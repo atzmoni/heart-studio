@@ -32,6 +32,7 @@ export const DEFAULTS = {
   outer: 0.955,     // scaled: size of the outermost ring
   width: 1.4,       // groove width, cm
   edge: 1.5,        // outer contour line width, cm
+  joint: 2.5,       // gap between the parts of an element of separate parts, cm (heart-elements.js)
   seam: 1.2,        // width of the joint between the halves, cm (0 = one piece)
   rim: 0,           // rim band width, cm (0 = no rim)
   gap: 2,           // width of the separation groove between rim and field, cm
@@ -110,46 +111,104 @@ export const polyLength = (p, closed) => p.reduce((s, q, i) => i || closed ? s +
 // ---------- distance field ----------
 // Signed distance to the contour on a RES-per-cm grid (positive inside), plus where along the contour the nearest point is
 // (u from 0 at the cleft, clockwise, to 1). Exact point-to-segment distances; inside/outside by scanline parity.
-export function distanceField(poly) {
-  const N = Math.round((SIZE + 2 * MARGIN) * RES) + 1, n = poly.length;
-  const d = new Float32Array(N * N), u = new Float32Array(N * N);
-  const ax = new Float32Array(n), ay = new Float32Array(n), ex = new Float32Array(n), ey = new Float32Array(n), il = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const a = poly[i], b = poly[(i + 1) % n];
-    ax[i] = a[0]; ay[i] = a[1]; ex[i] = b[0] - a[0]; ey[i] = b[1] - a[1];
-    il[i] = 1 / (ex[i] * ex[i] + ey[i] * ey[i] || 1);
-  }
-  const inside = new Uint8Array(N * N);
-  for (let j = 0; j < N; j++) {
-    const y = j / RES - MARGIN, xs = [];
-    for (let i = 0; i < n; i++) {
-      const y0 = ay[i], y1 = ay[i] + ey[i];
-      if ((y0 <= y) !== (y1 <= y)) xs.push(ax[i] + ex[i] * (y - y0) / ey[i]);
+// It takes one outline or a list of parts ({ loops: [outer, ...holes] }, see heart-elements.js). With parts, pid says which
+// part every sample belongs to (the nearest one outside them), and the joint between touching parts (cm) is cut out of d,
+// so every part shrinks by joint / 2 and the gaps stay exactly that wide along any shape.
+export function distanceField(input, joint = 0) {
+  const parts = Array.isArray(input[0]) ? [{ loops: [input] }] : input;
+  const N = Math.round((SIZE + 2 * MARGIN) * RES) + 1;
+  const d = new Float32Array(N * N), u = new Float32Array(N * N), pid = new Uint8Array(N * N).fill(255);
+  const ax = [], ay = [], ex = [], ey = [], il = [], su = [], start = [0];
+  for (const p of parts) {
+    for (const loop of p.loops) {
+      const n = loop.length;
+      for (let i = 0; i < n; i++) {
+        const a = loop[i], b = loop[(i + 1) % n];
+        ax.push(a[0]); ay.push(a[1]); ex.push(b[0] - a[0]); ey.push(b[1] - a[1]);
+        il.push(1 / ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2 || 1)); su.push(i / n);
+      }
     }
-    xs.sort((p, q) => p - q);
-    for (let k = 0; k + 1 < xs.length; k += 2) {
-      const a = Math.max(0, Math.ceil((xs[k] + MARGIN) * RES)), b = Math.min(N - 1, Math.floor((xs[k + 1] + MARGIN) * RES));
-      for (let i = a; i <= b; i++) inside[j * N + i] = 1;
+    start.push(ax.length);
+  }
+  const loopN = []; for (const p of parts) for (const loop of p.loops) for (let i = 0; i < loop.length; i++) loopN.push(loop.length);
+  for (let q = 0; q < parts.length; q++) {
+    for (let j = 0; j < N; j++) {
+      const y = j / RES - MARGIN, xs = [];
+      for (let i = start[q]; i < start[q + 1]; i++) {
+        const y0 = ay[i], y1 = ay[i] + ey[i];
+        if ((y0 <= y) !== (y1 <= y)) xs.push(ax[i] + ex[i] * (y - y0) / ey[i]);
+      }
+      xs.sort((p, r) => p - r);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        const a = Math.max(0, Math.ceil((xs[k] + MARGIN) * RES)), b = Math.min(N - 1, Math.floor((xs[k + 1] + MARGIN) * RES));
+        for (let i = a; i <= b; i++) pid[j * N + i] = q;
+      }
     }
   }
+  const S = ax.length;
+  if (parts.length > 1) { nearestBuckets(N, d, u, pid, { ax, ay, ex, ey, il, su, loopN, start, S }, joint); return { N, d, u, pid, parts, joint }; }
   for (let j = 0; j < N; j++) {
     const y = j / RES - MARGIN;
     for (let i = 0; i < N; i++) {
-      const x = i / RES - MARGIN;
+      const x = i / RES - MARGIN, k = j * N + i, own = pid[k];
+      // Inside a part the nearest edge is always one of its own (any other part is beyond it).
+      const s0 = own < 255 ? start[own] : 0, s1 = own < 255 ? start[own + 1] : S;
       let best = Infinity, bi = 0, bt = 0;
-      for (let s = 0; s < n; s++) {
+      for (let s = s0; s < s1; s++) {
         const px = x - ax[s], py = y - ay[s];
         let t = (px * ex[s] + py * ey[s]) * il[s];
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         const qx = px - ex[s] * t, qy = py - ey[s] * t, dd = qx * qx + qy * qy;
         if (dd < best) { best = dd; bi = s; bt = t; }
       }
-      const k = j * N + i;
-      d[k] = inside[k] ? Math.sqrt(best) : -Math.sqrt(best);
-      u[k] = (bi + bt) / n;
+      d[k] = (own < 255 ? Math.sqrt(best) : -Math.sqrt(best)) - joint / 2;
+      u[k] = su[bi] + bt / loopN[bi];
+      if (own === 255) { let q = 0; while (start[q + 1] <= bi) q++; pid[k] = q + 128; }   // outside: nearest part, flagged +128
     }
   }
-  return { N, d, u };
+  return { N, d, u, pid, parts, joint };
+}
+
+// The same nearest-edge search for elements of many parts, through 6 cm buckets of segments: inside a part only its own
+// edges count (searched outwards until nothing closer can be left), outside only edges within 16 cm (further out is -16).
+function nearestBuckets(N, d, u, pid, g, joint) {
+  const { ax, ay, ex, ey, il, su, loopN, start, S } = g, B = 6, M = Math.ceil((SIZE + 2 * MARGIN) / B) + 1, cells = Array.from({ length: M * M }, () => []);
+  const part = new Uint8Array(S); for (let q = 0; q + 1 < start.length; q++) part.fill(q, start[q], start[q + 1]);
+  const cell = v => Math.max(0, Math.min(M - 1, Math.floor((v + MARGIN) / B)));
+  for (let s = 0; s < S; s++) {
+    const x0 = cell(Math.min(ax[s], ax[s] + ex[s])), x1 = cell(Math.max(ax[s], ax[s] + ex[s])), y0 = cell(Math.min(ay[s], ay[s] + ey[s])), y1 = cell(Math.max(ay[s], ay[s] + ey[s]));
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) cells[cy * M + cx].push(s);
+  }
+  const OUT = 16;
+  for (let j = 0; j < N; j++) {
+    const y = j / RES - MARGIN, cy = cell(y);
+    for (let i = 0; i < N; i++) {
+      const x = i / RES - MARGIN, cx = cell(x), k = j * N + i, own = pid[k];
+      let best = Infinity, bi = -1, bt = 0;
+      const maxR = own < 255 ? M : Math.ceil(OUT / B) + 1;
+      for (let r = 0; r <= maxR; r++) {
+        if (bi >= 0 && Math.sqrt(best) < (r - 1) * B) break;
+        for (let yy = cy - r; yy <= cy + r; yy++) {
+          if (yy < 0 || yy >= M) continue;
+          for (let xx = cx - r; xx <= cx + r; xx++) {
+            if (xx < 0 || xx >= M || (Math.abs(yy - cy) !== r && Math.abs(xx - cx) !== r)) continue;
+            for (const s of cells[yy * M + xx]) {
+              if (own < 255 && part[s] !== own) continue;
+              const px = x - ax[s], py = y - ay[s];
+              let t = (px * ex[s] + py * ey[s]) * il[s];
+              t = t < 0 ? 0 : t > 1 ? 1 : t;
+              const qx = px - ex[s] * t, qy = py - ey[s] * t, dd = qx * qx + qy * qy;
+              if (dd < best) { best = dd; bi = s; bt = t; }
+            }
+          }
+        }
+      }
+      if (bi < 0) { d[k] = -OUT - joint / 2; u[k] = 0; pid[k] = 128; continue; }
+      d[k] = (own < 255 ? Math.sqrt(best) : -Math.min(OUT, Math.sqrt(best))) - joint / 2;
+      u[k] = su[bi] + bt / loopN[bi];
+      if (own === 255) pid[k] = part[bi] + 128;
+    }
+  }
 }
 
 // Bilinear sample of a grid in cm coordinates.
@@ -163,8 +222,8 @@ export function sample(grid, N, x, y) {
 // Scaled rings: for every point, the size s of the scaled copy of the outline (about centre C) that passes through it,
 // s = |p - C| / R(angle) where R is how far the outline is from C in that direction. Rings are the sets s = level.
 // ua is where along the outline (0..1 from the cleft, clockwise) the ray through the point lands: the same position on every ring.
-export function gaugeField(poly, field, cx, cy) {
-  const A = 4096, R = new Float32Array(A), U = new Float32Array(A), n = poly.length;
+function rayTable(poly, cx, cy, A) {
+  const R = new Float32Array(A), U = new Float32Array(A), n = poly.length;
   for (let k = 0; k < A; k++) {
     const th = k / A * 2 * Math.PI, dx = Math.cos(th), dy = Math.sin(th);
     let best = Infinity, bu = 0;
@@ -176,14 +235,32 @@ export function gaugeField(poly, field, cx, cy) {
     }
     R[k] = best === Infinity ? 1 : best; U[k] = bu;
   }
+  return { R, U, A };
+}
+function gaugeAt(T, x, y) {
+  const { R, U, A } = T;
+  let a = Math.atan2(y, x) / (2 * Math.PI); if (a < 0) a += 1;
+  const f = a * A, k0 = Math.floor(f) % A, k1 = (k0 + 1) % A, w = f - Math.floor(f);
+  let u0 = U[k0], u1 = U[k1]; if (u1 - u0 > 0.5) u1 -= 1; else if (u0 - u1 > 0.5) u1 += 1;
+  return [Math.hypot(x, y) / (R[k0] * (1 - w) + R[k1] * w), ((u0 * (1 - w) + u1 * w) % 1 + 1) % 1];
+}
+export function gaugeField(poly, field, cx, cy) {
+  const T = rayTable(poly, cx, cy, 4096);
   const { N } = field, s = new Float32Array(N * N), ua = new Float32Array(N * N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-    const x = i / RES - MARGIN - cx, y = j / RES - MARGIN - cy;
-    let a = Math.atan2(y, x) / (2 * Math.PI); if (a < 0) a += 1;
-    const f = a * A, k0 = Math.floor(f) % A, k1 = (k0 + 1) % A, w = f - Math.floor(f);
-    s[j * N + i] = Math.hypot(x, y) / (R[k0] * (1 - w) + R[k1] * w);
-    let u0 = U[k0], u1 = U[k1]; if (u1 - u0 > 0.5) u1 -= 1; else if (u0 - u1 > 0.5) u1 += 1;
-    ua[j * N + i] = ((u0 * (1 - w) + u1 * w) % 1 + 1) % 1;
+    const [g, q] = gaugeAt(T, i / RES - MARGIN - cx, j / RES - MARGIN - cy);
+    s[j * N + i] = g; ua[j * N + i] = q;
+  }
+  return { s, ua };
+}
+// The same for an element of separate parts: every part gets its own scaled rings, shrinking to its own centre.
+export function gaugeParts(field) {
+  const { N, pid, parts } = field, T = parts.map(p => rayTable(resample(p.loops[0], 240, true), p.c[0], p.c[1], 1024));
+  const s = new Float32Array(N * N), ua = new Float32Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i, p = parts[pid[k] & 127];
+    const [g, q] = gaugeAt(T[pid[k] & 127], i / RES - MARGIN - p.c[0], j / RES - MARGIN - p.c[1]);
+    s[k] = g; ua[k] = q;
   }
   return { s, ua };
 }
@@ -335,19 +412,30 @@ function splitAtSeam(P, loop) {
 }
 
 // Same as build(), reusing a contour and distance field when only the groove settings changed (the slow part is the field).
+// A field of several parts (heart-elements.js) gives every part its own contour and its own grooves; poly is then the first part.
 export function rebuild(cfg, poly, field) {
-  const { N, d } = field, inner = innerStart(cfg);
-  if (cfg.pattern === "scaled" && field.gKey !== cfg.cx + "," + cfg.cy) Object.assign(field, gaugeField(poly, field, cfg.cx, cfg.cy), { gKey: cfg.cx + "," + cfg.cy });
+  const { N, d } = field, inner = innerStart(cfg), multi = field.parts?.length > 1;
+  if (cfg.pattern === "scaled") {
+    const gk = multi ? "parts" : cfg.cx + "," + cfg.cy;
+    if (field.gKey !== gk) Object.assign(field, multi ? gaugeParts(field) : gaugeField(poly, field, cfg.cx, cfg.cy), { gKey: gk });
+  }
   const lev = levels(cfg, field);
   const longest = ls => ls.sort((a, b) => b.pts.length - a.pts.length);
   const rimLine = cfg.rim > 0 ? longest(isolines(d, N, cfg.rim)) : [];
   const innerLine = cfg.rim > 0 ? longest(isolines(d, N, inner)) : [];
   const sepLine = cfg.rim > 0 ? longest(isolines(d, N, cfg.rim + cfg.gap / 2)) : [];
+  // Every part's own outline, as cut (inside the joints).
+  const partLines = multi ? longest(isolines(d, N, 0)).filter(l => l.closed).map(l => l.pts) : [poly];
   // The field boundary: grooves are clipped to it (to the contour itself when there is no rim).
-  const fieldPolys = cfg.rim > 0 ? innerLine.filter(l => l.closed).map(l => l.pts) : [poly];
+  const fieldPolys = cfg.rim > 0 ? innerLine.filter(l => l.closed).map(l => l.pts) : partLines;
+  const partAt = p => field.pid ? field.pid[Math.round((p[1] + MARGIN) * RES) * N + Math.round((p[0] + MARGIN) * RES)] & 127 : 0;
   const grooves = lev.map((L, k) => {
     let pieces;
-    if (cfg.pattern === "scaled") {
+    if (cfg.pattern === "scaled" && multi) {
+      // Each part's rings are the iso lines of its own gauge, kept inside the part.
+      pieces = isolines(field.s, N, L, q => d[q] >= Math.max(inner, 0.2)).map(l => ({ p: l.pts, loop: l.closed }));
+      pieces = pieces.flatMap(({ p, loop }) => cfg.seam > 0 ? splitAtSeam(p, loop) : [p]);
+    } else if (cfg.pattern === "scaled") {
       const ring = poly.map(([x, y]) => [cfg.cx + (x - cfg.cx) * L, cfg.cy + (y - cfg.cy) * L]);
       ring.push(ring[0]);
       pieces = cfg.seam > 0 ? splitAtSeam(ring, true) : [ring];
@@ -357,19 +445,27 @@ export function rebuild(cfg, poly, field) {
       pieces = pieces.flatMap(({ p, loop }) => cfg.seam > 0 ? splitAtSeam(p, loop) : [p]);
     }
     pieces = pieces.filter(p => polyLength(p) > 2);
-    // Order pieces left to right so "a" is always the left one.
-    pieces.sort((p, q) => p.reduce((s, v) => s + v[0], 0) / p.length - q.reduce((s, v) => s + v[0], 0) / q.length);
+    if (multi) pieces.forEach(p => p.part = partAt(p[Math.floor(p.length / 2)]));
+    // Order pieces left to right so "a" is always the left one (by part first, for elements).
+    const mx = p => p.reduce((s, v) => s + v[0], 0) / p.length;
+    pieces.sort((p, q) => (p.part ?? 0) - (q.part ?? 0) || mx(p) - mx(q));
     return { id: k + 1, level: L, pieces, length: pieces.reduce((s, p) => s + polyLength(p), 0) };
   }).filter(g => g.pieces.length);
   // The seam runs down the middle from the cleft (first contour point) to the tip.
-  const seamLine = cfg.seam > 0 ? [[SIZE / 2, poly[0][1]], [SIZE / 2, SIZE]] : null;
+  const top = multi ? 0 : poly[0][1];
+  const seamLine = cfg.seam > 0 ? [[SIZE / 2, top], [SIZE / 2, SIZE]] : null;
+  // Per part: how deep it is (largest distance in from its edge), for effects that light each part as its own dome.
+  const parts = (multi ? field.parts : [{ name: "הלב", c: [cfg.cx, cfg.cy], order: 0, band: 0, tilt: [0, 0] }]).map(p => ({ ...p, depth: 1 }));
+  for (let k = 0; k < N * N; k++) if (d[k] > 0) { const q = parts[multi ? field.pid[k] & 127 : 0]; if (d[k] > q.depth) q.depth = d[k]; }
   return { cfg, poly, field, levels: lev, grooves, seamLine, rimLine: rimLine.map(l => l.pts), sepLine: sepLine.map(l => l.pts),
-    innerLine: innerLine.map(l => l.pts), stripes: lev.length + 1, perimeter: polyLength(poly, true) };
+    innerLine: innerLine.map(l => l.pts), stripes: lev.length + 1, parts, partLines, multi, cleft: top,
+    perimeter: partLines.reduce((s, p) => s + polyLength(p, true), 0) };
 }
 
 // ---------- channels ----------
 // Every part of the heart is a separate channel, per half (same ids as the renderer's channel texture).
-export const CH = { edge: 0, seam: 2, rim: 3, sep: 5, groove: 8, band: 136 };
+// Elements of separate parts add one channel per part (272 + part), over everything on that part.
+export const CH = { edge: 0, seam: 2, rim: 3, sep: 5, groove: 8, band: 136, part: 272 };
 export function chName(type, k, side) {
   const sd = side ? "ימין" : "שמאל";
   switch (type) {
@@ -388,17 +484,20 @@ export function channels(model) {
   if (model.cfg.rim > 0) for (let sd = 0; sd < 2; sd++) { add("rim", 0, sd, CH.rim + sd); add("sep", 0, sd, CH.sep + sd); }
   for (let k = 0; k <= n; k++) for (let sd = 0; sd < 2; sd++) add("band", k, sd, CH.band + k * 2 + sd);
   for (let k = 0; k < n; k++) for (let sd = 0; sd < 2; sd++) add("groove", k, sd, CH.groove + k * 2 + sd);
+  if (model.multi) model.parts.forEach((p, k) => out.push({ id: CH.part + k, type: "part", k, side: p.c[0] >= SIZE / 2 ? 1 : 0, name: p.name }));
   return out;
 }
 // Which channel a point (cm) is on, with the same rules as the shader. null outside the heart.
 export function channelAt(model, x, y) {
   const { cfg, field, levels: lev } = model, d = sample(field.d, field.N, x, y);
   if (d < 0) return null;
-  const sd = x >= SIZE / 2 ? 1 : 0, pick = (type, k = 0) => ({ id: (CH[type] + (type === "seam" ? 0 : k * 2 + sd)), type, k, side: sd, name: chName(type, k, sd) });
+  const P = model.multi ? field.pid[Math.round((y + MARGIN) * RES) * field.N + Math.round((x + MARGIN) * RES)] & 127 : -1;
+  const sd = x >= SIZE / 2 ? 1 : 0, pick = (type, k = 0) => ({ id: (CH[type] + (type === "seam" ? 0 : k * 2 + sd)), type, k, side: sd,
+    name: (P >= 0 ? model.parts[P].name + " · " : "") + chName(type, k, sd), part: P >= 0 ? { id: CH.part + P, k: P, name: model.parts[P].name } : null });
   if (d < cfg.edge) return pick("edge");
   if (cfg.rim > 0 && d < cfg.rim) return pick("rim");
   if (cfg.rim > 0 && d < cfg.rim + cfg.gap) return pick("sep");
-  if (cfg.seam > 0 && Math.abs(x - SIZE / 2) < cfg.seam / 2 && y > model.poly[0][1]) return pick("seam");
+  if (cfg.seam > 0 && Math.abs(x - SIZE / 2) < cfg.seam / 2 && y > model.cleft) return pick("seam");
   const phi = phiAt(cfg, x, y, d, field);
   let gd = Infinity, gi = 0, si = 0, gs = 1;
   if (cfg.pattern === "scaled") { const e = 0.5; gs = Math.hypot(sample(field.s, field.N, x + e, y) - sample(field.s, field.N, x - e, y), sample(field.s, field.N, x, y + e) - sample(field.s, field.N, x, y - e)); }
@@ -418,7 +517,9 @@ export function channelAt(model, x, y) {
 const f1 = v => Math.round(v * 10) / 10;
 const pathD = (pts, closed) => "M" + pts.map(p => f1(p[0]) + " " + f1(p[1])).join("L") + (closed ? "Z" : "");
 export const grooveColor = (k, n) => `hsl(${Math.round((k / Math.max(1, n)) * 300 + 190) % 360} 85% 58%)`;
-export const pieceName = (g, i) => g.pieces.length > 1 ? g.id + "abcdefgh"[i] : String(g.id);
+// Pieces of a groove: 3a, 3b ... on the heart; part.groove (12.3) on an element of separate parts.
+export const pieceName = (g, i) => g.pieces[i].part != null ? `${g.pieces[i].part + 1}.${g.id}` + (g.pieces.filter(p => p.part === g.pieces[i].part).length > 1 ? "abcdefgh"[g.pieces.slice(0, i).filter(p => p.part === g.pieces[i].part).length] || "" : "")
+  : g.pieces.length > 1 ? g.id + ("abcdefgh"[i] || "." + (i + 1)) : String(g.id);
 
 // Cutting / mapping plan: every part a separate group and every groove its own path id, 1 unit = 1 cm.
 export function toSVG(model, opts = {}) {
@@ -429,7 +530,10 @@ export function toSVG(model, opts = {}) {
   out.push(`<rect x="${-pad}" y="${-pad}" width="${W}" height="${W + 6}" fill="${opts.bg || "#05070a"}"/>`);
   out.push(`<g id="frame" stroke="#3b4658" stroke-width=".4" fill="none" stroke-dasharray="2 2"><rect x="0" y="0" width="${SIZE}" height="${SIZE}"/></g>`);
   out.push(`<g id="dimensions" fill="#8592a6" font-size="5" text-anchor="middle"><text x="${SIZE / 2}" y="${-6}">240 ס״מ</text><text x="${-8}" y="${SIZE / 2}" transform="rotate(-90 ${-8} ${SIZE / 2})">240 ס״מ</text></g>`);
-  out.push(`<g id="contour" fill="none" stroke="#ff3b5c" stroke-width="${Math.max(0.6, cfg.edge)}"><path id="contour-outer" d="${pathD(poly, true)}"/></g>`);
+  out.push(`<g id="contour" fill="none" stroke="#ff3b5c" stroke-width="${Math.max(0.6, cfg.edge)}">` + (model.multi
+    ? model.partLines.map((p, i) => `<path id="part-${i + 1}" d="${pathD(p, true)}"/>`).join("") : `<path id="contour-outer" d="${pathD(poly, true)}"/>`) + `</g>`);
+  if (model.multi && labels) out.push(`<g id="part-labels" font-size="4" font-weight="700" fill="#ff8fa3" text-anchor="middle" dominant-baseline="central">`
+    + model.parts.map((p, i) => `<text x="${f1(p.c[0])}" y="${f1(p.c[1])}">${i + 1}</text>`).join("") + `</g>`);
   if (cfg.rim > 0) {
     out.push(`<g id="rim" fill="none" stroke="#ffb3c1" stroke-width=".5" stroke-dasharray="3 1.5">${model.rimLine.map((p, i) => `<path id="rim-inner-${i + 1}" d="${pathD(p, true)}"/>`).join("")}</g>`);
     out.push(`<g id="separation" fill="none" stroke="#ffd166" stroke-opacity=".9" stroke-width="${cfg.gap}">${model.sepLine.map((p, i) => `<path id="separation-${i + 1}" d="${pathD(p, true)}"/>`).join("")}</g>`);
@@ -460,8 +564,11 @@ export function toJSON(model) {
     unit: "cm", width: SIZE, height: SIZE, origin: "top-left, y down",
     settings: { ...model.cfg },
     contour: r(model.poly), perimeter: f1(model.perimeter),
+    parts: model.multi ? model.parts.map((p, i) => ({ id: i + 1, name: p.name, centre: r([p.c])[0], order: f1(p.order), band: f1(p.band), tilt: p.tilt.map(f1),
+      loops: p.loops.map(r) })) : undefined,
+    partOutlines: model.multi ? model.partLines.map(r) : undefined,
     seam: model.seamLine && r(model.seamLine), rimInner: model.rimLine.map(r), separation: model.sepLine.map(r),
-    grooves: model.grooves.map(g => ({ id: g.id, level: Math.round(g.level * 1000) / 1000, length: f1(g.length), pieces: g.pieces.map((p, i) => ({ name: pieceName(g, i), points: r(p) })) })),
+    grooves: model.grooves.map(g => ({ id: g.id, level: Math.round(g.level * 1000) / 1000, length: f1(g.length), pieces: g.pieces.map((p, i) => ({ name: pieceName(g, i), part: p.part != null ? p.part + 1 : undefined, points: r(p) })) })),
     stripes: model.stripes,
   };
 }

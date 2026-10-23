@@ -26,7 +26,8 @@ export const TARGETS = {
 // The trance reading, offered next to the channels wherever a channel can be picked.
 export const TRANCE = { breath: "נשימה · עוצמה איטית", pump: "טראנס · פאמפ", build: "טראנס · בילדאפ", drop: "טראנס · דרופ", brk: "טראנס · ברייקדאון" };
 export const BLENDS = { screen: "Screen · מאיר", add: "Add · חיבור", lighten: "Max · הבהיר מביניהם", over: "Over · מעל", multiply: "Multiply · מכפיל", subtract: "Subtract · מחסר" };
-export const MASKS = { all: "כל הלב", grooves: "תעלות בלבד", hearts: "לבבות בלבד", contour: "קונטור", left: "חצי שמאל", right: "חצי ימין", inner: "חצי פנימי", outer: "חצי חיצוני", seam: "תפר" };
+export const MASKS = { all: "כל הלב", grooves: "תעלות בלבד", hearts: "לבבות בלבד", contour: "קונטור", left: "חצי שמאל", right: "חצי ימין", inner: "חצי פנימי", outer: "חצי חיצוני", seam: "תפר",
+  partsEven: "חלקים זוגיים", partsOdd: "חלקים אי-זוגיים", partsIn: "חלקים במרכז", partsOut: "חלקים בחוץ" };   // the parts: elements of separate parts
 export const MASK_ID = Object.fromEntries(Object.keys(MASKS).map((k, i) => [k, i]));
 
 const ch = (id, name, lo, hi, o = {}) => ({ id, name, lo, hi, src: -1, gain: 0, auto: true, range: 24, gate: -100, curve: 1.2,

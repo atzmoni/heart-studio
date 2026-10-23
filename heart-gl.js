@@ -68,6 +68,14 @@ export const EFFECTS = [
   { id: 55, name: "טראנס גייט", ico: "▦", e: 3, g: "trance" },
   { id: 56, name: "ארפג'יו", ico: "🎹", e: 1, g: "trance" },
   { id: 57, name: "היפר-ספייס", ico: "🌌", e: 1, g: "trance" },
+  // Breathing sound sculpture: every piece (a part of an element, or a ring of the heart) is its own voice, and every sound
+  // channel moves something different: bass the breath, mids the colour flow, highs a shimmer on the cut, the kick a pulse.
+  { id: 58, name: "פסל נושם", ico: "🌬️", e: 0, g: "parts" },
+  { id: 59, name: "מקהלת חלקים", ico: "🎶", e: 1, g: "parts" },
+  { id: 60, name: "גל עובר", ico: "🐦", e: 1, g: "parts" },
+  { id: 61, name: "פאנלים מתהפכים", ico: "🃏", e: 1, g: "parts" },
+  { id: 62, name: "תבליט פאנלים", ico: "🧱", e: 1, g: "parts" },
+  { id: 63, name: "שכבות מרחפות", ico: "🪐", e: 0, g: "parts" },
 ];
 
 export const PALETTES = {
@@ -89,7 +97,9 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 out vec4 o;
-uniform sampler2D uField, uVid, uCh;
+uniform sampler2D uField, uVid, uCh, uPartMap, uPartD;
+uniform int uParts;
+uniform float uBassS, uMidS, uHighS, uBreath, uFlow;
 uniform int uAnySolo;
 uniform vec2 uRes;
 uniform mat3 uInvHL, uInvHR;
@@ -109,7 +119,7 @@ uniform float uLayOp;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
 
-struct H { vec2 p, gD, gP; float aa, d, uc, phi, gd, gt, s, gn, sn, dn, side, rad; int gi, si;
+struct H { vec2 p, gD, gP, pc, tilt; float aa, d, uc, phi, gd, gt, s, gn, sn, dn, side, rad, pk, pb, dm; int gi, si, part;
   float inside, edge, seam, rim, sep, field, groove, stripe, lines; };
 
 float hash11(float n) { return fract(sin(n * 127.1 + 1.3) * 43758.5453); }
@@ -140,7 +150,16 @@ H heart(vec2 px) {
   bool out_ = any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)));
   h.d = out_ || gap ? -50.0 : f.r;
   h.uc = fract(atan(f.b, f.g) / TAU + 1.0);
-  h.dn = clamp(h.d / uDMax, 0.0, 1.0);
+  // The part this point is on (elements of separate parts): its centre, order, depth, facet tilt and spectrum band.
+  // Each part is its own little heart: dn and rad are measured within it.
+  h.part = 0; h.pc = uCenter; h.pk = 0.0; h.pb = 0.0; h.tilt = vec2(0.0); h.dm = uDMax;
+  if (uParts > 1) {
+    ivec2 gi = clamp(ivec2(floor((h.p + ${MARGIN.toFixed(1)}) * ${RES.toFixed(1)} + 0.5)), ivec2(0), ivec2(int(uN) - 1));
+    h.part = int(texelFetch(uPartMap, gi, 0).r * 255.0 + 0.5) & 127;
+    vec4 pa = texelFetch(uPartD, ivec2(h.part, 0), 0), pb = texelFetch(uPartD, ivec2(h.part, 1), 0);
+    h.pc = pa.xy; h.pk = pa.z; h.dm = max(pa.w, 1.0); h.tilt = pb.xy; h.pb = pb.z;
+  }
+  h.dn = clamp(h.d / h.dm, 0.0, 1.0);
   h.rad = uPattern == 4 ? clamp(f.a, 0.0, 1.0) : 1.0 - h.dn;   // 0 at the heart's core, 1 on the contour
   float r = length(h.p - uCenter);
   if (uPattern == 4) h.phi = f.a;
@@ -220,7 +239,7 @@ vec3 fxCalib(H h) {
 vec3 fxHeartbeat(H h) {
   float ph = uBeat;
   float env = exp(-ph * 8.0) + 0.65 * exp(-max(ph - 0.2, 0.0) * 9.0) * step(0.2, ph);
-  float front = ph * uDMax * 1.5;
+  float front = ph * h.dm * 1.5;
   float ring = exp(-pow((h.d - front) / 5.0, 2.0));
   vec3 base = pal(0.0);
   vec3 c = base * (0.08 + 0.9 * env * uInt) * (h.stripe * 0.7 + h.rim);
@@ -580,9 +599,10 @@ vec3 fxBarWipe(H h) {            // each new bar wipes a new colour up from the 
 // inner and an outer wall) and from a dome over the whole heart, so light, shadow and depth land exactly on the channels.
 vec3 nCut(H h, float steep) {
   float t = clamp(h.gt / (uGW * 0.5), -1.0, 1.0);
-  return normalize(vec3(h.gP * (t < 0.0 ? 1.0 : -1.0) * steep * h.groove, 1.0));
+  return normalize(vec3(h.gP * (t < 0.0 ? 1.0 : -1.0) * steep * h.groove + h.tilt, 1.0));
 }
-vec3 nDome(H h, float hm) { vec2 g = hm * 0.5 / sqrt(max(h.dn, 0.015)) * h.gD / uDMax; return normalize(vec3(-g, 1.0)); }
+// The dome of the heart, or of every part on its own, leaning the way the part's facet faces.
+vec3 nDome(H h, float hm) { vec2 g = hm * 0.5 / sqrt(max(h.dn, 0.015)) * h.gD / h.dm; return normalize(vec3(-g + h.tilt, 1.0)); }
 vec3 nMix(vec3 a, vec3 b) { return normalize(vec3(a.xy + b.xy, 1.0)); }
 float ao(H h) { return 1.0 - 0.65 * h.groove * (1.0 - abs(clamp(h.gt / (uGW * 0.5), -1.0, 1.0))); }
 float dif(vec3 n, vec3 L) { return max(dot(n, L), 0.0); }
@@ -689,6 +709,73 @@ vec3 fxHolo(H h) {               // a hologram: rainbow edges, scan lines and gl
   float scan = 0.75 + 0.25 * sin(h.p.y * 1.5 - uTime * 8.0), sweep = step(0.975, fract(h.p.y / 40.0 - uTime * 0.4 * uSpeed));
   float glitch = 1.0 - clamp(uHit, 0.0, 1.0) * 0.4 * step(0.5, hash11(floor(uTime * 20.0) + floor(h.p.y / 6.0)));
   return (ir * (0.15 + fres * 1.6) * scan + vec3(0.4, 1.0, 1.0) * h.groove * 0.7 + vec3(1.0) * sweep * 0.5) * glitch * (0.7 + 0.5 * uLevel) * (h.stripe + h.groove + h.edge);
+}
+
+// ================= breathing sound sculpture (58-63) =================
+// A piece is a part of an element, or a ring of the heart. Each sound channel has one job, smoothed so it moves and never jumps:
+// uBassS breathes (how deep and bright), uMidS turns the colour flow (uFlow), uHighS shimmers on the cut lines, the kick pulses,
+// the spectrum gives every piece its own voice, and uBreath is a slow breath whose pace follows the music's energy.
+// The trance reading joins in: a build-up deepens the breath and speeds the wave, a drop floods every piece at once.
+float pK(H h) { return uParts > 1 ? h.pk : ringIdx(h) / ringN(); }                       // where the piece is in the sequence
+float pB(H h) { return uParts > 1 ? h.pb : ringIdx(h) / ringN(); }                       // its slice of the spectrum
+float pSeed(H h) { return uParts > 1 ? hash11(float(h.part) * 7.31 + 0.4) : hash11(ringIdx(h) * 3.7 + 0.4); }
+float breathV(float off) { float x = fract(uBreath + off); return x < 0.4 ? smoothstep(0.0, 0.4, x) : 1.0 - smoothstep(0.4, 1.0, x); }   // in 40%, out 60%
+float shimmer(H h) { return pow(noise(h.p * 0.55 + vec2(uTime * 2.3, -uTime * 1.7)), 6.0) * uHighS * 3.5; }
+
+vec3 fxBreathe(H h) {            // every piece breathes light out from its core, one after another; the kick beats inside it
+  float k = pK(h), br = breathV(-k * 0.35), amp = 0.35 + 0.65 * uBassS, reach = min(br * (0.55 + 0.45 * amp) + uBuild * 0.3, 1.2);
+  float fill = smoothstep(1.0 - reach - 0.22, 1.0 - reach + 0.22, h.dn);
+  vec3 col = pal(k * 0.3 + uFlow), c = col * (0.04 + 0.96 * fill) * (0.3 + 0.7 * amp) * (h.stripe + h.groove * 1.25);
+  c += mix(col, vec3(1.0), 0.6) * shimmer(h) * (h.groove + h.edge);
+  float ring = exp(-pow((h.dn - kk()) / 0.08, 2.0)) * kk();
+  c += col * uDrop * 0.8 * (h.stripe + h.groove);
+  return c + pal(k * 0.3 + uFlow + 0.5) * ring * 0.8 * (h.stripe * 0.5 + h.groove) + col * h.edge * (0.12 + 0.45 * br);
+}
+vec3 fxChoir(H h) {              // every piece sings its own band of the spectrum, a lit dome whose rings fill from the core
+  float b = pB(h), v = specAt(b);
+  vec3 n = nMix(nDome(h, 25.0 + 55.0 * v), nCut(h, 2.0)), L = normalize(vec3(-0.4, -0.7, 0.8));
+  vec3 col = pal(b * 0.8 + uFlow * 0.5);
+  float fill = smoothstep(1.0 - v * 1.15 - 0.04, 1.0 - v * 1.15 + 0.04, h.dn);
+  vec3 c = col * (0.12 + 0.88 * dif(n, L)) * (0.12 + 0.88 * v) * ao(h) * (h.stripe * (0.5 + 0.5 * fill) + h.groove * (0.4 + 1.0 * fill));
+  return c + vec3(1.0) * spc(n, L, 40.0) * (0.15 + uHighS) * v + col * h.edge * (0.15 + 0.55 * breathV(b * 0.5));
+}
+vec3 fxWave(H h) {               // a murmuration: a wave rolls through the pieces every bar, a softer one comes back with the mids
+  float k = pK(h), T = clockB();
+  float f1 = fract(T * (0.25 + 0.25 * step(0.5, uBuild)) * uSpeed) * 1.3 - 0.15, w1 = exp(-pow((k - f1) / 0.1, 2.0)) + 0.35 * exp(-pow((k - f1 + 0.18) / 0.16, 2.0));
+  float f2 = 1.0 - fract(T * 0.125 * uSpeed), w2 = exp(-pow((k - f2) / 0.18, 2.0)) * uMidS;
+  float env = 0.35 + 0.65 * uLevelS + 0.6 * kk();
+  vec3 c = pal(k * 0.4 + uFlow) * w1 * env * (h.stripe * 0.8 + h.groove * 1.4) + pal(k * 0.4 + uFlow + 0.5) * w2 * 0.7 * (h.stripe * 0.5 + h.groove);
+  c += pal(0.6 + uFlow) * 0.05 * h.stripe * (1.0 + breathV(k * 0.3)) + mix(pal(k), vec3(1.0), 0.5) * shimmer(h) * h.groove;
+  return c + vec3(1.0) * h.edge * (w1 * 0.6 + 0.05);
+}
+vec3 fxCards(H h) {              // the pieces turn over like cards, one after another every two bars; the bass swings them further
+  float k = pK(h), T = clockB() / 8.0 * uSpeed, tt = clamp(fract(T) * 1.7 - k * 0.7, 0.0, 1.0);
+  float a = 3.14159265 * smoothstep(0.0, 1.0, tt) + sin(uTime * 1.3 + k * 6.0) * 0.25 * uBassS, ca = cos(a);
+  float dx = h.p.x - h.pc.x, rr = h.dm * 2.2;
+  float face = 1.0 - smoothstep(rr * abs(ca) - 1.0, rr * abs(ca) + 1.0, abs(dx)) * (1.0 - h.edge);   // narrower when edge-on
+  vec3 n = normalize(vec3(sin(a), 0.0, ca) * sign(ca + 1e-4) + vec3(h.tilt, 0.0)), L = normalize(vec3(-0.5, -0.4, 0.8));
+  vec3 col = ca > 0.0 ? pal(k * 0.3 + floor(T) * 0.25 + uFlow) : pal(k * 0.3 + floor(T) * 0.25 + uFlow + 0.5);
+  float shade = (0.2 + 0.8 * dif(n, L)) * (1.0 + 0.004 * dx * sin(a));
+  return col * shade * face * (0.5 + 0.5 * uLevelS + 0.3 * kk()) * (h.stripe + h.groove * 1.3) + vec3(1.0) * spc(n, L, 25.0) * face * (0.2 + uHighS) * h.stripe;
+}
+vec3 fxBlocks(H h) {             // every piece a raised block with a bevelled edge, its height its band; a slow light circles round
+  float v = max(specAt(pB(h)), uDrop), bw = 2.0 + 4.0 * v, bev = 1.0 - smoothstep(0.0, bw, h.d);
+  vec2 outd = -h.gD / (length(h.gD) + 1e-4);
+  vec3 n = normalize(vec3(h.tilt + outd * bev * (1.2 + 2.0 * v), 1.0));
+  float a = uTime * 0.25 * uSpeed + uFlow * 2.0;
+  vec3 L = normalize(vec3(cos(a), sin(a), 0.75 - 0.3 * uBassS)), col = pal(pB(h) * 0.7 + uFlow * 0.5);
+  vec3 c = col * (0.1 + 0.9 * dif(n, L)) * (0.3 + 0.6 * v + 0.3 * uBassS) * ao(h) + vec3(1.0) * spc(n, L, 30.0) * bev * (0.3 + 1.5 * uHighS);
+  return c * (h.stripe + h.groove) + col * h.edge * (0.2 + 0.3 * kk());
+}
+vec3 fxFloat(H h) {              // one flowing picture seen through all the pieces, each at its own depth: they drift apart and back
+  float z = pSeed(h) * 0.8 + pK(h) * 0.2;
+  vec2 sway = vec2(sin(uTime * 0.23 * uSpeed), cos(uTime * 0.17 * uSpeed)) * (14.0 + 26.0 * uMidS) + vec2(0.0, (breathV(0.0) - 0.5) * 10.0);
+  vec2 q = h.p + sway * z + (h.p - h.pc) * kk() * 0.15 * z;
+  float n = fbm(q * 0.025 + vec2(uTime * 0.03 * uSpeed, 0.0));
+  vec3 col = pal(n * 0.8 + z * 0.3 + uFlow * 0.4);
+  vec3 c = col * (0.12 + 0.88 * smoothstep(0.3, 0.8, n)) * (1.0 - z * 0.55) * (0.45 + 0.5 * uLevelS + 0.35 * uBassS);
+  c += vec3(1.0) * pow(noise(q * 0.4 + uTime), 8.0) * uHighS * 2.0 * (h.groove + h.edge);
+  return c * (h.stripe + h.groove * 1.2) + col * h.edge * 0.25;
 }
 
 // ---------------- ring engine ----------------
@@ -831,6 +918,12 @@ vec3 fx(int id, H h) {
     case 55: return fxTrGate(h);
     case 56: return fxTrArp(h);
     case 57: return fxTrHyper(h);
+    case 58: return fxBreathe(h);
+    case 59: return fxChoir(h);
+    case 60: return fxWave(h);
+    case 61: return fxCards(h);
+    case 62: return fxBlocks(h);
+    case 63: return fxFloat(h);
   }
   return vec3(0.0);
 }
@@ -848,7 +941,8 @@ vec3 layer(int id, H h) {
 
 // ---------------- channels ----------------
 // Every part is its own channel, per half: row 0 = tint colour + tint amount, row 1 = gain/2, effect+1 (0 = the show's), mute, solo.
-// Ids: 0-1 edge L/R, 2 seam, 3-4 rim, 5-6 separation, 8 + 2k + side = groove k, 136 + 2k + side = band k (band 0 = inner heart).
+// Ids: 0-1 edge L/R, 2 seam, 3-4 rim, 5-6 separation, 8 + 2k + side = groove k, 136 + 2k + side = band k (band 0 = inner heart),
+// 272 + p = part p of an element (over all of the part's own channels).
 vec4 chA(int id) { return texelFetch(uCh, ivec2(id, 0), 0); }
 vec4 chB(int id) { return texelFetch(uCh, ivec2(id, 1), 0); }
 vec3 chApply(int id, vec3 c) {
@@ -867,6 +961,10 @@ float layerMask(H h) {
   if (uMask == 6) return 1.0 - smoothstep(0.45, 0.55, h.rad);
   if (uMask == 7) return smoothstep(0.45, 0.55, h.rad);
   if (uMask == 8) return h.seam;
+  // Parts of an element (rings stand in for them on the heart).
+  if (uMask == 9 || uMask == 10) { int k = uParts > 1 ? h.part : int(ringIdx(h)); return float((k % 2 == 0) == (uMask == 9)); }
+  if (uMask == 11) return 1.0 - step(0.5, pK(h));
+  if (uMask == 12) return step(0.5, pK(h));
   return 1.0;
 }
 
@@ -877,11 +975,18 @@ void main() {
   for (int i = 0; i < 5; i++) { float w = chW(h, i); if (w > wd) { wd = w; dom = i; } }
   bool calib = uFxA == 0 || (uFxB == 0 && uMix > 0.001);            // the test grid always shows the whole heart, untouched
   int own = calib || uPass > 0 ? -1 : int(chB(chId(h, dom)).g * 255.0 + 0.5) - 1;  // this channel runs its own effect
+  int pch = 272 + h.part;                                             // the part's own channel (elements of separate parts)
+  if (!calib && uPass == 0 && own < 0 && uParts > 1) own = int(chB(pch).g * 255.0 + 0.5) - 1;
   vec3 c = layer(own >= 0 ? own : uFxA, h);
   if (uMix > 0.001 && own < 0) c = mix(c, layer(uFxB, h), uMix);
   float norm = 0.0; vec3 acc = vec3(0.0);
   if (!calib || uAnySolo == 1) for (int i = 0; i < 6; i++) { float w = chW(h, i); if (w > 0.001) { acc += w * chApply(chId(h, i), c); norm += w; } }
   if (norm > 0.001) c = acc / norm * h.inside + c * (1.0 - h.inside);
+  if (uParts > 1 && (!calib || uAnySolo == 1)) {
+    vec4 pa = chA(pch), pb = chB(pch);
+    if (uAnySolo == 1) c = max(c, vec3(pb.a > 0.5 ? 1.0 : 0.0) * h.inside);
+    else c = mix(c, pa.rgb * max(c.r, max(c.g, c.b)), pa.a) * pb.r * 2.0 * (1.0 - step(0.5, pb.b)) * h.inside + c * (1.0 - h.inside);
+  }
   if (uPass == 0) c += vec3(1.0, 0.95, 0.97) * h.edge * uOutline;
   c = clamp(c * uMaster, 0.0, 1.0);
   if (uPass == 0) { o = vec4(c, 1.0); return; }
@@ -892,7 +997,7 @@ void main() {
   else o = vec4(c, a);                                            // over, add, subtract: straight alpha
 }`;
 
-export const CH_W = 272;
+export const CH_W = 336;
 const PATTERN_ID = { parallel: 0, chevron: 1, concentric: 2, radial: 3, scaled: 4 };
 const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
 
@@ -958,6 +1063,7 @@ export class HeartGL {
     const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
     for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(p, i), name = u.name.replace(/\[0\]$/, ""); this.loc[name] = gl.getUniformLocation(p, u.name); }
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
+    this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
     for (let i = 0; i < CH_W; i++) this.chData[(CH_W + i) * 4] = 128;    // gain 1
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
@@ -966,7 +1072,13 @@ export class HeartGL {
     for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);
     for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+    for (const t of [this.partMap, this.partD]) {
+      gl.activeTexture(t === this.partMap ? gl.TEXTURE3 : gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, t);
+      for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+    }
     gl.uniform1i(this.loc.uField, 0); gl.uniform1i(this.loc.uVid, 1); gl.uniform1i(this.loc.uCh, 2);
+    gl.uniform1i(this.loc.uPartMap, 3); gl.uniform1i(this.loc.uPartD, 4);
     this.videoEl = null;
   }
 
@@ -985,7 +1097,17 @@ export class HeartGL {
     gl.texImage2D(gl.TEXTURE_2D, 0, this.linearFloat ? gl.RGBA32F : gl.RGBA16F, N, N, 0, gl.RGBA, gl.FLOAT, data);
     for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
     for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
-    this.model = model; this.N = N; this.dmax = dmax;
+    // Which part every sample is on (R8, read exactly with texelFetch) and, per part, centre, order, depth / tilt, band.
+    const parts = model.parts || [], pid = model.field.pid || new Uint8Array(N * N);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.partMap);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, N, N, 0, gl.RED, gl.UNSIGNED_BYTE, pid);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    const pd = new Float32Array(64 * 2 * 4);
+    parts.slice(0, 64).forEach((p, i) => { pd.set([p.c[0], p.c[1], p.order ?? 0, p.depth ?? dmax], i * 4); pd.set([p.tilt?.[0] ?? 0, p.tilt?.[1] ?? 0, p.band ?? 0, 0], (64 + i) * 4); });
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, this.partD);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 64, 2, 0, gl.RGBA, gl.FLOAT, pd);
+    this.model = model; this.N = N; this.dmax = dmax; this.nParts = model.multi ? Math.min(64, parts.length) : 1;
   }
   setVideo(el) { this.videoEl = el; }
   // The ring engine's colours for this frame: CH_W x RGBA.
@@ -1029,7 +1151,17 @@ export class HeartGL {
     gl.uniform1i(L.uPattern, PATTERN_ID[cfg.pattern] ?? 0); gl.uniform1i(L.uNLev, Math.min(64, m.levels.length));
     gl.uniform1fv(L.uLev, lev);
     gl.uniform1f(L.uGW, cfg.width); gl.uniform1f(L.uEdge, cfg.edge); gl.uniform1f(L.uRim, cfg.rim); gl.uniform1f(L.uGap, cfg.gap);
-    gl.uniform1f(L.uSeam, cfg.seam || 0); gl.uniform1f(L.uCleft, m.poly[0][1]);
+    gl.uniform1f(L.uSeam, cfg.seam || 0); gl.uniform1f(L.uCleft, m.cleft ?? m.poly[0][1]);
+    gl.uniform1i(L.uParts, this.nParts || 1);
+    // Smoothed sound for the breathing effects: fast in, slow out, so the light swells and settles instead of flickering.
+    const t = s.time ?? 0, dt = this.tPrev == null ? 0 : Math.min(0.1, Math.max(0, t - this.tPrev)); this.tPrev = t;
+    const sm = (k, v, up, down) => { const c0 = this.sm[k] ?? 0; this.sm[k] = c0 + ((v || 0) - c0) * (1 - Math.exp(-dt / (v > c0 ? up : down))); return this.sm[k]; };
+    const bassS = sm("b", s.bass, 0.08, 0.7), midS = sm("m", s.mid, 0.3, 1.4), highS = sm("h", s.high, 0.03, 0.25);
+    // A breath of 5 to 20 a minute, quicker when the music is louder; the colour flow turns with the mids.
+    this.breath = ((this.breath || 0) + dt * (0.085 + 0.18 * (s.levelS || 0) + 0.07 * bassS) * (s.speed ?? 1)) % 1000;
+    this.flow = ((this.flow || 0) + dt * (0.008 + 0.05 * midS) * (s.speed ?? 1)) % 1000;
+    gl.uniform1f(L.uBassS, bassS); gl.uniform1f(L.uMidS, midS); gl.uniform1f(L.uHighS, highS);
+    gl.uniform1f(L.uBreath, this.breath); gl.uniform1f(L.uFlow, this.flow);
     gl.uniform1f(L.uAngle, cfg.angle); gl.uniform2f(L.uCenter, cfg.cx, cfg.cy);
     gl.uniform1i(L.uFxA, s.fxA); gl.uniform1i(L.uFxB, s.fxB); gl.uniform1f(L.uMix, s.mix);
     for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
@@ -1046,6 +1178,8 @@ export class HeartGL {
       this.chDirty = false;
     }
     gl.uniform1i(L.uAnySolo, this.anySolo);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.partMap);
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, this.partD);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 }
