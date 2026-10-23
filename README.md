@@ -6,8 +6,15 @@
 ## איך פותחים
 
 - **באינטרנט:** https://atzmoni.github.io/heart-studio/ (ב-Chrome או Edge, בגלל MIDI)
-- **בלי אינטרנט (אירועים):** מורידים את הקובץ [`heart-studio.html`](heart-studio.html) ולוחצים עליו פעמיים.
-  כל הסטודיו נמצא בקובץ אחד.
+- **בלי אינטרנט (אירועים), הדרך המומלצת:** מורידים את הריפו (Code ← Download ZIP), פותחים את התיקייה ולוחצים פעמיים על:
+  - **Windows:** `Start Heart Studio.bat`
+  - **macOS:** `Start Heart Studio.command` (בפעם הראשונה: קליק ימני ← Open, כי הקובץ לא חתום)
+
+  נפתח חלון שחור קטן (השרת) וחלון של הסטודיו ב-Chrome או Edge. משאירים את החלון השחור פתוח במהלך המופע וסוגרים אותו בסוף.
+  הכתובת תמיד http://127.0.0.1:8765, ולכן הדפדפן זוכר את אישור המיקרופון ואת הכיול בין אירועים.
+  לא צריך להתקין כלום: ב-Windows זה PowerShell, וב-macOS זה Perl, ושניהם מגיעים עם המחשב. הגופנים שמורים בתיקייה `fonts`.
+- **קובץ יחיד:** [`heart-studio.html`](heart-studio.html), לחיצה כפולה וזהו. גם הוא עובד בלי אינטרנט ועם מיקרופון,
+  אבל הדפדפן עלול לשאול על המיקרופון בכל פתיחה.
 
 ## מה יש בפנים
 
@@ -49,5 +56,7 @@ python3 tools/build-heart-studio.py
 ---
 
 Projection mapping studio for a 240 × 240 cm ring heart, driven by music, video and MIDI. Open `index.html` from any static
-host, or `heart-studio.html` straight from disk with no internet. Static files, no build step; `tools/build-heart-studio.py`
+host. Offline at events, double-click `Start Heart Studio.bat` (Windows) or `Start Heart Studio.command` (macOS): it serves
+the folder on http://127.0.0.1:8765 with what the OS already has and opens Chrome or Edge, so the microphone permission and
+calibration persist. `heart-studio.html` also runs straight from disk. Static files, no build step; `tools/build-heart-studio.py`
 regenerates the single-file offline build.
