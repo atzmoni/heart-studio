@@ -89,7 +89,8 @@ h1 { margin: 0; font-weight: 800; font-size: 1.35rem; }
 h1 small { font-weight: 400; color: var(--muted); font-size: .85rem; }
 a { color: var(--accent); }
 .studio { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr); gap: 12px; align-items: start; }
-@media (max-width: 980px) { .studio { grid-template-columns: 1fr; } }
+.studio.wide { grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.6fr); }   /* the workspace needs room for its network */
+@media (max-width: 980px) { .studio, .studio.wide { grid-template-columns: 1fr; } }
 .col { display: grid; gap: 12px; min-width: 0; }
 section, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 h3 { margin: 0; font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
@@ -154,6 +155,53 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .grid2 label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .grid2 select, .grid2 input { width: 100%; }
+#rxMeters { width: 100%; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
+#rxSpec { width: 100%; height: 130px; display: block; background: #05070a; border-radius: 8px; cursor: crosshair; touch-action: none; }
+.fam { font: 600 .66rem var(--mono); color: #0d1117; padding: 1px 5px; border-radius: 3px; margin-inline-end: 4px; letter-spacing: .04em; }
+.fam.chop { background: #f59f00; } .fam.top { background: #f06595; }
+.exp { display: grid; grid-template-columns: minmax(6.5em, auto) 1fr 1fr minmax(5em, 1.3fr) 3.2em auto; gap: 6px; align-items: center; font-size: .82rem; }
+.exp > b { font-weight: 600; color: var(--muted); }
+.exp select { padding: 5px 6px; font-size: .8rem; min-width: 0; }
+.exp output { font: .78rem var(--mono); color: var(--muted); text-align: end; }
+.exp button { padding: 4px 8px; }
+@media (max-width: 560px) { .exp { grid-template-columns: 1fr 1fr; } .exp > b { grid-column: 1 / -1; } }
+.sl.big { grid-template-columns: 8em 1fr 3.4em; font-size: 1rem; }
+.sl.big input[type=range] { height: 28px; }
+#rxStyles button { flex: 1; min-width: 7em; }
+#rxAdv { padding: 10px 12px; }
+#rxAdv[open] > summary { margin-bottom: 10px; }
+#rxAdv > section { margin-top: 10px; }
+.layer { border: 1px solid var(--line); border-inline-start: 4px solid #f06595; border-radius: 10px; padding: 10px; display: grid; gap: 8px; }
+.layer.off { opacity: .6; }
+.layer header { display: flex; gap: 8px; align-items: center; }
+.layer header b { flex: 1; }
+.wsBar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.wsBar button { padding: 5px 9px; font-size: .8rem; border-inline-start: 3px solid var(--fam, var(--line)); }
+.wsArea { position: relative; height: min(70vh, 640px); overflow: hidden; border-radius: 8px; border: 1px solid var(--line); outline: none; touch-action: none; direction: ltr; cursor: grab;
+  background: #0a0d12 radial-gradient(circle, #1d2430 1px, transparent 1.2px) 0 0 / 22px 22px; }
+.wsArea:focus-visible { border-color: var(--accent); }
+.wsWorld { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.wsWires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+.wsWires path { fill: none; }
+.wsWires .w { stroke-width: 2; opacity: .85; pointer-events: none; }
+.wsWires .w.aud { stroke-width: 4.5; }
+.wsWires .w.tmp { stroke: #fff; stroke-dasharray: 6 4; }
+.wsWires .hit { stroke: transparent; stroke-width: 12; cursor: pointer; pointer-events: stroke; }
+.wsWires .hit:hover + .w { stroke-width: 4; opacity: 1; }
+.wsNode { position: absolute; background: #1b222d; border: 1px solid #2f3a4b; border-top: 3px solid var(--fam); border-radius: 6px; font: 11px/1.2 var(--mono); color: #d5dce6; box-shadow: 0 4px 12px #0008; user-select: none; -webkit-user-select: none; }
+.wsNode.sel { outline: 2px solid var(--fam); }
+.wsNode.err { border-color: var(--bad); }
+.wsNode header { display: flex; justify-content: space-between; align-items: center; height: 24px; padding: 0 4px 0 8px; font-weight: 600; color: var(--fam); cursor: move; }
+.wsNode header button { padding: 0 6px; border: 0; background: none; color: #8592a6; font-size: 14px; }
+.wsRow { position: relative; height: 19px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+.wsRow > span:first-of-type { color: #aab4c3; }
+.wsOut { display: flex; gap: 5px; align-items: center; margin-inline-start: auto; }
+.wsOut b { font-weight: 400; color: #e6ebf2; min-width: 3.2em; text-align: end; background: linear-gradient(90deg, color-mix(in srgb, var(--fam) 45%, transparent) calc(var(--v, 0) * 100%), transparent 0); border-radius: 2px; padding: 0 2px; }
+.wsPort { position: absolute; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: #0a0d12; border: 2px solid var(--fam); cursor: crosshair; }
+.wsPort.in { left: -6px; border-color: #aab4c3; } .wsPort.out { right: -6px; }
+.wsPort.aud { border-radius: 2px; }
+.wsPort:hover { background: var(--fam); }
+#wsParams { display: grid; gap: 8px; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
@@ -212,6 +260,9 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
     <div class="col">
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="show">🎛️ הופעה</button>
+        <button role="tab" aria-selected="false" data-tab="rx">🔊 סאונד</button>
+        <button role="tab" aria-selected="false" data-tab="lay">🧱 שכבות</button>
+        <button role="tab" aria-selected="false" data-tab="ws">🕸️ שולחן עבודה</button>
         <button role="tab" aria-selected="false" data-tab="eng">🎚️ מנוע</button>
         <button role="tab" aria-selected="false" data-tab="ch">🧩 ערוצים</button>
         <button role="tab" aria-selected="false" data-tab="geo">❤️ מבנה הלב</button>
@@ -254,6 +305,91 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
         </section>
+      </div>
+
+      <!-- sound: a TouchDesigner-style audio chain, one band per channel. Simple controls first, the full chain under "advanced". -->
+      <div class="col" data-panel="rx" hidden>
+        <section>
+          <h3><span class="fam chop">CHOP</span>תגובה לסאונד</h3>
+          <div class="row" id="rxStyles"></div>
+          <div class="sl big"><label for="rx_boost">רגישות</label><input type="range" id="rx_boost" min="0" max="300" value="150"><output id="rx_boostV"></output></div>
+          <div class="sl big"><label for="rx_punch">חדות</label><input type="range" id="rx_punch" min="0" max="100" value="50"><output id="rx_punchV"></output></div>
+          <div class="sl big"><label for="rx_speed">מהירות דעיכה</label><input type="range" id="rx_speed" min="0" max="100" value="50"><output id="rx_speedV"></output></div>
+          <div class="sl big"><label for="rx_fKick">קיק ומכות</label><input type="range" id="rx_fKick" min="0" max="300" value="100"><output id="rx_fKickV"></output></div>
+          <div class="sl big"><label for="rx_fBass">בס</label><input type="range" id="rx_fBass" min="0" max="300" value="100"><output id="rx_fBassV"></output></div>
+          <div class="sl big"><label for="rx_fHigh">אמצע וגבוהים</label><input type="range" id="rx_fHigh" min="0" max="300" value="100"><output id="rx_fHighV"></output></div>
+          <canvas id="rxMeters" aria-label="מדי הערוצים: עוצמה גולמית, עוצמה אחרי Attack/Release ופולס של כל ערוץ. לחיצה בוחרת ערוץ"></canvas>
+          <p class="help">רגישות = כמה חזק האור מגיב. חדות = הבדל גדול בין שקט לחזק. מהירות דעיכה = כמה מהר האור נכבה אחרי מכה. לא מגיב? מעלים רגישות. מהבהב כל הזמן? מורידים חדות.</p>
+          <div class="row"><button id="rxOn" aria-pressed="true">🔊 מנוע תגובה חדש</button><button id="rxReset">↺ ברירת מחדל</button></div>
+        </section>
+        <details class="panel" id="rxAdv">
+          <summary>⚙️ מתקדם · ערוצי תדר, Export ומודולציה</summary>
+        <section>
+          <h3>ערוצים · כל ערוץ הוא פס תדרים עם עוצמה ופולס משלו</h3>
+          <div class="row">
+            <button id="rxAdd">➕ ערוץ</button>
+            <button id="rxDel">🗑 מחק ערוץ</button>
+          </div>
+          <canvas id="rxSpec" aria-label="ספקטרום הכניסה עם פסי התדרים של הערוצים. גרירה קובעת את הפס של הערוץ הנבחר"></canvas>
+          <p class="help">לחיצה על ערוץ במדים בוחרת אותו, גרירה על הספקטרום קובעת את פס התדרים שלו. פס עמום = עוצמה גולמית, פס מלא = אחרי Attack/Release, עיגול = פולס.</p>
+          <div class="sl"><label for="rx_input">הגברת כניסה</label><input type="range" id="rx_input" min="-24" max="24" value="0"><output id="rx_inputV"></output></div>
+        </section>
+        <section>
+          <h3>ערוץ נבחר · <span id="rxName"></span></h3>
+          <div class="grid2">
+            <label>שם<input type="text" id="rc_name" maxlength="24"></label>
+            <label>מקור<select id="rc_src"></select></label>
+            <label>תדר נמוך (Hz)<input type="number" id="rc_lo" min="10" max="20000" step="1"></label>
+            <label>תדר גבוה (Hz)<input type="number" id="rc_hi" min="10" max="20000" step="1"></label>
+          </div>
+          <div id="rcLevel"></div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="rc_auto"> כיול אוטומטי לעוצמת השיר</label>
+            <label class="row help"><input type="checkbox" id="rc_inv"> הפוך</label>
+            <label class="row help"><input type="checkbox" id="rc_mute"> השתק</label>
+          </div>
+          <div class="grid2"><label>טריגר (פולס)<select id="rc_trig"></select></label></div>
+          <div id="rcTrig"></div>
+          <div id="rcOut"></div>
+          <p class="help">טווח דינמי קטן = תגובה חדה ודרמטית, גדול = עדינה. כיול אוטומטי עוקב אחרי השיא של הערוץ, כך ששיר שקט ושיר רועש ממלאים את כל הטווח; בלעדיו הטווח מתחיל בסף הרעש.</p>
+        </section>
+        <section>
+          <h3>חיבור לאפקטים · Export</h3>
+          <div class="exp" id="rxExp"></div>
+          <div class="sl"><label for="rx_sgain">ספקטרום · הגברה</label><input type="range" id="rx_sgain" min="0" max="300" value="120"><output id="rx_sgainV"></output></div>
+          <div class="sl"><label for="rx_sfloor">ספקטרום · סף</label><input type="range" id="rx_sfloor" min="0" max="80" value="10"><output id="rx_sfloorV"></output></div>
+          <div class="sl"><label for="rx_scurve">ספקטרום · ניגודיות</label><input type="range" id="rx_scurve" min="30" max="300" value="130"><output id="rx_scurveV"></output></div>
+          <p class="help">כל אפקט קורא קיק, מכה, בס, אמצע, גבוהים ועוצמה. כאן בוחרים איזה ערוץ מזין כל אחד, ובאיזו כמות. "ניתוח מקורי" משאיר את הזיהוי הקודם.</p>
+        </section>
+        <section>
+          <h3>מודולציה · ערוץ מזיז פרמטר</h3>
+          <div class="exp" id="rxMods"></div>
+          <div class="row"><button id="rxModAdd">➕ מודולציה</button></div>
+          <p class="help">כמו Export ב-TouchDesigner: ערוץ מזיז בהירות, גוון, מהירות, קונטור לבן ועוד, מעל הערך של הסליידר. עומק שלילי הופך את הכיוון.</p>
+        </section>
+        </details>
+      </div>
+
+      <!-- layers -->
+      <div class="col" data-panel="lay" hidden>
+        <section>
+          <h3><span class="fam top">TOP</span>שכבות · Layer Mix</h3>
+          <div class="layer"><header><b>שכבה 1 · ההופעה</b><span class="chip" id="lyBase"></span></header>
+            <p class="help">האפקט שנבחר בלשונית הופעה (או בבמאי האוטומטי), עם המעברים שלו. מעליו עד 3 שכבות.</p></div>
+          <div id="layers" class="col"></div>
+          <p class="help">לכל שכבה אפקט, מצב מיזוג, שקיפות, מסכה לפי חלקי החיתוך (תעלות, לבבות, קונטור, חצי) וערוץ סאונד שמניע אותה: האפקט של השכבה מגיב רק לערוץ הזה, והשקיפות נפתחת איתו לפי העומק.</p>
+        </section>
+      </div>
+
+      <!-- workspace: a TouchDesigner-style network of operators and wires -->
+      <div class="col" data-panel="ws" hidden>
+        <section>
+          <h3>שולחן עבודה · אופרטורים וחיבורים</h3>
+          <div class="wsBar" id="wsBar"></div>
+          <div class="wsArea" id="wsArea" tabindex="0" aria-label="רשת האופרטורים. גרירת רקע מזיזה, גלגלת מגדילה, Delete מוחק את האופרטור הנבחר"></div>
+          <div class="row"><label class="row help"><input type="checkbox" id="wsOn" checked> הרשת שולטת בלב</label><span class="help" id="wsInfo"></span></div>
+        </section>
+        <section id="wsParams"></section>
       </div>
 
       <!-- ring engine -->
@@ -317,7 +453,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
           </div>
           <div class="row"><button id="learnBtn" aria-pressed="false">🎓 MIDI Learn</button><button id="learnClear">נקה מיפויים</button></div>
           <p class="help" id="learnInfo"></p>
-          <p class="help">תו MIDI מדליק את הטבעת שלו (כמו במצב תווים), עוצמת הלחיצה = בהירות, פדל (CC64) מחזיק. בלי מיפוי: CC7 בהירות, CC1 רגישות, CC74 גוון, Program Change בוחר אפקט. MIDI Clock מתוכנת הדיג'יי מסנכרן את הביט במדויק. ב-Learn: מזיזים סליידר כאן ואז כפתור בבקר.</p>
+          <p class="help">תו MIDI מדליק את הטבעת שלו (כמו במצב תווים), עוצמת הלחיצה = בהירות, פדל (CC64) מחזיק. בלי מיפוי: CC7 בהירות, CC1 חיזוק התגובה לסאונד, CC74 גוון, Program Change בוחר אפקט. MIDI Clock מתוכנת הדיג'יי מסנכרן את הביט במדויק. ב-Learn: מזיזים סליידר כאן ואז כפתור בבקר.</p>
         </section>
       </div>
 
@@ -956,6 +1092,13 @@ const EFFECTS = [
   { id: 49, name: "זרקורים", ico: "🔦", e: 1, g: "3d" },
   { id: 50, name: "גל הלם", ico: "🌊", e: 2, g: "3d" },
   { id: 51, name: "הולוגרמה", ico: "🛸", e: 0, g: "3d" },
+  // Trance: driven by the sound engine's trance reading (sidechain pump, build-up, drop, breakdown) and the 16th-note clock.
+  { id: 52, name: "מניפת לייזרים", ico: "🎇", e: 2, g: "trance" },
+  { id: 53, name: "פאמפ סיידצ'יין", ico: "🫀", e: 1, g: "trance" },
+  { id: 54, name: "בילדאפ ודרופ", ico: "🚀", e: 2, g: "trance" },
+  { id: 55, name: "טראנס גייט", ico: "▦", e: 3, g: "trance" },
+  { id: 56, name: "ארפג'יו", ico: "🎹", e: 1, g: "trance" },
+  { id: 57, name: "היפר-ספייס", ico: "🌌", e: 1, g: "trance" },
 ];
 
 const PALETTES = {
@@ -987,10 +1130,13 @@ uniform float uLev[64];
 uniform float uGW, uEdge, uRim, uGap, uAngle, uSeam, uCleft;
 uniform vec2 uCenter;
 uniform float uTime, uBeat, uBeatN, uBar, uBass, uMid, uHigh, uLevel, uLevelS, uKick, uHit;
+uniform float uPump, uBuild, uDrop, uBreak;   // trance reading: 0 right after a kick -> 1; build-up; drop flash; breakdown
 uniform float uSpec[32];
 uniform float uEngMix;
 uniform float uSpeed, uInt, uMix, uVidMix, uVidOn, uVidAspect, uMaster, uOutline, uHue;
 uniform vec3 uPal[4];
+uniform int uPass, uMask, uLayMode;   // layer passes: 0 is the show itself, 1.. are layers blended over it (see renderLayer)
+uniform float uLayOp;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
 
@@ -1611,6 +1757,51 @@ vec3 fxEngine(H h) {
   return c * sheen * core;
 }
 
+// ================= trance (52-57) =================
+// A classic trance gate: 16 steps, on/off. The pattern reads from the lowest bit, one step per 16th note.
+float gateAt(int i) { return float((0x6DB5 >> (i & 15)) & 1); }
+float gate16() { float st = clockB() * 4.0; return gateAt(int(mod(floor(st), 16.0))) * (1.0 - smoothstep(0.5, 0.72, fract(st))); }
+vec3 fxTrLaser(H h) {            // a fan of beams from the heart's tip, sweeping over two bars; the cut grooves catch them
+  vec2 q = h.p - vec2(S * 0.5, S * 0.97);
+  float a = atan(q.x, -q.y), sw = sin(clockB() * TAU / 8.0) * 0.45, n = 7.0;
+  float x = (a - sw) * n / 1.7, d = abs(fract(x) - 0.5) * 1.7 / n, w = 0.01 + 0.02 * kk();
+  float beam = exp(-pow(d / w, 2.0)) * (1.0 - smoothstep(0.8, 0.95, abs(a - sw)));
+  float on = mix(1.0, gate16(), clamp(uBuild, 0.0, 1.0));
+  vec3 col = pal(floor(x) / n + floor(clockB() / 4.0) * 0.125);
+  return col * beam * on * (h.groove * 1.7 + h.stripe * 0.3 + h.edge) * (0.55 + 0.9 * kk()) + vec3(1.0) * h.edge * clamp(uDrop, 0.0, 1.0);
+}
+vec3 fxTrPump(H h) {             // the whole heart ducks on every kick and swells back before the next, like a sidechained pad
+  float k = ringIdx(h) / ringN(), p = clamp(uPump, 0.0, 1.0), sw = p * p * (3.0 - 2.0 * p);
+  float wave = 0.5 + 0.5 * sin((k - clockB() * 0.5) * TAU * 2.0);
+  return pal(k * 0.5 + clockB() * 0.03) * (0.12 + 0.88 * sw) * (h.stripe * (0.55 + 0.45 * wave) + h.groove * 1.25) + vec3(1.0) * h.edge * kk();
+}
+vec3 fxTrBuild(H h) {            // build: rings close in from the contour, faster as the build rises; drop: a white shock from the core
+  float k = ringIdx(h) / ringN(), b = clamp(uBuild, 0.0, 1.0), rate = exp2(floor(b * 4.0));
+  float front = 1.0 - fract(clockB() * rate / 4.0), ring = exp(-pow((k - front) * ringN() * 0.45, 2.0));
+  float spark = step(1.0 - 0.18 * b, hash21(floor(h.p * 0.5) + floor(uTime * 20.0)));
+  vec3 c = pal(0.6 + b * 0.4) * ring * (0.25 + 0.95 * b) * (h.groove * 1.5 + h.stripe * 0.5) + vec3(1.0) * spark * b * h.stripe * 0.6;
+  float d = clamp(uDrop, 0.0, 1.0), shock = exp(-pow((k - (1.0 - d)) * 6.0, 2.0)) * d;
+  return c + vec3(1.0) * shock * (h.groove * 2.0 + h.stripe) + vec3(1.0) * pow(d, 6.0) * 0.8 + pal(0.0) * 0.04 * h.stripe;
+}
+vec3 fxTrGate(H h) {             // the trance gate chops the heart in 16ths; neighbouring rings alternate, the halves are offset
+  float st = clockB() * 4.0; int idx = int(mod(floor(st), 16.0));
+  float g = gateAt(idx + (h.side > 0.5 ? 2 : 0)) * (1.0 - smoothstep(0.5, 0.75, fract(st)));
+  float alt = mod(ringIdx(h) + floor(st), 2.0);
+  return pal(float(idx) / 16.0) * g * (h.stripe * (0.35 + 0.65 * alt) + h.groove * 1.4) + vec3(1.0) * h.edge * 0.3 * g;
+}
+vec3 fxTrArp(H h) {              // one ring per 16th note, climbing out and back like an arpeggiator, with a fading tail
+  float n = ringN(), st = clockB() * 4.0, per = max(2.0 * (n - 1.0), 1.0), pos = mod(floor(st), per);
+  float r = pos <= n - 1.0 ? pos : per - pos, d = abs(ringIdx(h) - r);
+  float tail = exp(-d * 0.8) * (1.0 - fract(st) * 0.5);
+  return pal(r / n + floor(st / 16.0) * 0.25) * tail * (h.groove * 1.5 + h.stripe * 0.6) + vec3(1.0) * h.seam * 0.4 * kk();
+}
+vec3 fxTrHyper(H h) {            // hyperspace: rings rush out of the core, faster with the build; streaks race along the grooves
+  float k = ringIdx(h) / ringN(), sp = 0.5 + 2.0 * clamp(uBuild, 0.0, 1.0) + uLevel;
+  float z = fract(k * 3.0 - uTime * sp * uSpeed * 0.5), rv = smoothstep(0.0, 0.1, z) * (1.0 - smoothstep(0.1, 0.5, z));
+  float streak = pow(noise(vec2(h.s * 60.0, uTime * sp * 4.0 - k * 20.0)), 3.0) * 2.0;
+  return mix(pal(0.5), pal(0.0), k) * (rv * (h.groove * 1.4 + h.stripe * 0.6) + streak * h.groove * (0.5 + kk())) + vec3(1.0) * h.edge * kk() * 0.8;
+}
+
 vec3 fx(int id, H h) {
   switch (id) {
     case 0: return fxCalib(h);
@@ -1665,6 +1856,12 @@ vec3 fx(int id, H h) {
     case 49: return fxSpot(h);
     case 50: return fxShock(h);
     case 51: return fxHolo(h);
+    case 52: return fxTrLaser(h);
+    case 53: return fxTrPump(h);
+    case 54: return fxTrBuild(h);
+    case 55: return fxTrGate(h);
+    case 56: return fxTrArp(h);
+    case 57: return fxTrHyper(h);
   }
   return vec3(0.0);
 }
@@ -1692,21 +1889,38 @@ vec3 chApply(int id, vec3 c) {
   return c * b.r * 2.0 * (1.0 - step(0.5, b.b));
 }
 
+float layerMask(H h) {
+  if (uMask == 1) return h.groove;
+  if (uMask == 2) return h.stripe;
+  if (uMask == 3) return h.edge;
+  if (uMask == 4) return 1.0 - h.side;
+  if (uMask == 5) return h.side;
+  if (uMask == 6) return 1.0 - smoothstep(0.45, 0.55, h.rad);
+  if (uMask == 7) return smoothstep(0.45, 0.55, h.rad);
+  if (uMask == 8) return h.seam;
+  return 1.0;
+}
+
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   H h = heart(px);
   int dom = 5; float wd = chW(h, 5);
   for (int i = 0; i < 5; i++) { float w = chW(h, i); if (w > wd) { wd = w; dom = i; } }
   bool calib = uFxA == 0 || (uFxB == 0 && uMix > 0.001);            // the test grid always shows the whole heart, untouched
-  int own = calib ? -1 : int(chB(chId(h, dom)).g * 255.0 + 0.5) - 1;  // this channel runs its own effect
+  int own = calib || uPass > 0 ? -1 : int(chB(chId(h, dom)).g * 255.0 + 0.5) - 1;  // this channel runs its own effect
   vec3 c = layer(own >= 0 ? own : uFxA, h);
   if (uMix > 0.001 && own < 0) c = mix(c, layer(uFxB, h), uMix);
   float norm = 0.0; vec3 acc = vec3(0.0);
   if (!calib || uAnySolo == 1) for (int i = 0; i < 6; i++) { float w = chW(h, i); if (w > 0.001) { acc += w * chApply(chId(h, i), c); norm += w; } }
   if (norm > 0.001) c = acc / norm * h.inside + c * (1.0 - h.inside);
-  c += vec3(1.0, 0.95, 0.97) * h.edge * uOutline;
+  if (uPass == 0) c += vec3(1.0, 0.95, 0.97) * h.edge * uOutline;
   c = clamp(c * uMaster, 0.0, 1.0);
-  o = vec4(c, 1.0);
+  if (uPass == 0) { o = vec4(c, 1.0); return; }
+  // A layer: its mask keeps it inside chosen parts of the cut, and opacity goes out as the blend wants it.
+  float a = layerMask(h) * uLayOp;
+  if (uLayMode == 2) o = vec4(mix(vec3(1.0), c, a), 1.0);        // multiply: outside the mask the layer is white
+  else if (uLayMode == 1) o = vec4(c * a, 1.0);                   // screen, max: premultiplied
+  else o = vec4(c, a);                                            // over, add, subtract: straight alpha
 }`;
 
 const CH_W = 272;
@@ -1823,9 +2037,19 @@ class HeartGL {
   }
 
   // points: the six calibration points (see halves()), in output pixels.
-  render(s, points) {
+  render(s, points, pass = null) {
     const gl = this.gl, L = this.loc, c = this.canvas, m = this.model;
     if (!m) return;
+    gl.uniform1i(L.uPass, pass ? 1 : 0);
+    if (pass) {
+      gl.uniform1i(L.uMask, pass.mask || 0); gl.uniform1f(L.uLayOp, pass.op);
+      gl.uniform1i(L.uLayMode, { multiply: 2, screen: 1, lighten: 1 }[pass.blend] ?? 0);
+      gl.enable(gl.BLEND);
+      gl.blendEquation({ lighten: gl.MAX, subtract: gl.FUNC_REVERSE_SUBTRACT }[pass.blend] ?? gl.FUNC_ADD);
+      const F = { over: [gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA], add: [gl.SRC_ALPHA, gl.ONE], subtract: [gl.SRC_ALPHA, gl.ONE],
+        screen: [gl.ONE, gl.ONE_MINUS_SRC_COLOR], lighten: [gl.ONE, gl.ONE], multiply: [gl.DST_COLOR, gl.ZERO] }[pass.blend] || [gl.ONE, gl.ONE_MINUS_SRC_COLOR];
+      gl.blendFunc(F[0], F[1]);
+    } else gl.disable(gl.BLEND);
     gl.viewport(0, 0, c.width, c.height);
     const { L: pl, R: pr } = halves(points), col = H => [H[0], H[3], H[6], H[1], H[4], H[7], H[2], H[5], H[8]];
     gl.uniformMatrix3fv(L.uInvHL, false, col(homography(pl, BOX_L)));
@@ -1839,13 +2063,13 @@ class HeartGL {
     gl.uniform1f(L.uSeam, cfg.seam || 0); gl.uniform1f(L.uCleft, m.poly[0][1]);
     gl.uniform1f(L.uAngle, cfg.angle); gl.uniform2f(L.uCenter, cfg.cx, cfg.cy);
     gl.uniform1i(L.uFxA, s.fxA); gl.uniform1i(L.uFxB, s.fxB); gl.uniform1f(L.uMix, s.mix);
-    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
+    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
       gl.uniform1f(L["u" + k], s[k[0].toLowerCase() + k.slice(1)] ?? 0);
     gl.uniform1fv(L.uSpec, s.spec);
     gl.uniform3fv(L.uPal, (s.palette || PALETTES.love.c).flatMap(hex));
     const v = this.videoEl, vidOn = v && v.readyState >= 2 && v.videoWidth > 0;
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
-    if (vidOn) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch {} }
+    if (vidOn && !pass) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch {} }
     gl.uniform1f(L.uVidOn, vidOn ? 1 : 0); gl.uniform1f(L.uVidAspect, vidOn ? v.videoWidth / v.videoHeight : 1);
     if (this.chDirty) {
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);
@@ -2448,16 +2672,657 @@ class Engine {
 
 return { MODES, HALVES, COLORS, NOTE, noteName, DEFAULTS, Engine };
 })();
+
+// ===== heart-react.js =====
+const M_react = (() => {
+// Sound-reactive engine, built like a TouchDesigner audio chain:
+//   Audio Device In -> Audio Filter (one band per channel) -> Analyze -> Math (gain, range, curve) -> Lag (attack / release)
+//   -> Trigger -> Export.
+// Each channel is a frequency band of one input (the mix, or one channel of a multi-channel sound card) and has two outputs:
+//   env  - the band's level, 0..1, after gain, noise gate, dynamic range, curve and attack / release;
+//   trig - a pulse on every onset of the band (or every time it crosses a threshold), with its own hold and decay.
+// Exports send channels to the inputs every effect reads (kick, hit, bass, mid, high, level, spectrum), modulations send them
+// to show parameters (brightness, hue, speed...), and each layer of the layer stack can be driven by a channel of its own.
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const FFT = 4096;   // 11.7 Hz bins at 48 kHz: enough to keep a kick band (40-120 Hz) apart from the bass line
+
+const COLORS = ["#ff4f7b", "#ffb347", "#f2e35c", "#7cf29c", "#35d0ba", "#5fb6ff", "#a98bff", "#ff8ce0", "#e6ebf2", "#ff7a5c", "#9cff7a", "#7ad3ff"];
+const TRIG = { off: "בלי טריגר", onset: "התקפה (Onset)", level: "חציית סף" };
+const OUTS = { env: "עוצמה (env)", trig: "פולס (trig)" };
+// The inputs every effect already reads, in the order of the export table.
+const EXPORTS = { kick: "קיק · פולס ראשי", hit: "מכה · פולס משני", bass: "בס", mid: "אמצע", high: "גבוהים", level: "עוצמה כללית" };
+// Show parameters a channel can move. add: base + depth x value; mul: base x (1 - depth + depth x value), so depth 100% means
+// the parameter only opens with the music.
+const TARGETS = {
+  master: { name: "בהירות", kind: "mul" }, intensity: { name: "עוצמת תגובה", kind: "add", span: 100 },
+  hue: { name: "גוון", kind: "add", span: 180 }, speed: { name: "מהירות", kind: "add", span: 200 },
+  outline: { name: "קונטור לבן", kind: "add", span: 100 }, vidmix: { name: "וידאו על הלב", kind: "add", span: 100 },
+  engmix: { name: "מנוע הטבעות מעל", kind: "add", span: 100 },
+};
+// The trance reading, offered next to the channels wherever a channel can be picked.
+const TRANCE = { breath: "נשימה · עוצמה איטית", pump: "טראנס · פאמפ", build: "טראנס · בילדאפ", drop: "טראנס · דרופ", brk: "טראנס · ברייקדאון" };
+const BLENDS = { screen: "Screen · מאיר", add: "Add · חיבור", lighten: "Max · הבהיר מביניהם", over: "Over · מעל", multiply: "Multiply · מכפיל", subtract: "Subtract · מחסר" };
+const MASKS = { all: "כל הלב", grooves: "תעלות בלבד", hearts: "לבבות בלבד", contour: "קונטור", left: "חצי שמאל", right: "חצי ימין", inner: "חצי פנימי", outer: "חצי חיצוני", seam: "תפר" };
+const MASK_ID = Object.fromEntries(Object.keys(MASKS).map((k, i) => [k, i]));
+
+const ch = (id, name, lo, hi, o = {}) => ({ id, name, lo, hi, src: -1, gain: 0, auto: true, range: 24, gate: -100, curve: 1.2,
+  attack: 10, release: 160, trig: "off", sens: 60, tlevel: 60, hold: 140, decay: 220, min: 0, max: 100, inv: false, mute: false, ...o });
+const on = o => ({ trig: "onset", attack: 0, release: 120, curve: 1.5, ...o });
+const PRESETS = {
+  dj: { name: "DJ · 8 ערוצים", ch: [
+    ch("kick", "קיק", 40, 120, on({ range: 18, hold: 220 })), ch("bass", "בס", 60, 250), ch("lowmid", "גוף", 250, 800),
+    ch("snare", "סנר / קלאפ", 1800, 5000, on({ range: 20, hold: 160 })), ch("mid", "אמצע / קול", 800, 2500),
+    ch("hats", "היי-האט", 7000, 16000, on({ range: 18, hold: 70, decay: 120, sens: 55 })), ch("air", "אוויר", 4000, 16000),
+    ch("level", "עוצמה", 30, 16000, { range: 30, release: 400, curve: 1 }),
+  ], exp: { kick: ["kick", "trig"], hit: ["snare", "trig"], bass: ["bass", "env"], mid: ["mid", "env"], high: ["air", "env"], level: ["level", "env"] } },
+  b3: { name: "3 פסים", ch: [
+    ch("low", "נמוכים", 20, 250, { trig: "onset", hold: 200 }), ch("mid", "אמצע", 250, 4000), ch("high", "גבוהים", 4000, 16000, { trig: "onset", hold: 90 }),
+  ], exp: { kick: ["low", "trig"], hit: ["high", "trig"], bass: ["low", "env"], mid: ["mid", "env"], high: ["high", "env"], level: ["mid", "env"] } },
+  b5: { name: "5 פסים", ch: [
+    ch("sub", "סאב", 20, 60), ch("bass", "בס", 60, 250, { trig: "onset", hold: 200 }), ch("mid", "אמצע", 250, 2000),
+    ch("pres", "נוכחות", 2000, 6000, { trig: "onset", hold: 120 }), ch("bril", "ברק", 6000, 16000),
+  ], exp: { kick: ["bass", "trig"], hit: ["pres", "trig"], bass: ["bass", "env"], mid: ["mid", "env"], high: ["bril", "env"], level: ["mid", "env"] } },
+  voice: { name: "קול ושירה", ch: [
+    ch("kick", "קיק", 40, 120, on({ hold: 220 })), ch("bass", "בס", 60, 250), ch("voice", "קול", 300, 3400, { range: 20, attack: 40, release: 300 }),
+    ch("sib", "שורקות (ס/ש)", 5000, 9000, on({ hold: 120 })), ch("level", "עוצמה", 30, 16000, { range: 30, release: 400, curve: 1 }),
+  ], exp: { kick: ["kick", "trig"], hit: ["sib", "trig"], bass: ["bass", "env"], mid: ["voice", "env"], high: ["sib", "env"], level: ["voice", "env"] } },
+  stereo: { name: "כבל · ערוץ לכל צד", ch: [
+    ch("lk", "שמאל · קיק", 40, 120, on({ src: 0, hold: 220 })), ch("lv", "שמאל · עוצמה", 30, 16000, { src: 0, range: 30 }),
+    ch("rk", "ימין · קיק", 40, 120, on({ src: 1, hold: 220 })), ch("rv", "ימין · עוצמה", 30, 16000, { src: 1, range: 30 }),
+    ch("hi", "גבוהים", 4000, 16000, { trig: "onset", hold: 90 }),
+  ], exp: { kick: ["lk", "trig"], hit: ["rk", "trig"], bass: ["lv", "env"], mid: ["rv", "env"], high: ["hi", "env"], level: ["lv", "env"] } },
+};
+
+function defaults() {
+  const p = PRESETS.dj;
+  return {
+    on: true, boost: 150, punch: 50, speed: 50, preset: "dj", sel: p.ch[0].id,
+    ch: p.ch.map(c => ({ ...c })),
+    exp: Object.fromEntries(Object.entries(p.exp).map(([k, [id, out]]) => [k, { ch: id, out, amt: 100 }])),
+    spec: { gain: 120, floor: 10, curve: 130 },
+    mods: [{ tgt: "master", ch: "breath", out: "env", depth: 30 }],
+    layers: [
+      { on: false, fx: 23, blend: "screen", op: 80, mask: "all", drive: "kick", depth: 100, out: "trig" },
+      { on: false, fx: 13, blend: "add", op: 60, mask: "grooves", drive: "hats", depth: 100, out: "trig" },
+      { on: false, fx: 9, blend: "lighten", op: 70, mask: "contour", drive: "snare", depth: 0, out: "env" },
+    ],
+  };
+}
+
+class React {
+  constructor(music) {
+    this.music = music; this.o = defaults(); this.st = new Map(); this.an = new Map(); this.last = 0; this.levelS = 0;
+    this.n = 0;   // new channel ids
+  }
+  // Settings saved by an older or newer version: fill in what is missing, drop what is broken.
+  load(saved) {
+    const d = defaults(), o = { ...d, ...(saved || {}) };
+    o.ch = Array.isArray(o.ch) && o.ch.length ? o.ch.map(c => ({ ...ch("x", "", 20, 20000), ...c })) : d.ch;
+    o.exp = { ...d.exp, ...(o.exp || {}) }; o.spec = { ...d.spec, ...(o.spec || {}) };
+    o.mods = Array.isArray(o.mods) ? o.mods : d.mods;
+    o.layers = d.layers.map((l, i) => ({ ...l, ...(o.layers?.[i] || {}) }));
+    if (!o.ch.some(c => c.id === o.sel)) o.sel = o.ch[0].id;
+    this.o = o; return o;
+  }
+  preset(key) {
+    const p = PRESETS[key]; if (!p) return;
+    this.o.preset = key; this.o.ch = p.ch.map(c => ({ ...c })); this.o.sel = p.ch[0].id;
+    for (const [k, [id, out]] of Object.entries(p.exp)) this.o.exp[k] = { ...this.o.exp[k], ch: id, out };
+    this.st.clear();
+  }
+  add() {
+    const s = this.chan(this.o.sel) || this.o.ch[0];
+    let id; do id = "c" + ++this.n; while (this.o.ch.some(c => c.id === id));
+    const c = { ...(s || ch(id, "", 100, 1000)), id, name: (s?.name || "ערוץ") + " 2", mute: false };
+    this.o.ch.push(c); this.o.sel = id; return c;
+  }
+  remove(id) {
+    if (this.o.ch.length < 2) return;
+    this.o.ch = this.o.ch.filter(c => c.id !== id); this.st.delete(id);
+    if (this.o.sel === id) this.o.sel = this.o.ch[0].id;
+  }
+  chan(id) { return this.o.ch.find(c => c.id === id); }
+  has(id) { return id in TRANCE || !!this.chan(id); }
+  color(id) { const i = this.o.ch.findIndex(c => c.id === id); return COLORS[(i < 0 ? 0 : i) % COLORS.length]; }
+
+  // One analyser per input: the mix, or a channel of the sound card through the music's splitter. Made when first needed,
+  // and kept: the music routes every source (track, video, microphone, cable) through the same input node.
+  analyser(src) {
+    const m = this.music; if (!m.ctx || !m.input) return null;
+    let a = this.an.get(src); if (a) return a;
+    a = m.ctx.createAnalyser(); a.fftSize = FFT; a.smoothingTimeConstant = 0; a.minDecibels = -140; a.maxDecibels = 0;
+    if (src < 0) m.input.connect(a); else m.split.connect(a, Math.min(7, src));
+    a.buf = new Float32Array(a.frequencyBinCount); a.t = -1;
+    this.an.set(src, a); return a;
+  }
+  // The latest spectrum of the mix in dB, for the spectrum view.
+  spectrum() { const a = this.an.get(-1); return a && a.t >= 0 ? { buf: a.buf, hz: this.music.ctx.sampleRate / FFT } : null; }
+
+  // Mean power of a band of one input, in dB (null before there is any sound path). Each analyser is read once a frame.
+  band(src, lo, hi, nowMs) {
+    const a = this.analyser(src); if (!a) return null;
+    if (a.t !== nowMs) { a.getFloatFrequencyData(a.buf); a.t = nowMs; }
+    const n = a.buf.length, hz = this.music.ctx.sampleRate / FFT, l = Math.min(lo, hi), h = Math.max(lo, hi);
+    const k0 = clamp(Math.floor(l / hz), 1, n - 1), k1 = clamp(Math.ceil(h / hz), k0, n - 1);
+    let p = 0; for (let k = k0; k <= k1; k++) p += Math.pow(10, Math.max(-140, a.buf[k]) / 10);
+    return 10 * Math.log10(p / (k1 - k0 + 1) + 1e-14);
+  }
+  update(nowMs) {
+    const now = nowMs / 1000, dt = clamp(now - (this.last || now), 0, 0.1); this.last = now;
+    // The two simple controls scale every channel: punch narrows the dynamic range, speed shortens release and decay.
+    const rangeK = Math.pow(2, (50 - this.o.punch) / 30), timeK = Math.pow(2, (50 - this.o.speed) / 25);
+    for (const c of this.o.ch) {
+      const s = this.st.get(c.id) || { db: -140, v: 0, env: 0, trig: 0, peak: -60, slow: 0, lastT: -9, armed: true, fired: 0, raw: 0 };
+      this.st.set(c.id, s);
+      const raw = this.band(c.src, c.lo, c.hi, nowMs);
+      if (raw == null) { s.v = s.env = s.trig = 0; continue; }
+      const db = raw + c.gain;
+      s.db = db;
+      // Math: the dynamic range is a window of `range` dB. Auto: its top follows the band's recent peak (falls 4 dB a second),
+      // so quiet and loud songs both fill 0..1. Manual: the window starts at the noise gate.
+      const range = Math.max(3, c.range * rangeK);
+      s.peak = Math.max(db, s.peak - 4 * dt, c.gate + range);
+      const top = c.auto ? s.peak : c.gate + range, floor = top - range;
+      let v = db < c.gate ? 0 : clamp((db - floor) / range);
+      v = Math.pow(v, Math.max(0.1, c.curve));
+      if (c.inv) v = 1 - v;
+      s.raw = v;
+      // Lag: separate attack and release times, in milliseconds.
+      const tau = (v > s.env ? c.attack : c.release * timeK) / 1000;
+      s.env = tau <= 0 ? v : s.env + (v - s.env) * (1 - Math.exp(-dt / tau));
+      // Trigger: an onset is a jump above the band's own short average; a level trigger fires on the way up through the threshold
+      // and re-arms once the band falls 10% below it. Hold is the shortest gap between two pulses.
+      s.slow += (v - s.slow) * (1 - Math.exp(-dt / 0.25));
+      let fire = false;
+      if (c.trig === "onset") fire = v - s.slow > 0.42 - c.sens * 0.0038 && v > 0.12;
+      else if (c.trig === "level") { const t = c.tlevel / 100; if (s.armed && v >= t) { fire = true; s.armed = false; } else if (v < t - 0.1) s.armed = true; }
+      if (fire && now - s.lastT >= c.hold / 1000) { s.trig = 1; s.lastT = now; s.fired = now; }
+      else s.trig *= Math.exp(-dt / Math.max(0.01, c.decay * timeK / 1000));
+      if (c.trig === "off") s.trig = 0;
+      if (c.mute) { s.env = 0; s.trig = 0; }
+    }
+  }
+  // A channel's output after its output range (min..max, in %).
+  get(id, out = "env") {
+    if (id in TRANCE) return this.tr ? { breath: this.lastF?.breath ?? 0, pump: this.lastF?.pump ?? 1, build: this.tr.build, drop: this.tr.drop, brk: this.tr.brk }[id] : 0;
+    const c = this.chan(id), s = this.st.get(id); if (!c || !s) return 0;
+    const v = out === "trig" ? s.trig : s.env;
+    return (c.min + (c.max - c.min) * v) / 100;
+  }
+
+  // Replace the frame's music features with the exported channels. A channel left empty keeps the built-in analysis.
+  apply(f) {
+    if (!this.o.on) return f;
+    const b = this.o.boost / 100;
+    for (const k of Object.keys(EXPORTS)) {
+      const e = this.o.exp[k]; if (!e || !this.has(e.ch)) continue;
+      f[k] = this.get(e.ch, e.out) * e.amt / 100 * b;
+    }
+    this.trance(f); this.lastF = f;
+    this.levelS += (f.level - this.levelS) * (f.level > this.levelS ? 0.08 : 0.02);
+    f.levelS = this.levelS;
+    const sp = this.o.spec, g = sp.gain / 100, fl = sp.floor / 100, cu = sp.curve / 100, out = this.specOut ||= new Float32Array(32);
+    for (let i = 0; i < 32; i++) out[i] = clamp(Math.pow(clamp((f.spec[i] - fl) / (1 - fl)), cu) * g * b, 0, 1.5);
+    f.spec = out;
+    return f;
+  }
+  // Trance reading, from the kick and high exports and the beat clock (TouchDesigner users build the same thing from
+  // Trigger, Count and Lag CHOPs):
+  //   pump  - sidechain: 0 on each kick, back to 1 over half a beat (squared, like a compressor's release);
+  //   brk   - breakdown: no kick for two bars while the music goes on;
+  //   build - in a breakdown, the highs rising against their long average and the hits getting denser;
+  //   drop  - a flash when the kick comes back after a breakdown (or at a drop the track analysis found), fading over 1.5 s.
+  trance(f) {
+    const now = this.last, tr = this.tr ||= { kick: -9, hits: [], fast: 0, slow: 0, brk: 0, build: 0, drop: 0, t: null };
+    const dt = 1 / 60, period = 60 / Math.max(60, Math.min(200, f.bpm || 128));
+    const kc = this.o.exp.kick?.ch, hc = this.o.exp.hit?.ch, ks = this.st.get(kc), hs = this.st.get(hc);
+    const kicked = ks ? ks.fired === now : f.kick > 0.95;
+    if (hs && hs.fired === now) tr.hits.push(now);
+    tr.hits = tr.hits.filter(t => now - t < 2);
+    const hi = f.high ?? 0;
+    tr.fast += (hi - tr.fast) * 0.03; tr.slow += (hi - tr.slow) * 0.003;
+    const gap = now - tr.kick, inBreak = gap > period * 8 && (f.level ?? 0) > 0.08;
+    tr.brk += ((inBreak ? 1 : 0) - tr.brk) * 0.05;
+    const rise = Math.max(0, Math.min(1, (tr.fast - tr.slow) / (tr.slow + 0.05) * 1.5)), dens = Math.min(1, tr.hits.length / 12);
+    tr.build += ((tr.brk > 0.5 ? Math.min(1, rise * 0.6 + dens * 0.6) : 0) - tr.build) * 0.04;
+    let drop = kicked && tr.brk > 0.5;
+    const a = this.music.analysis;
+    if (a?.events && f.grid && tr.t != null) for (const e of a.events) if (e.type === "drop" && e.t > tr.t && e.t <= f.t) drop = true;
+    tr.t = f.t;
+    if (kicked) tr.kick = now;
+    tr.drop = drop ? 1 : tr.drop * Math.exp(-dt / 1.5);
+    if (drop) { tr.brk = 0; tr.build = 0; }
+    // Breath: the music's loudness through a slow, eased follower (in about a bar, out over two), so the heart breathes with
+    // the song instead of flickering with it.
+    const lv = Math.min(1, f.level ?? 0); tr.breath ??= 0;
+    tr.breath += (lv - tr.breath) * (1 - Math.exp(-dt / (lv > tr.breath ? period * 1.2 : period * 2.5)));
+    f.breath = tr.breath * tr.breath * (3 - 2 * tr.breath);
+    const p = Math.min(1, (now - tr.kick) / (period * 0.5));
+    f.pump = p * p; f.brk = tr.brk; f.build = tr.build; f.drop = tr.drop;
+  }
+  // Show parameters after the modulations: base values in the sliders' own units.
+  modulate(base) {
+    const out = { ...base };
+    if (!this.o.on) return out;
+    for (const m of this.o.mods) {
+      const t = TARGETS[m.tgt]; if (!t || !m.depth || !this.has(m.ch)) continue;
+      const v = this.get(m.ch, m.out), d = m.depth / 100;
+      if (t.kind === "mul") out[m.tgt] *= d >= 0 ? 1 - d + d * v : 1 + d * v;
+      else out[m.tgt] += d * v * t.span;
+    }
+    return out;
+  }
+  // The audio a layer reacts to: its drive channel as every input (kick and hit from the pulse, the rest from the level),
+  // and its opacity, opened by the drive channel by `depth`.
+  layer(l, f) {
+    const c = this.has(l.drive), b = this.o.boost / 100;
+    let op = l.op / 100, s = f;
+    if (c && this.o.on) {
+      const env = this.get(l.drive, "env") * b, trig = this.get(l.drive, "trig") * b;
+      s = { ...f, kick: trig || env, hit: trig, bass: env, mid: env, high: env, level: env };
+      const d = l.depth / 100; op *= 1 - d + d * clamp(this.get(l.drive, l.out) * b);
+    }
+    return { s, op };
+  }
+}
+
+return { COLORS, TRIG, OUTS, EXPORTS, TARGETS, TRANCE, BLENDS, MASKS, MASK_ID, PRESETS, defaults, React };
+})();
+
+// ===== heart-nodes.js =====
+const M_nodes = (() => {
+// Workspace: a node network for the show's sound, after TouchDesigner's way of working. Operators sit in a network,
+// wires carry their outputs to other operators, every operator cooks once a frame from its inputs, and the result is
+// exported to the heart: show parameters, the inputs every effect reads, and extra layers of effects.
+// Two kinds of wire: audio (an input and a frequency band, amber, thick) and value (a number per frame, thin).
+// Operators, as in TouchDesigner's audio chain:
+//   Audio Device In -> Audio Filter (band) -> Analyze (level, 0..1) -> Math / Lag / Trigger / Count / Logic -> Export.
+// Built from Derivative's published operator reference, written from scratch for the heart.
+
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const ease = (t, k) => k === "in" ? t * t : k === "out" ? 1 - (1 - t) * (1 - t) : k === "inout" ? t * t * (3 - 2 * t) : t;
+
+const FAMS = {
+  audio: { name: "סאונד", col: "#f59f00" }, signal: { name: "עיבוד", col: "#22b8cf" }, time: { name: "זמן", col: "#94d82d" },
+  out: { name: "פלט ללב", col: "#f06595" },
+};
+// Show parameters an Export can drive: the value 0..1 becomes the slider's own units.
+const EXPORT_PARAMS = {
+  master: ["בהירות", v => v * 100], hue: ["גוון", v => v * 360], speed: ["מהירות", v => v * 200], intensity: ["עוצמת תגובה", v => v * 100],
+  outline: ["קונטור לבן", v => v * 100], vidmix: ["וידאו", v => v * 100], engmix: ["מנוע טבעות", v => v * 100],
+};
+const EXPORT_FEATS = { kick: "קיק", hit: "מכה", bass: "בס", mid: "אמצע", high: "גבוהים", level: "עוצמה" };
+
+// Parameter helpers: f = number slider, m = menu, b = toggle.
+const f = (k, l, d, min, max, step = 0.01) => ({ k, l, t: "f", d, min, max, step });
+const m = (k, l, d, o) => ({ k, l, t: "m", d, o });
+const b = (k, l, d) => ({ k, l, t: "b", d });
+const A = "audio";   // port type
+
+function makeOps(env) {
+  // env: { rx, music, effects, blends, masks, inputs() }
+  return {
+    audioin: { fam: "audio", name: "Audio Device In", he: "הכניסה של הסטודיו: שיר, וידאו, מיקרופון או כבל. בוחרים את המיקס או ערוץ אחד של כרטיס הקול.",
+      ins: [], outs: [["audio", A]], params: () => [m("src", "ערוץ", "-1", [["-1", "מיקס"], ...env.inputs().map((n, i) => [String(i), n])])],
+      cook: (n) => [{ src: +n.p.src, lo: 20, hi: 20000 }] },
+    filter: { fam: "audio", name: "Audio Filter", he: "מסנן תדרים: מעביר רק חלק מהספקטרום. Low Pass מתחת לחיתוך, High Pass מעליו, Band Pass בין שניהם.",
+      ins: [["audio", A]], outs: [["audio", A]],
+      params: () => [m("type", "סוג", "band", [["low", "Low Pass"], ["high", "High Pass"], ["band", "Band Pass"]]), f("lo", "חיתוך נמוך (Hz)", 40, 20, 16000, 1), f("hi", "חיתוך גבוה (Hz)", 120, 20, 20000, 1)],
+      cook(n, [a]) {
+        if (!a) return [null];
+        const p = n.p, lo = p.type === "low" ? a.lo : Math.max(a.lo, p.lo), hi = p.type === "high" ? a.hi : Math.min(a.hi, p.hi);
+        return [{ src: a.src, lo: Math.min(lo, hi), hi: Math.max(lo, hi) }];
+      } },
+    analyze: { fam: "audio", name: "Analyze", he: "מודד את העוצמה של הקול שנכנס (RMS בדציבלים) והופך אותה לערך 0..1: הגברה, סף רעש וטווח דינמי. כיול אוטומטי עוקב אחרי השיא.",
+      ins: [["audio", A]], outs: [["level"], ["dB"]],
+      params: () => [f("gain", "הגברה (dB)", 0, -24, 36, 1), f("gate", "סף רעש (dB)", -100, -130, -20, 1), f("range", "טווח (dB)", 24, 3, 60, 1), b("auto", "כיול אוטומטי", true)],
+      cook(n, [a], c) {
+        if (!a) return [0, -140];
+        const raw = env.rx.band(a.src, a.lo, a.hi, c.nowMs); if (raw == null) return [0, -140];
+        const p = n.p, db = raw + p.gain, r = n.rt;
+        r.peak = Math.max(db, (r.peak ?? -60) - 4 * c.dt, p.gate + p.range);
+        const top = p.auto ? r.peak : p.gate + p.range;
+        return [db < p.gate ? 0 : clamp((db - (top - p.range)) / p.range), db];
+      } },
+    channel: { fam: "audio", name: "Sound Channel", he: "ערוץ מלשונית הסאונד (קיק, בס, היי-האט…) או קריאת הטראנס, כמו שהוא.",
+      ins: [], outs: [["env"], ["trig"]],
+      params: () => [m("ch", "ערוץ", env.rx.o.ch[0]?.id || "", env.channels())],
+      cook: (n) => [env.rx.get(n.p.ch, "env"), env.rx.get(n.p.ch, "trig")] },
+    trance: { fam: "audio", name: "Trance", he: "קריאה מוזיקלית: נשימה (עוצמה איטית ורכה), פאמפ (0 על הקיק, עולה עד הקיק הבא), בילדאפ, דרופ וברייקדאון.",
+      ins: [], outs: [["breath"], ["pump"], ["build"], ["drop"], ["break"]], params: () => [],
+      cook: (n, I, c) => [c.f.breath ?? 0, c.f.pump ?? 1, c.f.build ?? 0, c.f.drop ?? 0, c.f.brk ?? 0] },
+    beat: { fam: "time", name: "Beat", he: "שעון המוזיקה: ramp עולה בכל פעימה, bar בכל תיבה, pulse על כל פעימה, step של 16 צעדים.",
+      ins: [], outs: [["ramp"], ["bar"], ["pulse"], ["step"], ["16th"]], params: () => [f("decay", "דעיכת pulse (שנ')", 0.15, 0.02, 1)],
+      cook(n, I, c) {
+        const fr = c.f, k = fr.beatN ?? 0, r = n.rt;
+        if (r.k !== k) { r.k = k; r.pulse = 1; } else r.pulse = (r.pulse ?? 0) * Math.exp(-c.dt / n.p.decay);
+        const st = Math.floor(((fr.beatN ?? 0) + (fr.beat ?? 0)) * 4);
+        return [fr.beat ?? 0, fr.bar ?? 0, r.pulse, ((st % 16) + 16) % 16 / 15, 1 - ((((fr.beat ?? 0) * 4) % 1))];
+      } },
+    lfo: { fam: "time", name: "LFO", he: "מתנד: גל שחוזר על עצמו. בסנכרון, הקצב נמדד בפעימות של השיר.",
+      ins: [], outs: [["out"]],
+      params: () => [m("wave", "צורה", "sine", [["sine", "סינוס"], ["tri", "משולש"], ["square", "ריבוע"], ["ramp", "רמפה"], ["pulse", "פולס"]]),
+        b("sync", "סנכרון לפעימות", true), f("rate", "קצב (מחזורים לפעימה / Hz)", 0.25, 0.01, 8), f("amp", "עוצמה", 1, 0, 2), f("off", "היסט", 0, -1, 1), f("phase", "פאזה", 0, 0, 1)],
+      cook(n, I, c) {
+        const p = n.p, x = (p.sync ? ((c.f.beatN ?? 0) + (c.f.beat ?? 0)) * p.rate : c.t * p.rate) + p.phase, fr = x - Math.floor(x);
+        const w = { sine: 0.5 + 0.5 * Math.sin(x * 2 * Math.PI), tri: 1 - 2 * Math.abs(fr - 0.5), square: fr < 0.5 ? 1 : 0, ramp: fr, pulse: fr < 0.1 ? 1 : 0 }[p.wave] ?? 0;
+        return [w * p.amp + p.off];
+      } },
+    constant: { fam: "signal", name: "Constant", he: "ערך קבוע, מסליידר. טוב לשליטה ידנית או מבקר MIDI.",
+      ins: [], outs: [["value"]], params: () => [f("v", "ערך", 0.5, 0, 1)], cook: n => [n.p.v] },
+    math: { fam: "signal", name: "Math", he: "מתמטיקה: הוספה לפני, הכפלה, הוספה אחרי, מיפוי טווח, קימור, היפוך והגבלה.",
+      ins: [["in"]], outs: [["out"]],
+      params: () => [f("pre", "הוספה לפני", 0, -1, 1), f("gain", "הכפלה", 1, -5, 5), f("post", "הוספה אחרי", 0, -1, 1),
+        f("from0", "מטווח מ-", 0, -1, 2), f("from1", "מטווח עד", 1, -1, 2), f("to0", "לטווח מ-", 0, -1, 2), f("to1", "לטווח עד", 1, -1, 2),
+        f("curve", "קימור", 1, 0.2, 4), b("inv", "היפוך", false), b("clamp", "הגבלה ל-0..1", true)],
+      cook(n, [x = 0]) {
+        const p = n.p; let v = (x + p.pre) * p.gain + p.post;
+        v = (v - p.from0) / ((p.from1 - p.from0) || 1);
+        v = Math.sign(v) * Math.pow(Math.abs(v), p.curve);
+        if (p.inv) v = 1 - v;
+        v = p.to0 + v * (p.to1 - p.to0);
+        return [p.clamp ? clamp(v, Math.min(p.to0, p.to1), Math.max(p.to0, p.to1)) : v];
+      } },
+    lag: { fam: "signal", name: "Lag", he: "החלקה: זמן עלייה וזמן ירידה נפרדים (בערך הזמן להגיע ל-90%), עם Overshoot שמגזים בתנועה.",
+      ins: [["in"]], outs: [["out"]], params: () => [f("up", "זמן עלייה (שנ')", 0.02, 0, 3), f("down", "זמן ירידה (שנ')", 0.3, 0, 5), f("over", "Overshoot", 0, 0, 1)],
+      cook(n, [x = 0], c) {
+        const r = n.rt, p = n.p, prev = r.v ?? x, t = (x > prev ? p.up : p.down) / 2.3;   // 90% after `lag` seconds
+        r.vel = r.vel ?? 0;
+        let v = t <= 0 ? x : prev + (x - prev) * (1 - Math.exp(-c.dt / t));
+        if (p.over > 0) { r.vel = r.vel * 0.85 + (v - prev); v += r.vel * p.over * 3; }
+        r.v = v; return [v];
+      } },
+    trigger: { fam: "signal", name: "Trigger", he: "מעטפת ADSR: כשהכניסה חוצה את הסף, מתחיל Attack עד Peak, Decay עד Sustain, ו-Release כשהיא יורדת מתחת לסף השחרור.",
+      ins: [["in"]], outs: [["env"], ["fire"]],
+      params: () => [f("th", "סף", 0.5, 0, 1), f("rel", "סף שחרור", 0.4, 0, 1), f("retrig", "השהיה לטריגר הבא (שנ')", 0.1, 0, 2),
+        f("att", "Attack (שנ')", 0, 0, 2), f("peak", "Peak", 1, 0, 2), f("dec", "Decay (שנ')", 0.2, 0, 3), f("sus", "Sustain", 0, 0, 1), f("relT", "Release (שנ')", 0.2, 0, 4),
+        m("shape", "צורה", "out", [["lin", "ליניארי"], ["in", "Ease In"], ["out", "Ease Out"], ["inout", "Ease In Out"]])],
+      cook(n, [x = 0], c) {
+        const r = n.rt, p = n.p;
+        r.stage ??= "off"; r.t ??= 0; r.v ??= 0; r.last ??= -9;
+        let fire = 0;
+        if (x >= p.th && !r.on && c.t - r.last >= p.retrig) { r.on = true; r.stage = "att"; r.t = 0; r.from = r.v; r.last = c.t; fire = 1; }
+        else if (x < p.rel && r.on) { r.on = false; if (r.stage !== "off") { r.stage = "rel"; r.t = 0; r.from = r.v; } }
+        r.t += c.dt;
+        if (r.stage === "att") { r.v = p.att > 0 ? r.from + (p.peak - r.from) * ease(clamp(r.t / p.att), p.shape) : p.peak; if (r.t >= p.att) { r.stage = "dec"; r.t = 0; } }
+        else if (r.stage === "dec") { r.v = p.dec > 0 ? p.peak + (p.sus - p.peak) * ease(clamp(r.t / p.dec), p.shape) : p.sus; if (r.t >= p.dec) { r.stage = "sus"; if (!r.on) { r.stage = "rel"; r.t = 0; r.from = r.v; } } }
+        else if (r.stage === "sus") r.v = p.sus;
+        else if (r.stage === "rel") { r.v = p.relT > 0 ? r.from * (1 - ease(clamp(r.t / p.relT), p.shape)) : 0; if (r.t >= p.relT) { r.stage = "off"; r.v = 0; } }
+        return [r.v, fire];
+      } },
+    count: { fam: "signal", name: "Count", he: "סופר טריגרים: כל חציית סף מוסיפה 1. גבולות: לולאה, עצירה או זיגזג. כניסה שנייה מאפסת.",
+      ins: [["in"], ["reset"]], outs: [["count"], ["norm"]],
+      params: () => [f("th", "סף", 0.5, 0, 1), f("min", "מינימום", 0, 0, 64, 1), f("max", "מקסימום", 7, 1, 64, 1), m("limit", "גבולות", "loop", [["off", "בלי"], ["loop", "לולאה"], ["clamp", "עצירה"], ["zigzag", "זיגזג"]])],
+      cook(n, [x = 0, rs = 0]) {
+        const r = n.rt, p = n.p; r.c ??= p.min; r.dir ??= 1;
+        if (rs >= 0.5 && !r.ron) r.c = p.min; r.ron = rs >= 0.5;
+        if (x >= p.th && !r.on) {
+          let c = r.c + r.dir;
+          if (p.limit === "loop" && c > p.max) c = p.min;
+          else if (p.limit === "clamp") c = Math.min(c, p.max);
+          else if (p.limit === "zigzag" && (c > p.max || c < p.min)) { r.dir = -r.dir; c = r.c + r.dir; }
+          r.c = c;
+        }
+        r.on = x >= p.th;
+        return [r.c, clamp((r.c - p.min) / ((p.max - p.min) || 1))];
+      } },
+    logic: { fam: "signal", name: "Logic", he: "לוגיקה: כל כניסה נחשבת דולקת מעל הסף. AND, OR, XOR, NOT, או השוואה בין שתי הכניסות.",
+      ins: [["a"], ["b"]], outs: [["out"]],
+      params: () => [m("op", "פעולה", "and", [["and", "AND"], ["or", "OR"], ["xor", "XOR"], ["not", "NOT a"], ["gt", "a > b"], ["lt", "a < b"]]), f("th", "סף", 0.5, 0, 1)],
+      cook(n, [a = 0, b = 0]) {
+        const t = n.p.th, A1 = a >= t, B1 = b >= t;
+        return [+({ and: A1 && B1, or: A1 || B1, xor: A1 !== B1, not: !A1, gt: a > b, lt: a < b }[n.p.op] ?? false)];
+      } },
+    combine: { fam: "signal", name: "Combine", he: "מחבר שתי כניסות: חיבור, כפל, מקסימום, מינימום, ממוצע או הפרש.",
+      ins: [["a"], ["b"]], outs: [["out"]],
+      params: () => [m("op", "פעולה", "max", [["add", "חיבור"], ["mul", "כפל"], ["max", "מקסימום"], ["min", "מינימום"], ["avg", "ממוצע"], ["sub", "a פחות b"]])],
+      cook: (n, [a = 0, b = 0]) => [{ add: a + b, mul: a * b, max: Math.max(a, b), min: Math.min(a, b), avg: (a + b) / 2, sub: a - b }[n.p.op] ?? 0] },
+    jumper: { fam: "signal", name: "Random Hold", he: "בכל טריגר קופץ לערך אקראי חדש בטווח, ומחזיק אותו עד הטריגר הבא.",
+      ins: [["trig"]], outs: [["out"]], params: () => [f("th", "סף", 0.5, 0, 1), f("lo", "מינימום", 0, 0, 1), f("hi", "מקסימום", 1, 0, 1)],
+      cook(n, [x = 0]) { const r = n.rt; if (x >= n.p.th && !r.on) r.v = n.p.lo + Math.random() * (n.p.hi - n.p.lo); r.on = x >= n.p.th; return [r.v ?? n.p.lo]; } },
+    nul: { fam: "signal", name: "Null", he: "מעביר הלאה כמו שהוא. נקודת חיבור מסודרת, כמו Null ב-TouchDesigner.",
+      ins: [["in"]], outs: [["out"]], params: () => [], cook: (n, [x = 0]) => [x] },
+    exporter: { fam: "out", name: "Export → Heart", he: "שולח ערכים ללב: כל כניסה מחוברת מחליפה את הפרמטר (בהירות, גוון, מהירות…) או את מה שהאפקטים קוראים (קיק, בס…).",
+      ins: [...Object.entries(EXPORT_PARAMS).map(([k, [l]]) => [l, null, k]), ...Object.entries(EXPORT_FEATS).map(([k, l]) => [l, null, "f_" + k])], outs: [], params: () => [],
+      cook: () => [] },
+    layer: { fam: "out", name: "Layer → Heart", he: "שכבת אפקט מעל ההופעה: בוחרים אפקט, מיזוג ומסכה לפי חלקי החיתוך. כניסת השקיפות פותחת אותה, וכניסות הקיק והעוצמה הן מה שהאפקט שלה מרגיש.",
+      ins: [["שקיפות"], ["קיק"], ["עוצמה"]], outs: [],
+      params: () => [m("fx", "אפקט", "23", env.effects()), m("blend", "מיזוג", "screen", Object.entries(env.blends)), m("mask", "מסכה", "all", Object.entries(env.masks)),
+        f("op", "שקיפות בסיס", 1, 0, 1), b("on", "פעילה", true)],
+      cook: () => [] },
+  };
+}
+
+// ---------------- network ----------------
+let uid = 1;
+class Network {
+  constructor(ops) { this.ops = ops; this.nodes = []; this.wires = []; this.vals = new Map(); this.t = 0; }
+  add(type, x, y, p = {}) {
+    const op = this.ops[type]; if (!op) return null;
+    const n = { id: "n" + uid++, type, x, y, p: {}, rt: {} };
+    for (const q of op.params()) n.p[q.k] = q.d;
+    Object.assign(n.p, p);
+    this.nodes.push(n); return n;
+  }
+  remove(id) { this.nodes = this.nodes.filter(n => n.id !== id); this.wires = this.wires.filter(w => w.from[0] !== id && w.to[0] !== id); }
+  node(id) { return this.nodes.find(n => n.id === id); }
+  ins(n) { return this.ops[n.type].ins; }
+  outs(n) { return this.ops[n.type].outs; }
+  // A value input takes one wire; connecting again replaces it. Audio goes only to audio, values only to values.
+  connect(from, to) {
+    const a = this.node(from[0]), b = this.node(to[0]); if (!a || !b || a === b) return false;
+    const ot = this.outs(a)[from[1]]?.[1] || null, it = this.ins(b)[to[1]]?.[1] || null;
+    if (ot !== it) return false;
+    this.wires = this.wires.filter(w => !(w.to[0] === to[0] && w.to[1] === to[1]));
+    this.wires.push({ from: [...from], to: [...to] }); return true;
+  }
+  input(n, i) { const w = this.wires.find(w => w.to[0] === n.id && w.to[1] === i); return w ? this.vals.get(w.from[0])?.[w.from[1]] : undefined; }
+  wired(n, i) { return this.wires.some(w => w.to[0] === n.id && w.to[1] === i); }
+  // Cook every operator once, inputs first. A loop reads the previous frame's value, as in TouchDesigner.
+  cook(ctx) {
+    this.t += ctx.dt; ctx.t = this.t;
+    const done = new Set(), busy = new Set();
+    const visit = n => {
+      if (done.has(n.id) || busy.has(n.id)) return;
+      busy.add(n.id);
+      for (const w of this.wires) if (w.to[0] === n.id) { const s = this.node(w.from[0]); if (s) visit(s); }
+      busy.delete(n.id); done.add(n.id);
+      const I = this.ins(n).map((_, i) => this.input(n, i));
+      try { this.vals.set(n.id, this.ops[n.type].cook(n, I, ctx) || []); n.err = null; } catch (e) { n.err = e.message; this.vals.set(n.id, []); }
+    };
+    for (const n of this.nodes) visit(n);
+    // What goes to the heart.
+    const out = { params: {}, feats: {}, layers: [] };
+    for (const n of this.nodes) {
+      if (n.type === "exporter") this.ins(n).forEach(([, , k], i) => {
+        const v = this.input(n, i); if (v === undefined || !isFinite(v)) return;
+        if (k.startsWith("f_")) out.feats[k.slice(2)] = v; else out.params[k] = EXPORT_PARAMS[k][1](v);
+      });
+      if (n.type === "layer" && n.p.on) {
+        const op = this.wired(n, 0) ? clamp(this.input(n, 0) ?? 0) * n.p.op : n.p.op, k = this.input(n, 1), lv = this.input(n, 2);
+        out.layers.push({ fx: +n.p.fx, blend: n.p.blend, mask: n.p.mask, op, kick: k, level: lv });
+      }
+    }
+    return out;
+  }
+  save() { return { nodes: this.nodes.map(({ id, type, x, y, p }) => ({ id, type, x, y, p })), wires: this.wires }; }
+  load(o) {
+    this.nodes = []; this.wires = []; this.vals.clear();
+    for (const s of o?.nodes || []) if (this.ops[s.type]) { const n = this.add(s.type, s.x, s.y, s.p); n.id = s.id; }
+    for (const n of this.nodes) { const k = +n.id.slice(1); if (k >= uid) uid = k + 1; }
+    for (const w of o?.wires || []) this.connect(w.from, w.to);
+  }
+}
+
+// Ready-made networks.
+const TEMPLATES = {
+  trance: { name: "🚀 טראנס", build(N) {
+    const a = N.add("audioin", 20, 40);
+    const fk = N.add("filter", 200, 20, { type: "band", lo: 40, hi: 120 }), ak = N.add("analyze", 380, 20, { range: 18 });
+    const tk = N.add("trigger", 560, 20, { th: 0.55, rel: 0.35, retrig: 0.2, att: 0, peak: 1, dec: 0.18, sus: 0, relT: 0.1 });
+    const fh = N.add("filter", 200, 210, { type: "high", lo: 6000 }), ah = N.add("analyze", 380, 210, { range: 20 }), lh = N.add("lag", 560, 230, { up: 0.01, down: 0.25 });
+    const tr = N.add("trance", 380, 400), mp = N.add("math", 560, 400, { to0: 0.35, to1: 1 });
+    const bt = N.add("beat", 20, 400), lf = N.add("lfo", 200, 470, { wave: "ramp", sync: true, rate: 1 / 32 });
+    const bd = N.add("combine", 560, 560, { op: "max" });
+    const ex = N.add("exporter", 800, 330);
+    const l1 = N.add("layer", 800, 20, { fx: "23", blend: "screen", mask: "grooves" }), l2 = N.add("layer", 800, 170, { fx: "52", blend: "add", mask: "all", op: 0.9 });
+    const l3 = N.add("layer", 1020, 520, { fx: "54", blend: "screen", mask: "all" });
+    const W = (a1, o, b1, i) => N.connect([a1.id, o], [b1.id, i]);
+    W(a, 0, fk, 0); W(fk, 0, ak, 0); W(ak, 0, tk, 0); W(tk, 0, l1, 0); W(tk, 0, l1, 1);
+    W(a, 0, fh, 0); W(fh, 0, ah, 0); W(ah, 0, lh, 0); W(lh, 0, l2, 0); W(tk, 0, l2, 1);
+    W(tr, 1, mp, 0); W(mp, 0, ex, 0); W(lf, 0, ex, 1); W(tk, 0, ex, 7);
+    W(tr, 2, bd, 0); W(tr, 3, bd, 1); W(bd, 0, l3, 0);
+    void bt;
+  } },
+  bands: { name: "🎚️ 3 פסים", build(N) {
+    const a = N.add("audioin", 20, 200), ex = N.add("exporter", 760, 160);
+    [["low", 20, 250, "f_bass", 9], ["band", 250, 4000, "f_mid", 10], ["high", 4000, 20000, "f_high", 11]].forEach(([type, lo, hi, , port], i) => {
+      const fl = N.add("filter", 200, 40 + i * 190, { type, lo, hi }), an = N.add("analyze", 380, 40 + i * 190), lg = N.add("lag", 560, 40 + i * 190, { up: 0.02, down: 0.25 });
+      N.connect([a.id, 0], [fl.id, 0]); N.connect([fl.id, 0], [an.id, 0]); N.connect([an.id, 0], [lg.id, 0]); N.connect([lg.id, 0], [ex.id, port]);
+    });
+  } },
+};
+
+// ---------------- editor ----------------
+// The network on screen: operators as boxes, inputs on the left, outputs on the right, wires as curves. Drag a box by its
+// title, drag from an output to an input to wire it, click a wire to cut it, drag the background to pan, wheel to zoom.
+// The selected operator's parameters show under the network, like TouchDesigner's parameter window.
+const NW = 156, HEAD = 24, ROW = 19;
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const portY = i => HEAD + ROW * i + ROW / 2;
+class Editor {
+  constructor(area, panel, net, onChange) {
+    Object.assign(this, { area, panel, net, onChange, view: { x: 20, y: 20, k: 0.85 }, sel: null, drag: null });
+    area.innerHTML = `<div class="wsWorld"><svg class="wsWires"></svg><div class="wsNodes"></div></div>`;
+    this.world = area.querySelector(".wsWorld"); this.svg = area.querySelector(".wsWires"); this.box = area.querySelector(".wsNodes");
+    area.addEventListener("pointerdown", e => this.down(e));
+    area.addEventListener("pointermove", e => this.move(e));
+    area.addEventListener("pointerup", e => this.up(e));
+    area.addEventListener("wheel", e => { e.preventDefault(); const r = area.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, v = this.view, k = Math.min(2, Math.max(0.3, v.k * Math.exp(-e.deltaY * 0.0012)));
+      v.x = mx - (mx - v.x) * k / v.k; v.y = my - (my - v.y) * k / v.k; v.k = k; this.place(); }, { passive: false });
+    area.addEventListener("keydown", e => { if ((e.key === "Delete" || e.key === "Backspace") && this.sel) { this.net.remove(this.sel); this.sel = null; this.render(); this.changed(); } });
+    this.render();
+  }
+  changed() { this.onChange?.(); }
+  pt(e) { const r = this.area.getBoundingClientRect(), v = this.view; return [(e.clientX - r.left - v.x) / v.k, (e.clientY - r.top - v.y) / v.k]; }
+  place() { const v = this.view; this.world.style.transform = `translate(${v.x}px,${v.y}px) scale(${v.k})`; }
+  add(type) {
+    const r = this.area.getBoundingClientRect(), v = this.view, n = this.net.add(type, (r.width / 2 - v.x) / v.k - NW / 2 + Math.random() * 30, (r.height / 2 - v.y) / v.k - 40 + Math.random() * 30);
+    this.sel = n?.id; this.render(); this.changed();
+  }
+  fit() {
+    const ns = this.net.nodes; if (!ns.length) return;
+    const r = this.area.getBoundingClientRect(), x0 = Math.min(...ns.map(n => n.x)), y0 = Math.min(...ns.map(n => n.y));
+    const x1 = Math.max(...ns.map(n => n.x + NW)), y1 = Math.max(...ns.map(n => n.y + this.h(n)));
+    const k = Math.min(1.2, Math.max(0.3, Math.min((r.width - 30) / (x1 - x0), (r.height - 30) / (y1 - y0))));
+    this.view = { k, x: (r.width - (x1 - x0) * k) / 2 - x0 * k, y: (r.height - (y1 - y0) * k) / 2 - y0 * k }; this.place();
+  }
+  h(n) { return HEAD + ROW * Math.max(1, this.net.ins(n).length, this.net.outs(n).length) + 8; }
+  render() {
+    const N = this.net;
+    this.box.innerHTML = N.nodes.map(n => {
+      const op = N.ops[n.type], fam = FAMS[op.fam], ins = N.ins(n), outs = N.outs(n), rows = Math.max(1, ins.length, outs.length);
+      let body = "";
+      for (let i = 0; i < rows; i++) {
+        const a = ins[i], o = outs[i];
+        body += `<div class="wsRow">${a ? `<i class="wsPort in ${a[1] === A ? "aud" : ""}" data-in="${i}"></i><span>${esc(a[0])}</span>` : "<span></span>"}`
+          + `${o ? `<span class="wsOut"><b data-v="${i}"></b>${esc(o[0])}</span><i class="wsPort out ${o[1] === A ? "aud" : ""}" data-out="${i}"></i>` : ""}</div>`;
+      }
+      return `<div class="wsNode ${n.id === this.sel ? "sel" : ""}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${NW}px;--fam:${fam.col}">`
+        + `<header title="${esc(op.he)}">${esc(op.name)}<button data-del aria-label="מחק">×</button></header>${body}</div>`;
+    }).join("");
+    this.els = new Map([...this.box.children].map(el => [el.dataset.id, el]));
+    this.wires(); this.place(); this.params();
+  }
+  wires(tmp) {
+    const N = this.net, P = (n, side, i) => [n.x + (side ? NW : 0), n.y + portY(i)];
+    const path = ([x1, y1], [x2, y2]) => { const d = Math.max(40, Math.abs(x2 - x1) * 0.5); return `M${x1},${y1} C${x1 + d},${y1} ${x2 - d},${y2} ${x2},${y2}`; };
+    let s = "";
+    N.wires.forEach((w, i) => {
+      const a = N.node(w.from[0]), b = N.node(w.to[0]); if (!a || !b) return;
+      const aud = N.outs(a)[w.from[1]]?.[1] === A, d = path(P(a, 1, w.from[1]), P(b, 0, w.to[1])), col = FAMS[N.ops[a.type].fam].col;
+      s += `<path d="${d}" class="hit" data-w="${i}"/><path d="${d}" class="w ${aud ? "aud" : ""}" style="stroke:${col}"/>`;
+    });
+    if (tmp) s += `<path d="${path(tmp[0], tmp[1])}" class="w tmp"/>`;
+    this.svg.innerHTML = s;
+  }
+  // Live values on every output, refreshed by the studio's frame loop while the tab is open.
+  show() {
+    for (const n of this.net.nodes) {
+      const el = this.els?.get(n.id); if (!el) continue;
+      const v = this.net.vals.get(n.id) || [];
+      el.querySelectorAll("[data-v]").forEach(b => { const x = v[+b.dataset.v];
+        b.textContent = x == null ? "—" : typeof x === "object" ? `${Math.round(x.lo)}-${Math.round(x.hi)}Hz` : x.toFixed(2);
+        b.style.setProperty("--v", typeof x === "number" ? Math.min(1, Math.max(0, x)) : 0); });
+      el.classList.toggle("err", !!n.err);
+    }
+  }
+  params() {
+    const n = this.net.node(this.sel), P = this.panel;
+    if (!n) { P.innerHTML = `<p class="help">בחרו אופרטור כדי לראות את הפרמטרים שלו. הוספה מהסרגל למעלה, חיבור בגרירה מיציאה (ימין) לכניסה (שמאל), ניתוק בלחיצה על חוט.</p>`; return; }
+    const op = this.net.ops[n.type];
+    P.innerHTML = `<h3 style="color:${FAMS[op.fam].col}">${esc(op.name)}</h3><p class="help">${esc(op.he)}</p>` + op.params().map(q => {
+      const v = n.p[q.k], id = `wp_${q.k}`;
+      if (q.t === "f") return `<div class="sl"><label for="${id}">${esc(q.l)}</label><input type="range" id="${id}" data-k="${q.k}" min="${q.min}" max="${q.max}" step="${q.step}" value="${v}"><output>${+(+v).toFixed(3)}</output></div>`;
+      if (q.t === "m") return `<div class="grid2"><label>${esc(q.l)}<select data-k="${q.k}">${q.o.map(([k, l]) => `<option value="${esc(k)}"${String(k) === String(v) ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label></div>`;
+      return `<label class="row help"><input type="checkbox" data-k="${q.k}"${v ? " checked" : ""}> ${esc(q.l)}</label>`;
+    }).join("");
+    P.oninput = P.onchange = e => {
+      const el = e.target, k = el.dataset.k; if (!k) return;
+      n.p[k] = el.type === "checkbox" ? el.checked : el.type === "range" ? +el.value : el.value;
+      if (el.type === "range") el.nextElementSibling.textContent = +(+el.value).toFixed(3);
+      this.changed();
+    };
+  }
+  down(e) {
+    const t = e.target, nodeEl = t.closest(".wsNode");
+    this.area.focus({ preventScroll: true });
+    if (t.dataset.del != null && nodeEl) { this.net.remove(nodeEl.dataset.id); this.sel = null; this.render(); this.changed(); return; }
+    if (t.dataset.out != null && nodeEl) { const n = this.net.node(nodeEl.dataset.id); this.drag = { kind: "wire", from: [n.id, +t.dataset.out], p0: [n.x + NW, n.y + portY(+t.dataset.out)] }; }
+    else if (t.dataset.in != null && nodeEl) {   // pulling a wire off an input picks it up again from its source
+      const w = this.net.wires.find(w => w.to[0] === nodeEl.dataset.id && w.to[1] === +t.dataset.in); if (!w) return;
+      this.net.wires = this.net.wires.filter(x => x !== w); const n = this.net.node(w.from[0]);
+      this.drag = { kind: "wire", from: w.from, p0: [n.x + NW, n.y + portY(w.from[1])] }; this.changed();
+    } else if (t.closest("header") && nodeEl) {
+      const n = this.net.node(nodeEl.dataset.id), [x, y] = this.pt(e);
+      this.drag = { kind: "node", n, dx: x - n.x, dy: y - n.y };
+      if (this.sel !== n.id) { this.sel = n.id; this.box.querySelectorAll(".wsNode").forEach(el => el.classList.toggle("sel", el === nodeEl)); this.params(); }
+    } else if (nodeEl) { if (this.sel !== nodeEl.dataset.id) { this.sel = nodeEl.dataset.id; this.render(); } return; }
+    else if (t.classList.contains("hit")) { this.net.wires.splice(+t.dataset.w, 1); this.wires(); this.changed(); return; }
+    else { this.drag = { kind: "pan", x: e.clientX - this.view.x, y: e.clientY - this.view.y }; if (this.sel) { this.sel = null; this.render(); } }
+    this.area.setPointerCapture(e.pointerId);
+  }
+  move(e) {
+    const d = this.drag; if (!d) return;
+    if (d.kind === "pan") { this.view.x = e.clientX - d.x; this.view.y = e.clientY - d.y; this.place(); }
+    else if (d.kind === "node") { const [x, y] = this.pt(e); d.n.x = Math.round(x - d.dx); d.n.y = Math.round(y - d.dy); const el = this.els.get(d.n.id); el.style.left = d.n.x + "px"; el.style.top = d.n.y + "px"; this.wires(); }
+    else if (d.kind === "wire") this.wires([d.p0, this.pt(e)]);
+  }
+  up(e) {
+    const d = this.drag; this.drag = null; if (!d) return;
+    if (d.kind === "wire") {
+      const t = document.elementFromPoint(e.clientX, e.clientY), port = t?.closest?.("[data-in]"), nodeEl = t?.closest?.(".wsNode");
+      if (port && nodeEl && !this.net.connect(d.from, [nodeEl.dataset.id, +port.dataset.in])) this.onWarn?.("אפשר לחבר סאונד רק לסאונד, וערך רק לערך");
+      this.wires(); this.changed();
+    } else if (d.kind === "node") this.changed();
+  }
+}
+
+return { FAMS, EXPORT_PARAMS, EXPORT_FEATS, makeOps, Network, TEMPLATES, Editor };
+})();
 // ===== page =====
 
 const G = M_geo;
 const { HeartGL, EFFECTS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } = M_gl;
 const { Music, regrid } = M_audio;
 const { Engine, MODES: E_MODES, HALVES, COLORS, noteName } = M_engine;
+const { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } = M_react;
+const { makeOps, Network, Editor, FAMS: WS_FAMS, TEMPLATES } = M_nodes;
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2518,7 +3383,7 @@ const curFx = () => (mix > 0 ? fxB : fxA);
 
 // ---------- pads ----------
 const KEYS = "1234567890";
-const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["3d", "תלת-ממד · מוארים לפי החיתוך"]];
+const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"]];
 function renderPads() {
   const c = curFx();
   $("pads").innerHTML = FX_GROUPS.map(([g, title]) => `<h4 class="padh">${title}</h4>` + EFFECTS.map((e, i) => (e.g || "base") !== g ? "" :
@@ -2549,6 +3414,7 @@ document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
   document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
   if (b.dataset.tab === "geo") renderPlan();
+  document.querySelector(".studio").classList.toggle("wide", b.dataset.tab === "ws");
 });
 
 // ---------- channels ----------
@@ -2648,6 +3514,194 @@ window.heartStudio = { engine, music };   // for the console: heartStudio.engine
 $("engOn").onclick = () => setFx(21);
 engine.onChord = c => { $("chordChip").textContent = c.name; };
 
+// ---------- sound: TouchDesigner-style channels, exports, modulations, layers ----------
+const rx = new React(music);
+rx.load(store.get(K.rx, null));
+window.heartStudio.rx = rx;
+const saveRx = () => store.set(K.rx, rx.o);
+const rxSel = () => rx.chan(rx.o.sel);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const opts = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${k}"${k === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+const chOpts = (cur, none) => `<option value="">${none}</option>` + rx.o.ch.map(c => `<option value="${c.id}"${c.id === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("")
+  + `<optgroup label="קריאה מוזיקלית">` + Object.entries(TRANCE).map(([k, l]) => `<option value="${k}"${k === cur ? " selected" : ""}>${esc(l)}</option>`).join("") + `</optgroup>`;
+const hzFmt = v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "k" : Math.round(v) + "";
+// Selected-channel sliders: [key, label, min, max, unit, scale from slider to setting]
+const RC = {
+  rcLevel: [["gain", "הגברה", -24, 36, "dB"], ["range", "טווח דינמי", 3, 60, "dB"], ["gate", "סף רעש", -120, -20, "dB"], ["curve", "קימור", 20, 300, "", 100],
+    ["attack", "Attack", 0, 500, "ms"], ["release", "Release", 10, 3000, "ms"]],
+  rcTrig: [["sens", "רגישות טריגר", 0, 100, "%"], ["tlevel", "סף טריגר", 0, 100, "%"], ["hold", "מרווח מינימלי", 20, 1000, "ms"], ["decay", "דעיכת פולס", 20, 2000, "ms"]],
+  rcOut: [["min", "יציאה מינימום", 0, 100, "%"], ["max", "יציאה מקסימום", 0, 300, "%"]],
+};
+const rcFmt = (k, v) => { const r = Object.values(RC).flat().find(x => x[0] === k); return (r[5] ? (v / r[5]).toFixed(2) : (v > 0 && r[4] === "dB" && k === "gain" ? "+" : "") + v) + r[4]; };
+for (const [box, list] of Object.entries(RC))
+  $(box).innerHTML = list.map(([k, l, a, b]) => `<div class="sl"><label for="rc_${k}">${l}</label><input type="range" id="rc_${k}" min="${a}" max="${b}"><output id="rc_${k}V"></output></div>`).join("");
+$("rc_trig").innerHTML = opts(TRIG);
+$("rxStyles").innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-style="${k}">${esc(p.name)}</button>`).join("");
+function rcForm() {
+  const c = rxSel(); if (!c) return;
+  $("rxName").textContent = c.name; $("rxName").style.color = rx.color(c.id);
+  if (document.activeElement !== $("rc_name")) $("rc_name").value = c.name;
+  const n = Math.max(2, music.inChannels || 2);
+  $("rc_src").innerHTML = `<option value="-1">מיקס של כל הערוצים</option>` + Array.from({ length: n }, (_, i) => `<option value="${i}">כניסה ${i + 1}${n === 2 ? (i ? " (ימין)" : " (שמאל)") : ""}</option>`).join("");
+  $("rc_src").value = String(c.src); if ($("rc_src").selectedIndex < 0) $("rc_src").value = "-1";
+  $("rc_lo").value = Math.round(c.lo); $("rc_hi").value = Math.round(c.hi);
+  for (const [k, , , , , sc] of Object.values(RC).flat()) { const v = Math.round(c[k] * (sc || 1)); $("rc_" + k).value = v; $("rc_" + k + "V").textContent = rcFmt(k, v); }
+  ["auto", "inv", "mute"].forEach(k => $("rc_" + k).checked = !!c[k]);
+  $("rc_trig").value = c.trig;
+  $("rc_sens").closest(".sl").hidden = c.trig !== "onset"; $("rc_tlevel").closest(".sl").hidden = c.trig !== "level";
+  ["hold", "decay"].forEach(k => $("rc_" + k).closest(".sl").hidden = c.trig === "off");
+  $("rc_gate").previousElementSibling.textContent = c.auto ? "סף רעש" : "סף רעש (תחילת הטווח)";
+  $("rxDel").disabled = rx.o.ch.length < 2;
+}
+for (const [k, , , , , sc] of Object.values(RC).flat())
+  $("rc_" + k).oninput = () => { const c = rxSel(), v = +$("rc_" + k).value; if (!c) return; c[k] = v / (sc || 1); $("rc_" + k + "V").textContent = rcFmt(k, v); saveRx(); };
+["auto", "inv", "mute"].forEach(k => $("rc_" + k).onchange = () => { const c = rxSel(); if (c) { c[k] = $("rc_" + k).checked; saveRx(); rcForm(); } });
+$("rc_trig").onchange = () => { const c = rxSel(); if (c) { c.trig = $("rc_trig").value; saveRx(); rcForm(); } };
+$("rc_src").onchange = () => { const c = rxSel(); if (c) { c.src = +$("rc_src").value; saveRx(); } };
+["lo", "hi"].forEach(k => $("rc_" + k).onchange = () => { const c = rxSel(), v = +$("rc_" + k).value; if (c && isFinite(v) && v > 0) { c[k] = Math.min(20000, Math.max(10, v)); saveRx(); } });
+$("rc_name").oninput = () => { const c = rxSel(); if (c) { c.name = $("rc_name").value || "ערוץ"; $("rxName").textContent = c.name; saveRx(); rxLists(); } };
+$("rxStyles").onclick = e => { const b = e.target.closest("[data-style]"); if (!b) return; rx.preset(b.dataset.style); saveRx(); rxAll(); toast("סגנון: " + PRESETS[b.dataset.style].name); };
+$("rxReset").onclick = () => { rx.load({ layers: rx.o.layers }); saveRx(); rxAll(); toast("הגדרות הסאונד חזרו לברירת המחדל"); };
+$("rxAdd").onclick = () => { if (rx.o.ch.length >= 16) return toast("עד 16 ערוצים"); rx.add(); saveRx(); rxAll(); };
+$("rxDel").onclick = () => { rx.remove(rx.o.sel); saveRx(); rxAll(); };
+$("rxOn").onclick = () => { rx.o.on = !rx.o.on; saveRx(); rxTop(); };
+const RX_SL = { boost: ["boost", v => v + "%"], punch: ["punch", v => v + "%"], speed: ["speed", v => v + "%"], sgain: ["spec.gain", v => v + "%"], sfloor: ["spec.floor", v => v + "%"], scurve: ["spec.curve", v => (v / 100).toFixed(2)] };
+const deep = (o, path, v) => { const ks = path.split("."), last = ks.pop(), t = ks.reduce((a, k) => a[k], o); if (v === undefined) return t[last]; t[last] = v; };
+for (const [id, [path, f]] of Object.entries(RX_SL)) $("rx_" + id).oninput = () => { const v = +$("rx_" + id).value; deep(rx.o, path, v); $("rx_" + id + "V").textContent = f(v); saveRx(); };
+// The input gain is the ring engine's, shown here too.
+$("rx_input").oninput = () => { eo.gain = +$("rx_input").value; $("e_gain").value = eo.gain; $("e_gainV").textContent = ENG_SL.gain(eo.gain); $("rx_inputV").textContent = ENG_SL.gain(eo.gain); engApply(); };
+$("e_gain").addEventListener("input", () => { $("rx_input").value = eo.gain; $("rx_inputV").textContent = ENG_SL.gain(eo.gain); });
+// Simple faders: how much each part of the song moves the effects, written into the export amounts.
+const RX_F = { fKick: ["kick", "hit"], fBass: ["bass"], fHigh: ["mid", "high"] };
+for (const [id, keys] of Object.entries(RX_F)) $("rx_" + id).oninput = () => {
+  const v = +$("rx_" + id).value; $("rx_" + id + "V").textContent = v + "%";
+  for (const k of keys) { rx.o.exp[k].amt = v; const el = $(`ex_${k}_amt`); if (el) { el.value = v; $(`ex_${k}_amtV`).textContent = v + "%"; } }
+  saveRx();
+};
+function rxTop() {
+  for (const [id, keys] of Object.entries(RX_F)) { const v = rx.o.exp[keys[0]].amt; $("rx_" + id).value = v; $("rx_" + id + "V").textContent = v + "%"; }
+  document.querySelectorAll("[data-style]").forEach(b => b.setAttribute("aria-pressed", b.dataset.style === rx.o.preset));
+  $("rxOn").setAttribute("aria-pressed", rx.o.on); $("rxOn").textContent = rx.o.on ? "🔊 מנוע תגובה חדש · פעיל" : "🔈 מנוע תגובה חדש · כבוי (ניתוח מקורי)";
+  for (const [id, [path, f]] of Object.entries(RX_SL)) { const v = deep(rx.o, path); $("rx_" + id).value = v; $("rx_" + id + "V").textContent = f(v); }
+  $("rx_input").value = eo.gain; $("rx_inputV").textContent = ENG_SL.gain(eo.gain);
+}
+// Export, modulation and layer rows: rebuilt when channels are added, removed or renamed.
+function rxLists() {
+  $("rxExp").innerHTML = Object.entries(EXPORTS).map(([k, name]) => { const e = rx.o.exp[k];
+    return `<b>${name}</b><select id="ex_${k}_ch" aria-label="ערוץ ל${name}">${chOpts(e.ch, "ניתוח מקורי")}</select><select id="ex_${k}_out" aria-label="יציאה">${opts(OUTS, e.out)}</select>`
+      + `<input type="range" id="ex_${k}_amt" min="0" max="300" value="${e.amt}" aria-label="כמות ${name}"><output id="ex_${k}_amtV">${e.amt}%</output><span></span>`; }).join("");
+  $("rxMods").innerHTML = rx.o.mods.map((m, i) => `<select id="md${i}_tgt" aria-label="פרמטר">${opts(Object.fromEntries(Object.entries(TARGETS).map(([k, t]) => [k, t.name])), m.tgt)}</select>`
+    + `<select id="md${i}_ch" aria-label="ערוץ">${chOpts(m.ch, "—")}</select><select id="md${i}_out" aria-label="יציאה">${opts(OUTS, m.out)}</select>`
+    + `<input type="range" id="md${i}_depth" min="-100" max="100" value="${m.depth}" aria-label="עומק"><output id="md${i}_depthV">${m.depth}%</output><button data-mdel="${i}" aria-label="מחק מודולציה">🗑</button>`).join("")
+    || `<span class="help" style="grid-column:1/-1">אין מודולציות</span>`;
+  const fxOpts = cur => EFFECTS.filter(e => e.id > 0).map(e => `<option value="${e.id}"${e.id === cur ? " selected" : ""}>${e.ico} ${esc(e.name)}</option>`).join("");
+  $("layers").innerHTML = rx.o.layers.map((l, i) => `<div class="layer ${l.on ? "" : "off"}" style="border-inline-start-color:${l.drive && rx.chan(l.drive) ? rx.color(l.drive) : "#f06595"}">
+    <header><button id="ly${i}_on" aria-pressed="${l.on}" aria-label="הצג שכבה ${i + 2}">${l.on ? "👁" : "🚫"}</button><b>שכבה ${i + 2}</b><select id="ly${i}_fx" aria-label="אפקט">${fxOpts(l.fx)}</select></header>
+    <div class="grid2"><label>מיזוג<select id="ly${i}_blend">${opts(BLENDS, l.blend)}</select></label><label>מסכה<select id="ly${i}_mask">${opts(MASKS, l.mask)}</select></label>
+    <label>ערוץ מניע<select id="ly${i}_drive">${chOpts(l.drive, "כמו ההופעה")}</select></label><label>השקיפות לפי<select id="ly${i}_out">${opts(OUTS, l.out)}</select></label></div>
+    <div class="sl"><label for="ly${i}_op">שקיפות</label><input type="range" id="ly${i}_op" min="0" max="100" value="${l.op}"><output id="ly${i}_opV">${l.op}%</output></div>
+    <div class="sl"><label for="ly${i}_depth">פתיחה עם הערוץ</label><input type="range" id="ly${i}_depth" min="0" max="100" value="${l.depth}"><output id="ly${i}_depthV">${l.depth}%</output></div></div>`).join("");
+}
+function rxAll() { rxTop(); rcForm(); rxLists(); }
+const rxRow = id => { const m = /^(ex|md|ly)(?:_(\w+?)|(\d+))_(\w+)$/.exec(id); return m && { kind: m[1], key: m[2] ?? +m[3], f: m[4] }; };
+function rxEdit(e) {
+  const r = rxRow(e.target.id || ""); if (!r) return;
+  const obj = r.kind === "ex" ? rx.o.exp[r.key] : r.kind === "md" ? rx.o.mods[r.key] : rx.o.layers[r.key]; if (!obj) return;
+  const el = e.target, v = el.type === "range" || r.f === "fx" ? +el.value : el.value;
+  obj[r.f] = v;
+  if (el.type === "range") $(el.id + "V").textContent = v + "%";
+  saveRx();
+  if (r.kind === "ex") rxTop();
+  if (r.kind === "ly" && (r.f === "drive" || e.type === "change")) rxLists();
+}
+for (const box of ["rxExp", "rxMods", "layers"]) { $(box).addEventListener("input", rxEdit); $(box).addEventListener("change", e => e.target.type !== "range" && rxEdit(e)); }
+$("layers").addEventListener("click", e => { const b = e.target.closest("[id$=_on]"); if (!b) return; const l = rx.o.layers[+b.id.slice(2, -3)]; l.on = !l.on; saveRx(); rxLists(); });
+$("rxMods").addEventListener("click", e => { const b = e.target.closest("[data-mdel]"); if (!b) return; rx.o.mods.splice(+b.dataset.mdel, 1); saveRx(); rxLists(); });
+$("rxModAdd").onclick = () => { rx.o.mods.push({ tgt: "master", ch: rx.o.sel, out: "env", depth: 50 }); saveRx(); rxLists(); };
+rxAll();
+
+// Meters: one row per channel, raw level dim, the lagged level bright, the pulse as a lamp. Click selects.
+const RX_ROW = 22;
+function drawRx() {
+  const cv = $("rxMeters"); if (cv.closest("[data-panel]").hidden) return;
+  const d = devicePixelRatio || 1, n = rx.o.ch.length, cssH = n * RX_ROW + 6;
+  if (cv.style.height !== cssH + "px") cv.style.height = cssH + "px";
+  const W = cv.clientWidth * d, H = cssH * d; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"), rh = RX_ROW * d, lab = 112 * d, bx = 6 * d, bw = W - lab - bx - 34 * d;
+  x.clearRect(0, 0, W, H); x.textBaseline = "middle";
+  rx.o.ch.forEach((c, i) => {
+    const s = rx.st.get(c.id) || {}, y = 3 * d + i * rh, col = rx.color(c.id), sel = c.id === rx.o.sel;
+    if (sel) { x.fillStyle = "rgba(255,79,123,.14)"; x.fillRect(0, y, W, rh); }
+    x.fillStyle = "#151b24"; x.fillRect(bx, y + 4 * d, bw, rh - 8 * d);
+    x.globalAlpha = c.mute ? 0.25 : 0.35; x.fillStyle = col; x.fillRect(bx, y + 4 * d, bw * Math.min(1, s.raw || 0), rh - 8 * d);
+    x.globalAlpha = c.mute ? 0.3 : 1; x.fillRect(bx, y + 7 * d, bw * Math.min(1, rx.get(c.id, "env")), rh - 14 * d);
+    if (c.trig === "level") { x.fillStyle = "#fff"; x.fillRect(bx + bw * c.tlevel / 100 - d, y + 3 * d, 2 * d, rh - 6 * d); }
+    x.globalAlpha = 1;
+    if (c.trig !== "off") { const t = s.trig || 0; x.fillStyle = `rgba(255,255,255,${0.12 + 0.88 * t})`; x.beginPath(); x.arc(bx + bw + 14 * d, y + rh / 2, 6 * d, 0, 7); x.fill(); }
+    x.fillStyle = sel ? "#fff" : "#c7d0dc"; x.font = `${sel ? 600 : 400} ${12 * d}px Heebo`; x.textAlign = "right";
+    x.fillText(c.name + (c.src >= 0 ? ` ·${c.src + 1}` : ""), W - 4 * d, y + rh / 2);
+    x.fillStyle = "#8592a6"; x.font = `${10 * d}px JetBrains Mono`; x.textAlign = "left";
+    x.fillText(`${hzFmt(c.lo)}-${hzFmt(c.hi)}`, bx + 4 * d, y + rh / 2);
+  });
+  drawSpec();
+}
+$("rxMeters").onclick = e => { const r = $("rxMeters").getBoundingClientRect(), i = Math.floor((e.clientY - r.top - 3) / RX_ROW), c = rx.o.ch[i]; if (c) { rx.o.sel = c.id; saveRx(); rcForm(); } };
+// Spectrum of the mix on a log axis (20 Hz - 20 kHz) with every channel's band; dragging sets the selected channel's band.
+const F0 = 20, F1 = 20000, hzAt = (px, W) => F0 * Math.pow(F1 / F0, Math.min(1, Math.max(0, px / W))), xAt = (hz, W) => Math.log(hz / F0) / Math.log(F1 / F0) * W;
+function drawSpec() {
+  const cv = $("rxSpec"), d = devicePixelRatio || 1, W = cv.clientWidth * d, H = cv.clientHeight * d;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"); x.clearRect(0, 0, W, H);
+  rx.o.ch.forEach(c => {
+    const a = xAt(Math.min(c.lo, c.hi), W), b = xAt(Math.max(c.lo, c.hi), W), sel = c.id === rx.o.sel;
+    x.globalAlpha = sel ? 0.32 : 0.1 + 0.25 * rx.get(c.id, "env"); x.fillStyle = rx.color(c.id); x.fillRect(a, 0, Math.max(d, b - a), H);
+    if (sel) { x.globalAlpha = 1; x.fillRect(a, 0, d, H); x.fillRect(b - d, 0, d, H); }
+  });
+  x.globalAlpha = 1;
+  const sp = rx.spectrum();
+  if (sp) {
+    x.strokeStyle = "#e6ebf2"; x.lineWidth = 1.2 * d; x.beginPath();
+    for (let px = 0; px < W; px += 2 * d) { const k = Math.max(1, Math.min(sp.buf.length - 1, Math.round(hzAt(px, W) / sp.hz))), db = sp.buf[k], y = H - (Math.max(-120, db) + 120) / 100 * H; px ? x.lineTo(px, y) : x.moveTo(px, y); }
+    x.stroke();
+  } else { x.fillStyle = "#8592a6"; x.font = `${12 * d}px Heebo`; x.textAlign = "center"; x.fillText("אין קול עדיין: טענו שיר או חברו מיקרופון", W / 2, H / 2); }
+  x.fillStyle = "#8592a6"; x.font = `${9 * d}px JetBrains Mono`; x.textAlign = "center";
+  for (const f of [50, 100, 250, 500, 1000, 2500, 5000, 10000]) x.fillText(hzFmt(f), xAt(f, W), H - 6 * d);
+}
+let specDrag = null;
+const specHz = e => { const r = $("rxSpec").getBoundingClientRect(); return Math.round(hzAt(e.clientX - r.left, r.width)); };
+$("rxSpec").onpointerdown = e => { const c = rxSel(); if (!c) return; specDrag = specHz(e); c.lo = c.hi = specDrag; $("rxSpec").setPointerCapture(e.pointerId); };
+$("rxSpec").onpointermove = e => { const c = rxSel(); if (specDrag == null || !c) return; const h = specHz(e); c.lo = Math.min(specDrag, h); c.hi = Math.max(specDrag, h, c.lo + 5); rcForm(); };
+$("rxSpec").onpointerup = () => { if (specDrag == null) return; specDrag = null; saveRx(); rcForm(); };
+
+// ---------- workspace ----------
+const wsOps = makeOps({
+  rx, music, blends: BLENDS, masks: MASKS,
+  inputs: () => Array.from({ length: Math.max(2, music.inChannels || 2) }, (_, i) => `כניסה ${i + 1}`),
+  channels: () => [...rx.o.ch.map(c => [c.id, c.name]), ...Object.entries(TRANCE)],
+  effects: () => EFFECTS.filter(e => e.id > 0).map(e => [String(e.id), e.ico + " " + e.name]),
+});
+const wsNet = new Network(wsOps);
+let wsSave = 0;
+const wsStored = store.get(K.ws, null);
+if (wsStored) wsNet.load(wsStored); else TEMPLATES.trance.build(wsNet);
+const ws = new Editor($("wsArea"), $("wsParams"), wsNet, () => { clearTimeout(wsSave); wsSave = setTimeout(() => store.set(K.ws, { ...wsNet.save(), on: $("wsOn").checked }), 300); });
+ws.onWarn = toast;
+$("wsOn").checked = wsStored?.on ?? false;
+$("wsOn").onchange = () => ws.changed();
+const WS_ADD = [["audioin", "audio"], ["filter", "audio"], ["analyze", "audio"], ["channel", "audio"], ["trance", "audio"], ["beat", "time"], ["lfo", "time"],
+  ["constant", "signal"], ["math", "signal"], ["lag", "signal"], ["trigger", "signal"], ["count", "signal"], ["logic", "signal"], ["combine", "signal"], ["jumper", "signal"], ["nul", "signal"],
+  ["exporter", "out"], ["layer", "out"]];
+$("wsBar").innerHTML = WS_ADD.map(([t, f]) => `<button data-add="${t}" style="--fam:${WS_FAMS[f].col}" title="${esc(wsOps[t].he)}">${esc(wsOps[t].name)}</button>`).join("")
+  + Object.entries(TEMPLATES).map(([k, t]) => `<button data-tpl="${k}">${esc(t.name)}</button>`).join("") + `<button id="wsFit">⤢ התאם</button><button id="wsClear">🗑 נקה</button>`;
+$("wsBar").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.add) ws.add(b.dataset.add);
+  else if (b.dataset.tpl) { wsNet.load(null); TEMPLATES[b.dataset.tpl].build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); toast("תבנית: " + TEMPLATES[b.dataset.tpl].name); }
+  else if (b.id === "wsFit") ws.fit();
+  else if (b.id === "wsClear") { wsNet.load(null); ws.sel = null; ws.render(); ws.changed(); }
+};
+document.querySelector('[data-tab="ws"]').addEventListener("click", () => setTimeout(() => ws.fit(), 0));
+
 // Cable / sound card input.
 async function listInputs() {
   const list = await music.inputs().catch(() => []), cur = $("inDev").value || music.deviceId;
@@ -2667,7 +3721,7 @@ navigator.mediaDevices?.addEventListener?.("devicechange", listInputs);
 
 // MIDI: notes light rings (engine), CC moves sliders (defaults or learned), programs and drum pads pick effects.
 let learn = false, learnTarget = null, ccMap = store.get(K.cc, {});
-const DEFAULT_CC = { 7: "master", 1: "e_sens", 74: "hue", 11: "e_intensity" };
+const DEFAULT_CC = { 7: "master", 1: "rx_boost", 74: "hue", 11: "e_intensity" };
 const labelOf = id => document.querySelector(`label[for="${id}"]`)?.textContent || id;
 function learnInfo() {
   const e = Object.entries(ccMap);
@@ -2899,7 +3953,7 @@ $("cueBtn").onclick = () => { cuePlay = !cuePlay; $("cueBtn").setAttribute("aria
 $("clearCues").onclick = () => { cues = []; saveCues(); };
 $("autoBtn").onclick = () => toggleAuto();
 function toggleAuto() { auto = !auto; $("autoBtn").setAttribute("aria-pressed", auto); lastCue = -1; toast(auto ? "הבמאי האוטומטי פועל" : "שליטה ידנית"); }
-$("saveShow").onclick = () => download("heart-show.json", JSON.stringify({ version: 1, cfg, points: P, fold, channels: chState, show, cues, track: trackName }, null, 1), "application/json");
+$("saveShow").onclick = () => download("heart-show.json", JSON.stringify({ version: 1, cfg, points: P, fold, channels: chState, show, cues, track: trackName, react: rx.o, workspace: { ...wsNet.save(), on: $("wsOn").checked } }, null, 1), "application/json");
 $("loadShowBtn").onclick = () => $("loadShow").click();
 $("loadShow").onchange = async () => {
   try {
@@ -2910,6 +3964,8 @@ $("loadShow").onchange = async () => {
     if (s.channels) chState = s.channels;
     if (s.show) Object.assign(show, s.show);
     if (Array.isArray(s.cues)) cues = s.cues;
+    if (s.react) { rx.load(s.react); saveRx(); rxAll(); }
+    if (s.workspace) { wsNet.load(s.workspace); $("wsOn").checked = !!s.workspace.on; ws.sel = null; ws.render(); ws.changed(); }
     store.set(K.pts, P); store.set(K.fold, fold); saveShow(); rebuild(); renderPals(); saveCues(); toast("המופע נטען");
   } catch { toast("קובץ מופע לא תקין"); }
 };
@@ -2993,6 +4049,10 @@ addEventListener("keydown", e => {
 let hudT = 0, lastBeatShown = -1;
 function frame(now) {
   const f = music.frame(now);
+  rx.update(now); rx.apply(f);
+  const wsOut = wsNet.cook({ f, nowMs: now, dt: Math.min(0.1, Math.max(0.001, (now - (frame.last ?? now)) / 1000)) || 1 / 60 }); frame.last = now;
+  const wsLive = $("wsOn").checked;
+  if (wsLive) for (const [k, v] of Object.entries(wsOut.feats)) f[k] = v * rx.o.boost / 100;
   director(f);
   if (mix > 0) { mix = Math.min(1, (now - xStart) / 1000 / xDur); if (mix >= 1) { fxA = fxB; mix = 0; } }
   blackLv += ((black ? 0 : 1) - blackLv) * 0.2;
@@ -3003,18 +4063,33 @@ function frame(now) {
   }
   engine.update(f, { palette: PALETTES[show.palette].c });
   gl.setEngine(engine.out);
-  drawEngine(f);
-  gl.render({
-    engMix: show.engmix / 100, fxA, fxB, mix: mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
-    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: f.bass, mid: f.mid, high: f.high, level: f.level, levelS: f.levelS,
-    kick: f.kick * show.intensity / 75, hit: f.hit * show.intensity / 75, spec: f.spec, speed: show.speed / 100, int: show.intensity / 100,
-    master: show.master / 100 * blackLv, outline: show.outline / 100, hue: show.hue / 360, vidMix: show.vidmix / 100, palette: PALETTES[show.palette].c,
-  }, P);
+  drawEngine(f); drawRx();
+  // Show sliders after the sound modulations, then the show itself and the layers over it.
+  const sv = Object.assign(rx.modulate(show), wsLive ? wsOut.params : {}), c01 = v => Math.min(1, Math.max(0, v));
+  const state = (a, fx) => ({
+    engMix: c01(sv.engmix / 100), fxA: fx ?? fxA, fxB: fx ?? fxB, mix: fx == null && mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
+    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
+    kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
+    master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
+  });
+  gl.render(state(f), P);
+  if (curFx() !== 0 && fxA !== 0) for (const l of rx.o.layers) {
+    if (!l.on) continue;
+    const { s, op } = rx.layer(l, f);
+    if (op > 0.003) gl.render(state(s, l.fx), P, { blend: l.blend, op, mask: MASK_ID[l.mask] });
+  }
+  if (wsLive && curFx() !== 0 && fxA !== 0) for (const l of wsOut.layers.slice(0, 4)) {
+    if (l.op <= 0.003) continue;
+    const a = { ...f, kick: l.kick ?? f.kick, hit: l.kick ?? f.hit, level: l.level ?? f.level, bass: l.level ?? f.bass, mid: l.level ?? f.mid, high: l.level ?? f.high };
+    gl.render(state(a, l.fx), P, { blend: l.blend, op: Math.min(1, l.op), mask: MASK_ID[l.mask] });
+  }
+  if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
   drawOv();
   if (now - hudT > 90) {
     hudT = now;
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
     drawTL(f);
+    $("lyBase").textContent = EFFECTS[curFx()].ico + " " + EFFECTS[curFx()].name + (rx.o.layers.some(l => l.on) ? ` · +${rx.o.layers.filter(l => l.on).length} שכבות` : "");
     const el = music.el; $("timeLbl").textContent = el ? `${fmt(el.currentTime)} / ${fmt(el.duration)}` : "0:00 / 0:00";
     if (outWin && outWin.closed) { outWin = null; outState(); }
   }
