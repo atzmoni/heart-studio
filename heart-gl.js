@@ -61,6 +61,13 @@ export const EFFECTS = [
   { id: 49, name: "זרקורים", ico: "🔦", e: 1, g: "3d" },
   { id: 50, name: "גל הלם", ico: "🌊", e: 2, g: "3d" },
   { id: 51, name: "הולוגרמה", ico: "🛸", e: 0, g: "3d" },
+  // Trance: driven by the sound engine's trance reading (sidechain pump, build-up, drop, breakdown) and the 16th-note clock.
+  { id: 52, name: "מניפת לייזרים", ico: "🎇", e: 2, g: "trance" },
+  { id: 53, name: "פאמפ סיידצ'יין", ico: "🫀", e: 1, g: "trance" },
+  { id: 54, name: "בילדאפ ודרופ", ico: "🚀", e: 2, g: "trance" },
+  { id: 55, name: "טראנס גייט", ico: "▦", e: 3, g: "trance" },
+  { id: 56, name: "ארפג'יו", ico: "🎹", e: 1, g: "trance" },
+  { id: 57, name: "היפר-ספייס", ico: "🌌", e: 1, g: "trance" },
 ];
 
 export const PALETTES = {
@@ -92,10 +99,13 @@ uniform float uLev[64];
 uniform float uGW, uEdge, uRim, uGap, uAngle, uSeam, uCleft;
 uniform vec2 uCenter;
 uniform float uTime, uBeat, uBeatN, uBar, uBass, uMid, uHigh, uLevel, uLevelS, uKick, uHit;
+uniform float uPump, uBuild, uDrop, uBreak;   // trance reading: 0 right after a kick -> 1; build-up; drop flash; breakdown
 uniform float uSpec[32];
 uniform float uEngMix;
 uniform float uSpeed, uInt, uMix, uVidMix, uVidOn, uVidAspect, uMaster, uOutline, uHue;
 uniform vec3 uPal[4];
+uniform int uPass, uMask, uLayMode;   // layer passes: 0 is the show itself, 1.. are layers blended over it (see renderLayer)
+uniform float uLayOp;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
 
@@ -716,6 +726,51 @@ vec3 fxEngine(H h) {
   return c * sheen * core;
 }
 
+// ================= trance (52-57) =================
+// A classic trance gate: 16 steps, on/off. The pattern reads from the lowest bit, one step per 16th note.
+float gateAt(int i) { return float((0x6DB5 >> (i & 15)) & 1); }
+float gate16() { float st = clockB() * 4.0; return gateAt(int(mod(floor(st), 16.0))) * (1.0 - smoothstep(0.5, 0.72, fract(st))); }
+vec3 fxTrLaser(H h) {            // a fan of beams from the heart's tip, sweeping over two bars; the cut grooves catch them
+  vec2 q = h.p - vec2(S * 0.5, S * 0.97);
+  float a = atan(q.x, -q.y), sw = sin(clockB() * TAU / 8.0) * 0.45, n = 7.0;
+  float x = (a - sw) * n / 1.7, d = abs(fract(x) - 0.5) * 1.7 / n, w = 0.01 + 0.02 * kk();
+  float beam = exp(-pow(d / w, 2.0)) * (1.0 - smoothstep(0.8, 0.95, abs(a - sw)));
+  float on = mix(1.0, gate16(), clamp(uBuild, 0.0, 1.0));
+  vec3 col = pal(floor(x) / n + floor(clockB() / 4.0) * 0.125);
+  return col * beam * on * (h.groove * 1.7 + h.stripe * 0.3 + h.edge) * (0.55 + 0.9 * kk()) + vec3(1.0) * h.edge * clamp(uDrop, 0.0, 1.0);
+}
+vec3 fxTrPump(H h) {             // the whole heart ducks on every kick and swells back before the next, like a sidechained pad
+  float k = ringIdx(h) / ringN(), p = clamp(uPump, 0.0, 1.0), sw = p * p * (3.0 - 2.0 * p);
+  float wave = 0.5 + 0.5 * sin((k - clockB() * 0.5) * TAU * 2.0);
+  return pal(k * 0.5 + clockB() * 0.03) * (0.12 + 0.88 * sw) * (h.stripe * (0.55 + 0.45 * wave) + h.groove * 1.25) + vec3(1.0) * h.edge * kk();
+}
+vec3 fxTrBuild(H h) {            // build: rings close in from the contour, faster as the build rises; drop: a white shock from the core
+  float k = ringIdx(h) / ringN(), b = clamp(uBuild, 0.0, 1.0), rate = exp2(floor(b * 4.0));
+  float front = 1.0 - fract(clockB() * rate / 4.0), ring = exp(-pow((k - front) * ringN() * 0.45, 2.0));
+  float spark = step(1.0 - 0.18 * b, hash21(floor(h.p * 0.5) + floor(uTime * 20.0)));
+  vec3 c = pal(0.6 + b * 0.4) * ring * (0.25 + 0.95 * b) * (h.groove * 1.5 + h.stripe * 0.5) + vec3(1.0) * spark * b * h.stripe * 0.6;
+  float d = clamp(uDrop, 0.0, 1.0), shock = exp(-pow((k - (1.0 - d)) * 6.0, 2.0)) * d;
+  return c + vec3(1.0) * shock * (h.groove * 2.0 + h.stripe) + vec3(1.0) * pow(d, 6.0) * 0.8 + pal(0.0) * 0.04 * h.stripe;
+}
+vec3 fxTrGate(H h) {             // the trance gate chops the heart in 16ths; neighbouring rings alternate, the halves are offset
+  float st = clockB() * 4.0; int idx = int(mod(floor(st), 16.0));
+  float g = gateAt(idx + (h.side > 0.5 ? 2 : 0)) * (1.0 - smoothstep(0.5, 0.75, fract(st)));
+  float alt = mod(ringIdx(h) + floor(st), 2.0);
+  return pal(float(idx) / 16.0) * g * (h.stripe * (0.35 + 0.65 * alt) + h.groove * 1.4) + vec3(1.0) * h.edge * 0.3 * g;
+}
+vec3 fxTrArp(H h) {              // one ring per 16th note, climbing out and back like an arpeggiator, with a fading tail
+  float n = ringN(), st = clockB() * 4.0, per = max(2.0 * (n - 1.0), 1.0), pos = mod(floor(st), per);
+  float r = pos <= n - 1.0 ? pos : per - pos, d = abs(ringIdx(h) - r);
+  float tail = exp(-d * 0.8) * (1.0 - fract(st) * 0.5);
+  return pal(r / n + floor(st / 16.0) * 0.25) * tail * (h.groove * 1.5 + h.stripe * 0.6) + vec3(1.0) * h.seam * 0.4 * kk();
+}
+vec3 fxTrHyper(H h) {            // hyperspace: rings rush out of the core, faster with the build; streaks race along the grooves
+  float k = ringIdx(h) / ringN(), sp = 0.5 + 2.0 * clamp(uBuild, 0.0, 1.0) + uLevel;
+  float z = fract(k * 3.0 - uTime * sp * uSpeed * 0.5), rv = smoothstep(0.0, 0.1, z) * (1.0 - smoothstep(0.1, 0.5, z));
+  float streak = pow(noise(vec2(h.s * 60.0, uTime * sp * 4.0 - k * 20.0)), 3.0) * 2.0;
+  return mix(pal(0.5), pal(0.0), k) * (rv * (h.groove * 1.4 + h.stripe * 0.6) + streak * h.groove * (0.5 + kk())) + vec3(1.0) * h.edge * kk() * 0.8;
+}
+
 vec3 fx(int id, H h) {
   switch (id) {
     case 0: return fxCalib(h);
@@ -770,6 +825,12 @@ vec3 fx(int id, H h) {
     case 49: return fxSpot(h);
     case 50: return fxShock(h);
     case 51: return fxHolo(h);
+    case 52: return fxTrLaser(h);
+    case 53: return fxTrPump(h);
+    case 54: return fxTrBuild(h);
+    case 55: return fxTrGate(h);
+    case 56: return fxTrArp(h);
+    case 57: return fxTrHyper(h);
   }
   return vec3(0.0);
 }
@@ -797,21 +858,38 @@ vec3 chApply(int id, vec3 c) {
   return c * b.r * 2.0 * (1.0 - step(0.5, b.b));
 }
 
+float layerMask(H h) {
+  if (uMask == 1) return h.groove;
+  if (uMask == 2) return h.stripe;
+  if (uMask == 3) return h.edge;
+  if (uMask == 4) return 1.0 - h.side;
+  if (uMask == 5) return h.side;
+  if (uMask == 6) return 1.0 - smoothstep(0.45, 0.55, h.rad);
+  if (uMask == 7) return smoothstep(0.45, 0.55, h.rad);
+  if (uMask == 8) return h.seam;
+  return 1.0;
+}
+
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   H h = heart(px);
   int dom = 5; float wd = chW(h, 5);
   for (int i = 0; i < 5; i++) { float w = chW(h, i); if (w > wd) { wd = w; dom = i; } }
   bool calib = uFxA == 0 || (uFxB == 0 && uMix > 0.001);            // the test grid always shows the whole heart, untouched
-  int own = calib ? -1 : int(chB(chId(h, dom)).g * 255.0 + 0.5) - 1;  // this channel runs its own effect
+  int own = calib || uPass > 0 ? -1 : int(chB(chId(h, dom)).g * 255.0 + 0.5) - 1;  // this channel runs its own effect
   vec3 c = layer(own >= 0 ? own : uFxA, h);
   if (uMix > 0.001 && own < 0) c = mix(c, layer(uFxB, h), uMix);
   float norm = 0.0; vec3 acc = vec3(0.0);
   if (!calib || uAnySolo == 1) for (int i = 0; i < 6; i++) { float w = chW(h, i); if (w > 0.001) { acc += w * chApply(chId(h, i), c); norm += w; } }
   if (norm > 0.001) c = acc / norm * h.inside + c * (1.0 - h.inside);
-  c += vec3(1.0, 0.95, 0.97) * h.edge * uOutline;
+  if (uPass == 0) c += vec3(1.0, 0.95, 0.97) * h.edge * uOutline;
   c = clamp(c * uMaster, 0.0, 1.0);
-  o = vec4(c, 1.0);
+  if (uPass == 0) { o = vec4(c, 1.0); return; }
+  // A layer: its mask keeps it inside chosen parts of the cut, and opacity goes out as the blend wants it.
+  float a = layerMask(h) * uLayOp;
+  if (uLayMode == 2) o = vec4(mix(vec3(1.0), c, a), 1.0);        // multiply: outside the mask the layer is white
+  else if (uLayMode == 1) o = vec4(c * a, 1.0);                   // screen, max: premultiplied
+  else o = vec4(c, a);                                            // over, add, subtract: straight alpha
 }`;
 
 export const CH_W = 272;
@@ -928,9 +1006,19 @@ export class HeartGL {
   }
 
   // points: the six calibration points (see halves()), in output pixels.
-  render(s, points) {
+  render(s, points, pass = null) {
     const gl = this.gl, L = this.loc, c = this.canvas, m = this.model;
     if (!m) return;
+    gl.uniform1i(L.uPass, pass ? 1 : 0);
+    if (pass) {
+      gl.uniform1i(L.uMask, pass.mask || 0); gl.uniform1f(L.uLayOp, pass.op);
+      gl.uniform1i(L.uLayMode, { multiply: 2, screen: 1, lighten: 1 }[pass.blend] ?? 0);
+      gl.enable(gl.BLEND);
+      gl.blendEquation({ lighten: gl.MAX, subtract: gl.FUNC_REVERSE_SUBTRACT }[pass.blend] ?? gl.FUNC_ADD);
+      const F = { over: [gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA], add: [gl.SRC_ALPHA, gl.ONE], subtract: [gl.SRC_ALPHA, gl.ONE],
+        screen: [gl.ONE, gl.ONE_MINUS_SRC_COLOR], lighten: [gl.ONE, gl.ONE], multiply: [gl.DST_COLOR, gl.ZERO] }[pass.blend] || [gl.ONE, gl.ONE_MINUS_SRC_COLOR];
+      gl.blendFunc(F[0], F[1]);
+    } else gl.disable(gl.BLEND);
     gl.viewport(0, 0, c.width, c.height);
     const { L: pl, R: pr } = halves(points), col = H => [H[0], H[3], H[6], H[1], H[4], H[7], H[2], H[5], H[8]];
     gl.uniformMatrix3fv(L.uInvHL, false, col(homography(pl, BOX_L)));
@@ -944,13 +1032,13 @@ export class HeartGL {
     gl.uniform1f(L.uSeam, cfg.seam || 0); gl.uniform1f(L.uCleft, m.poly[0][1]);
     gl.uniform1f(L.uAngle, cfg.angle); gl.uniform2f(L.uCenter, cfg.cx, cfg.cy);
     gl.uniform1i(L.uFxA, s.fxA); gl.uniform1i(L.uFxB, s.fxB); gl.uniform1f(L.uMix, s.mix);
-    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
+    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
       gl.uniform1f(L["u" + k], s[k[0].toLowerCase() + k.slice(1)] ?? 0);
     gl.uniform1fv(L.uSpec, s.spec);
     gl.uniform3fv(L.uPal, (s.palette || PALETTES.love.c).flatMap(hex));
     const v = this.videoEl, vidOn = v && v.readyState >= 2 && v.videoWidth > 0;
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
-    if (vidOn) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch {} }
+    if (vidOn && !pass) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch {} }
     gl.uniform1f(L.uVidOn, vidOn ? 1 : 0); gl.uniform1f(L.uVidAspect, vidOn ? v.videoWidth / v.videoHeight : 1);
     if (this.chDirty) {
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);
