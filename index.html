@@ -290,7 +290,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
         <section>
           <h3>המבנה · 240×240 ס״מ</h3>
           <div class="grid2">
-            <label>צורת הלב<select id="g_shape"></select></label>
+            <label>צורה / אלמנט<select id="g_shape"></select></label>
             <label>דפוס התעלות<select id="g_pattern"></select></label>
             <label>מספר תעלות<input type="number" id="g_count" min="1" max="64" step="1"></label>
             <label>רוחב תעלה (ס״מ)<input type="number" id="g_width" min="0.3" max="10" step="0.1"></label>
@@ -303,6 +303,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
             <label>תפר מרכזי (ס״מ)<input type="number" id="g_seam" min="0" max="10" step="0.1"></label>
             <label>שוליים (ס״מ)<input type="number" id="g_rim" min="0" max="40" step="0.5"></label>
             <label>תעלת הפרדה (ס״מ)<input type="number" id="g_gap" min="0" max="10" step="0.1"></label>
+            <label data-multi>מרווח בין חלקים (ס״מ)<input type="number" id="g_joint" min="0.5" max="12" step="0.5"></label>
           </div>
           <p class="help" id="geoInfo"></p>
           <div class="row">
@@ -357,6 +358,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 
 <script type="module">
 import * as G from "./heart-geo.js?v=1";
+import { ELEMENTS, ELEMENT_BASE, partsOf } from "./heart-elements.js?v=1";
 import { HeartGL, EFFECTS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
@@ -383,7 +385,9 @@ const shapes = {};
 let model;
 function rebuild(keepLevels = true) {
   if (!keepLevels) cfg.levels = null;
-  const sc = shapes[cfg.shape] ||= (() => { const poly = G.outline(cfg.shape); return { poly, field: G.distanceField(poly) }; })();
+  // A heart shape is one outline; an element (heart-elements.js) is several parts, its field cut by the joints between them.
+  const multi = !!ELEMENTS[cfg.shape], key = multi ? cfg.shape + "|" + cfg.joint : cfg.shape;
+  const sc = shapes[key] ||= (() => { const parts = partsOf(cfg.shape); return { poly: parts[0].loops[0], field: G.distanceField(multi ? parts : parts[0].loops[0], multi ? cfg.joint : 0) }; })();
   model = G.rebuild(cfg, sc.poly, sc.field);
   gl.setModel(model);
   engine.setRings(model.levels.length);
@@ -424,7 +428,7 @@ const curFx = () => (mix > 0 ? fxB : fxA);
 
 // ---------- pads ----------
 const KEYS = "1234567890";
-const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["3d", "תלת-ממד · מוארים לפי החיתוך"]];
+const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["3d", "תלת-ממד · מוארים לפי החיתוך"], ["parts", "פסל אור-קול נושם · כל חלק קול משלו"]];
 function renderPads() {
   const c = curFx();
   $("pads").innerHTML = FX_GROUPS.map(([g, title]) => `<h4 class="padh">${title}</h4>` + EFFECTS.map((e, i) => (e.g || "base") !== g ? "" :
@@ -479,6 +483,7 @@ function renderChannels() {
   const n = model.levels.length, rows = [];
   const row = (label, type, k, cls = "") => rows.push(`<tr class="${cls}"><td class="n" data-row="${type}:${k}">${label}</td>${chChip(by[type + k + "_1"])}${chChip(by[type + k + "_0"])}</tr>`);
   row("קונטור", "edge", 0);
+  if (model.multi) list.filter(c => c.type === "part").forEach(c => rows.push(`<tr><td class="n" data-row="part:${c.k}">${c.name}</td><td colspan="2">${chChip(c).replace(/^<td>|<\/td>$/g, "").replace(/<span>[^<]*<\/span>/, "<span>חלק</span>")}</td></tr>`));
   if (cfg.rim > 0) { row("שוליים", "rim", 0); row("תעלת הפרדה", "sep", 0, "g"); }
   for (let k = n; k >= 0; k--) { row(k ? `לב ${k}` : "♥ לב פנימי", "band", k); if (k > 0) row(`תעלה ${k}`, "groove", k - 1, "g"); }
   if (cfg.seam > 0) rows.push(`<tr><td class="n" data-row="seam:0">תפר מרכזי</td><td colspan="2">${chChip(by["seam0_0"]).replace(/^<td>|<\/td>$/g, "")}</td></tr>`);
@@ -494,8 +499,8 @@ $("chRows").onclick = e => {
 };
 const GROUPS = [
   ["הכל", c => true], ["כל התעלות", c => c.type === "groove"], ["כל הלבבות", c => c.type === "band"], ["חצי שמאל", c => c.side === 0 && c.type !== "seam"],
-  ["חצי ימין", c => c.side === 1], ["קונטור", c => c.type === "edge"], ["זוגיים", c => (c.type === "groove" || c.type === "band") && c.k % 2 === 0],
-  ["אי-זוגיים", c => (c.type === "groove" || c.type === "band") && c.k % 2 === 1], ["נקה", null],
+  ["חצי ימין", c => c.side === 1], ["קונטור", c => c.type === "edge"], ["כל החלקים", c => c.type === "part"], ["זוגיים", c => (c.type === "groove" || c.type === "band" || c.type === "part") && c.k % 2 === 0],
+  ["אי-זוגיים", c => (c.type === "groove" || c.type === "band" || c.type === "part") && c.k % 2 === 1], ["נקה", null],
 ];
 $("groups").innerHTML = GROUPS.map(([n], i) => `<button data-g="${i}">${n}</button>`).join("");
 $("groups").onclick = e => { const b = e.target.closest("[data-g]"); if (!b) return; const f = GROUPS[+b.dataset.g][1]; if (!f) { sel.clear(); renderChannels(); return; } select(chList().filter(f).map(c => c.id), false); };
@@ -630,23 +635,30 @@ function drawEngine(f) {
 }
 
 // ---------- geometry form ----------
-$("g_shape").innerHTML = Object.entries(G.SHAPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("g_shape").innerHTML = `<optgroup label="לב">` + Object.entries(G.SHAPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("") + `</optgroup>`
+  + `<optgroup label="אלמנטים מחלקים נפרדים">` + Object.entries(ELEMENTS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join("") + `</optgroup>`;
 $("g_pattern").innerHTML = Object.entries(G.PATTERNS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-const GF = ["shape", "pattern", "count", "width", "inner", "outer", "cx", "cy", "angle", "edge", "seam", "rim", "gap"];
+const GF = ["shape", "pattern", "count", "width", "inner", "outer", "cx", "cy", "angle", "edge", "seam", "rim", "gap", "joint"];
 function syncGeoForm() {
   GF.forEach(k => { const el = $("g_" + k); if (document.activeElement !== el) el.value = cfg[k]; });
-  document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(cfg.pattern));
+  document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(cfg.pattern) || (model.multi && l.querySelector("#g_cx,#g_cy") && cfg.pattern === "scaled"));
+  document.querySelectorAll("[data-multi]").forEach(l => l.hidden = !model.multi);
   $("g_count").disabled = !!cfg.levels?.length;
   const sp = cfg.pattern === "scaled" && model.levels.length > 1 ? ((cfg.outer - cfg.inner) / (model.levels.length - 1) * 118).toFixed(1) : null;
-  $("geoInfo").textContent = `${model.grooves.length} תעלות · ${model.stripes} לבבות/פסים · ${model.grooves.reduce((s, g) => s + g.pieces.length, 0)} קווים נפרדים · היקף ${Math.round(model.perimeter)} ס״מ`
+  $("geoInfo").textContent = (model.multi ? `${model.parts.length} חלקים נפרדים · ` : "") + `${model.grooves.length} תעלות · ${model.stripes} לבבות/פסים · ${model.grooves.reduce((s, g) => s + g.pieces.length, 0)} קווים נפרדים · היקף ${Math.round(model.perimeter)} ס״מ`
     + (sp ? ` · מרווח בצדדים ≈ ${sp} ס״מ` : "") + (cfg.levels?.length ? " · התעלות מתוך סריקה" : "");
 }
 GF.forEach(k => $("g_" + k).onchange = () => {
   const el = $("g_" + k), v = el.type === "number" ? +el.value : el.value;
   if (el.type === "number" && !isFinite(v)) return;
   cfg[k] = v;
+  // Picking an element brings the groove settings that suit its parts; going back to a heart brings the heart's.
+  if (k === "shape" && (ELEMENTS[v] || model?.multi)) {
+    const H = { pattern: G.DEFAULTS.pattern, count: G.DEFAULTS.count, inner: G.DEFAULTS.inner, outer: G.DEFAULTS.outer, width: G.DEFAULTS.width, edge: G.DEFAULTS.edge, seam: G.DEFAULTS.seam, rim: G.DEFAULTS.rim };
+    Object.assign(cfg, ELEMENTS[v] ? { ...ELEMENT_BASE, joint: cfg.joint || ELEMENT_BASE.joint, ...ELEMENTS[v].preset } : H); cfg.levels = null;
+  }
   if (k === "pattern") { cfg.levels = null; if (v === "chevron" && Math.abs(cfg.angle) > 70) cfg.angle = 30; if (v === "parallel" && cfg.angle === 30) cfg.angle = 90; }
-  if (k === "shape" && !shapes[v]) toast("מחשב את שדה המרחקים…");
+  if ((k === "shape" || k === "joint") && !shapes[ELEMENTS[cfg.shape] ? cfg.shape + "|" + cfg.joint : cfg.shape]) toast("מחשב את שדה המרחקים…");
   setTimeout(() => rebuild(k !== "pattern"), 20);
 });
 $("geoReset").onclick = () => { cfg = { ...G.DEFAULTS }; rebuild(false); toast("חזרה למידות האלמנט"); };
