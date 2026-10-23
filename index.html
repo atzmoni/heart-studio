@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heart Mapping Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="theme.css?v=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%E2%9D%A4%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<script src="theme.js?v=1"></script>
+<style>
+/* Projection mapping studio for the 240 x 240 cm grooved heart. The stage on the right is the projector output itself (the same
+   canvas is streamed to the projector window); the panels on the left run the show, the channels, the heart model and the
+   projector calibration. Desktop first, stacks on narrow screens. */
+:root {
+  --bg: #0d1117; --panel: #161c25; --line: #263041; --fg: #e6ebf2; --muted: #8592a6;
+  --accent: #ff4f7b; --bad: #ef6461; --on-accent: #2a0611; --sel: #3a1422;
+  --display: "Heebo", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { --accent: #c2185b; --on-accent: #fff; --sel: #fbe3ec; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--display); }
+main { max-width: 1500px; margin: 0 auto; padding: 12px 16px 28px; display: grid; gap: 12px; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+h1 { margin: 0; font-weight: 800; font-size: 1.35rem; }
+h1 small { font-weight: 400; color: var(--muted); font-size: .85rem; }
+a { color: var(--accent); }
+.studio { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 980px) { .studio { grid-template-columns: 1fr; } }
+.col { display: grid; gap: 12px; min-width: 0; }
+section, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+h3 { margin: 0; font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.stage { position: relative; border-radius: 12px; overflow: hidden; background: #000; width: 100%; touch-action: none; color: #eef2f7; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage:fullscreen { border-radius: 0; background: #000; }
+.stage:fullscreen .hud, .stage:fullscreen .hud2 { display: none; }
+.hud { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+.hud2 { position: absolute; bottom: 8px; inset-inline-end: 8px; display: flex; gap: 6px; }
+.chip { font: 600 .78rem var(--mono); background: rgba(13,17,23,.8); color: #eef2f7; padding: 3px 10px; border-radius: 99px; border: 1px solid #263041; white-space: nowrap; }
+.beat { display: inline-flex; gap: 4px; align-items: center; }
+.beat i { width: 9px; height: 9px; border-radius: 50%; background: #263041; display: inline-block; }
+.beat i.on { background: #ff4f7b; box-shadow: 0 0 8px #ff4f7b; }
+.round { width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 1.05rem; background: rgba(13,17,23,.8); color: #eef2f7; border-color: #263041; }
+button, select, input[type=text], input[type=number] { font: 600 .92rem var(--display); color: var(--fg); background: var(--btn, #1f2734); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+input[type=number] { font-family: var(--mono); width: 6em; direction: ltr; cursor: text; }
+button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--sel); }
+button:disabled { opacity: .45; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sl { display: grid; grid-template-columns: 7.5em 1fr 3.4em; gap: 8px; align-items: center; }
+.sl output { font: .8rem var(--mono); color: var(--muted); text-align: end; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.help { color: var(--muted); font-size: .86rem; margin: 0; }
+.warn { color: var(--warn-text, #f2b84b); font-size: .86rem; margin: 0; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { flex: 1; padding: 8px 6px; }
+.tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--accent); background: var(--sel); }
+.pads { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.pads button { padding: 8px 4px 6px; display: grid; justify-items: center; gap: 1px; font-size: .82rem; position: relative; }
+.pads button span { font-size: 1.3rem; line-height: 1.1; }
+.pads button kbd { position: absolute; top: 3px; inset-inline-end: 5px; font: .66rem var(--mono); color: var(--muted); }
+.pads button.next { border-style: dashed; border-color: var(--accent); }
+.padh { grid-column: 1 / -1; margin: 6px 0 0; font-size: .74rem; font-weight: 600; color: var(--muted); letter-spacing: .06em; }
+.transport { display: grid; gap: 8px; }
+#tl { width: 100%; height: 92px; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
+.time { font: .85rem var(--mono); color: var(--muted); direction: ltr; }
+.pal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pal button { padding: 6px; display: grid; gap: 4px; font-size: .78rem; }
+.pal button b { height: 14px; border-radius: 4px; display: block; }
+.chs { max-height: 430px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--well, #0a0e14); }
+.chs table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.chs th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 600; padding: 4px; z-index: 1; }
+.chs td { padding: 2px 4px; }
+.chs td.n { color: var(--muted); white-space: nowrap; cursor: pointer; }
+.chs tr.g td.n { padding-inline-start: 16px; font-size: .76rem; }
+.ch { width: 100%; padding: 3px 6px; font: 600 .74rem var(--mono); display: flex; gap: 6px; align-items: center; justify-content: space-between; border-radius: 6px; }
+.ch i { width: 12px; height: 12px; border-radius: 3px; background: #333; flex: none; }
+.ch.sel { outline: 2px solid var(--accent); }
+.ch.mute { opacity: .4; text-decoration: line-through; }
+.ch em { font-style: normal; color: var(--muted); font-weight: 400; }
+#plan { width: 100%; background: #05070a; border-radius: 8px; display: block; }
+#plan svg { width: 100%; height: auto; display: block; }
+#engCv { width: 100%; height: 150px; display: block; background: #05070a; border-radius: 8px; }
+#vu { width: 100%; height: 26px; display: block; background: #05070a; border-radius: 6px; }
+.chord { font: 800 1.6rem var(--mono); min-width: 4.5em; text-align: center; padding: 2px 12px; border-radius: 10px; background: #05070a; color: #fff; direction: ltr; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); color: var(--fg); padding: 8px 16px; border-radius: 99px; font-size: .9rem; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
+.toast.on { opacity: 1; }
+details summary { cursor: pointer; font-weight: 600; }
+details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); font-size: .88rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.grid2 label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
+.grid2 select, .grid2 input { width: 100%; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>מיפוי לב <small>· מקרן · 240×240 ס״מ · מוזיקה ווידאו</small></h1>
+    <div class="row">
+      <span class="chip" id="bpmChip">— BPM</span>
+      <span class="chip beat" id="beatDots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </div>
+  </header>
+
+  <div class="studio">
+    <div class="col">
+      <div class="stage" id="stage">
+        <canvas id="out" width="1920" height="1080"></canvas>
+        <canvas id="ov"></canvas>
+        <div class="hud"><span class="chip" id="fxChip"></span><span class="chip" id="hoverChip" hidden></span><span class="chip" id="calChip" hidden>מצב כיול: גררו את 6 הנקודות</span></div>
+        <div class="hud2">
+          <button class="round" id="blackBtn" title="החשכה (B)" aria-label="החשכה" aria-pressed="false">⏻</button>
+          <button class="round" id="outBtn" title="חלון מקרן" aria-label="פתיחת חלון מקרן">📽️</button>
+          <button class="round" id="fsBtn" title="מסך מלא (F)" aria-label="מסך מלא">⛶</button>
+        </div>
+      </div>
+
+      <section class="transport">
+        <div class="row">
+          <button id="playBtn" class="primary" disabled>▶ נגן</button>
+          <label class="row" style="gap:6px"><button id="musicBtn">🎵 טען מוזיקה</button><input type="file" id="musicFile" accept="audio/*,video/*" hidden></label>
+          <button id="micBtn">🎤 מיקרופון</button>
+          <label class="row" style="gap:6px"><button id="videoBtn">🎬 טען וידאו</button><input type="file" id="videoFile" accept="video/*" hidden></label>
+          <button id="tapBtn" title="T">👆 טאפ</button>
+          <span class="time" id="timeLbl">0:00 / 0:00</span>
+        </div>
+        <canvas id="tl" aria-label="ציר זמן: גל הקול, פעימות, דרופים וקיו. לחיצה קופצת לנקודה"></canvas>
+        <div class="row">
+          <span class="help" id="trackInfo">טענו שיר: הוא ינותח מראש (קצב, פעימות, תיבות ודרופים) כך שהאור נופל בדיוק על הביט.</span>
+        </div>
+        <div class="row">
+          <button id="x2Btn" disabled title="הקצב נתפס בחצי מהירות">×2</button>
+          <button id="d2Btn" disabled title="הקצב נתפס בכפול">÷2</button>
+          <button id="halfBtn" disabled title="הזזת הגריד בחצי פעימה">½ פעימה</button>
+          <div class="sl" style="flex:1;min-width:240px"><label for="latency">השהיית מקרן</label><input type="range" id="latency" min="-200" max="300" value="40"><output id="latencyV"></output></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="row" style="justify-content:space-between"><h3>אפקטים</h3><span class="help">מקשים 1-9, 0 · רווח = נגן · B החשכה · T טאפ · A במאי · C כיול</span></div>
+        <div class="pads" id="pads"></div>
+        <div class="sl"><label for="xfade">מעבר</label><input type="range" id="xfade" min="0" max="40" value="6"><output id="xfadeV"></output></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="show">🎛️ הופעה</button>
+        <button role="tab" aria-selected="false" data-tab="eng">🎚️ מנוע</button>
+        <button role="tab" aria-selected="false" data-tab="ch">🧩 ערוצים</button>
+        <button role="tab" aria-selected="false" data-tab="geo">❤️ מבנה הלב</button>
+        <button role="tab" aria-selected="false" data-tab="proj">📽️ מקרן</button>
+      </div>
+
+      <!-- show -->
+      <div class="col" data-panel="show">
+        <section>
+          <h3>במאי אוטומטי</h3>
+          <div class="row">
+            <button id="autoBtn" aria-pressed="false">🤖 הופעה אוטומטית (A)</button>
+            <select id="phrase" aria-label="אורך משפט"><option value="4">כל 4 תיבות</option><option value="8" selected>כל 8 תיבות</option><option value="16">כל 16 תיבות</option></select>
+            <button id="strobeOk" aria-pressed="false">⚡ לאפשר סטרובו</button>
+          </div>
+          <p class="help">עם שיר שנותח: הבמאי בונה תוכנית לכל השיר מראש (מתחלפת בתחילת משפט, מתפוצצת בדרופ, נרגעת בברייק) והיא מוצגת על ציר הזמן. עם מיקרופון הוא מגיב בזמן אמת לעוצמה.</p>
+          <div class="row">
+            <button id="recBtn" aria-pressed="false">⏺ הקלטת קיו</button>
+            <button id="cueBtn" aria-pressed="false">▶ נגן קיו</button>
+            <button id="clearCues">🗑 נקה קיו</button>
+            <button id="saveShow">💾 שמירת מופע</button>
+            <label class="row"><button id="loadShowBtn">📂 טעינת מופע</button><input type="file" id="loadShow" accept=".json,application/json" hidden></label>
+          </div>
+          <p class="help" id="cueInfo"></p>
+        </section>
+        <section>
+          <h3>צבעים</h3>
+          <div class="pal" id="pals"></div>
+        </section>
+        <section>
+          <h3>שליטה</h3>
+          <div class="sl"><label for="speed">מהירות</label><input type="range" id="speed" min="10" max="300" value="100"><output id="speedV"></output></div>
+          <div class="sl"><label for="intensity">עוצמת תגובה</label><input type="range" id="intensity" min="0" max="100" value="75"><output id="intensityV"></output></div>
+          <div class="sl"><label for="hue">גוון</label><input type="range" id="hue" min="0" max="360" value="0"><output id="hueV"></output></div>
+          <div class="sl"><label for="master">בהירות</label><input type="range" id="master" min="0" max="100" value="100"><output id="masterV"></output></div>
+          <div class="sl"><label for="outline">קונטור לבן</label><input type="range" id="outline" min="0" max="100" value="0"><output id="outlineV"></output></div>
+          <div class="sl"><label for="vidmix">וידאו על הלב</label><input type="range" id="vidmix" min="0" max="100" value="0"><output id="vidmixV"></output></div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="vidSync" checked> וידאו מסונכרן לזמן המוזיקה</label>
+            <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
+          </div>
+        </section>
+      </div>
+
+      <!-- ring engine -->
+      <div class="col" data-panel="eng" hidden>
+        <section>
+          <h3>מנוע הטבעות · מהלב הפנימי החוצה: לב, תעלה, לב, תעלה…</h3>
+          <canvas id="engCv" aria-label="רמת כל טבעת: החצי השמאלי משמאל, הימני מימין, הלב הפנימי באמצע"></canvas>
+          <div class="row"><span class="chord" id="chordChip">—</span><span class="help" id="engInfo"></span></div>
+          <div class="row">
+            <button id="engOn" class="primary">🎹 הפעל את המנוע כאפקט</button>
+            <div class="sl" style="flex:1;min-width:220px"><label for="engmix">מעל כל אפקט</label><input type="range" id="engmix" min="0" max="100" value="0"><output id="engmixV"></output></div>
+          </div>
+          <div class="grid2">
+            <label>מצב<select id="e_mode"></select></label>
+            <label>החצאים<select id="e_halves"></select></label>
+            <label>צבע<select id="e_color"></select></label>
+            <label>כיוון<select id="e_dir"><option value="in">נמוך במרכז, גבוה בחוץ</option><option value="out">גבוה במרכז, נמוך בחוץ</option></select></label>
+            <label data-e="notes chords midi notesMidi">התו של הלב הפנימי<select id="e_base"></select></label>
+            <label data-e="spectrum">תדר נמוך (Hz)<input type="number" id="e_fMin" min="20" max="500" step="1"></label>
+            <label data-e="spectrum">תדר גבוה (Hz)<input type="number" id="e_fMax" min="1000" max="20000" step="100"></label>
+          </div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="e_contour"> קונטור = עוצמה כללית</label>
+            <label class="row help"><input type="checkbox" id="e_seam"> תפר = ביט</label>
+          </div>
+        </section>
+        <section>
+          <h3>רגישות למוזיקה</h3>
+          <div class="sl"><label for="e_gain">הגברת כניסה</label><input type="range" id="e_gain" min="-24" max="24" value="0"><output id="e_gainV"></output></div>
+          <div class="sl"><label for="e_sens">רגישות</label><input type="range" id="e_sens" min="0" max="100" value="60"><output id="e_sensV"></output></div>
+          <div class="sl"><label for="e_gate">סף רעש</label><input type="range" id="e_gate" min="-110" max="-30" value="-70"><output id="e_gateV"></output></div>
+          <div class="sl"><label for="e_attack">תגובה (Attack)</label><input type="range" id="e_attack" min="0" max="100" value="70"><output id="e_attackV"></output></div>
+          <div class="sl"><label for="e_release">דעיכה (Release)</label><input type="range" id="e_release" min="0" max="100" value="35"><output id="e_releaseV"></output></div>
+          <div class="sl"><label for="e_contrast">ניגודיות</label><input type="range" id="e_contrast" min="50" max="300" value="140"><output id="e_contrastV"></output></div>
+          <div class="sl"><label for="e_intensity">עוצמת המנוע</label><input type="range" id="e_intensity" min="0" max="150" value="100"><output id="e_intensityV"></output></div>
+        </section>
+        <section>
+          <h3>כניסת קול · כבל וערוצים</h3>
+          <div class="row">
+            <select id="inDev" aria-label="כניסת קול"><option value="">כניסת ברירת המחדל</option></select>
+            <button id="inConnect">🔌 חבר כניסה</button>
+            <span class="chip" id="inState" style="color:var(--muted)">לא מחובר</span>
+          </div>
+          <div class="grid2">
+            <label>ערוץ לחצי השמאלי<select id="e_routeL"></select></label>
+            <label>ערוץ לחצי הימני<select id="e_routeR"></select></label>
+          </div>
+          <canvas id="vu" aria-label="עוצמת הכניסה"></canvas>
+          <p class="help">כבל מיציאת ה-Booth / Rec של המיקסר לכניסת הקו של כרטיס הקול. בכרטיס רב-ערוצי בוחרים איזה ערוץ מזין כל חצי; עם "סטריאו: ערוץ לכל חצי" החצי השמאלי מנגן את הערוץ השמאלי והימני את הימני.</p>
+        </section>
+        <section>
+          <h3>MIDI</h3>
+          <div class="row">
+            <button id="midiOn">🎛️ חבר MIDI</button>
+            <select id="midiIn" aria-label="כניסת MIDI"><option value="all">כל הכניסות</option></select>
+            <span class="chip" id="midiState" style="color:var(--muted)">כבוי</span>
+          </div>
+          <div class="grid2">
+            <label>ערוצי MIDI<select id="e_midiSplit"><option value="mirror">כל הערוצים בשני החצאים</option><option value="split">ערוץ 1 = שמאל · ערוץ 2 = ימין</option></select></label>
+            <label class="row help" style="align-self:end"><input type="checkbox" id="e_drums"> ערוץ 10 (פדים) מחליף אפקטים</label>
+          </div>
+          <div class="row"><button id="learnBtn" aria-pressed="false">🎓 MIDI Learn</button><button id="learnClear">נקה מיפויים</button></div>
+          <p class="help" id="learnInfo"></p>
+          <p class="help">תו MIDI מדליק את הטבעת שלו (כמו במצב תווים), עוצמת הלחיצה = בהירות, פדל (CC64) מחזיק. בלי מיפוי: CC7 בהירות, CC1 רגישות, CC74 גוון, Program Change בוחר אפקט. MIDI Clock מתוכנת הדיג'יי מסנכרן את הביט במדויק. ב-Learn: מזיזים סליידר כאן ואז כפתור בבקר.</p>
+        </section>
+      </div>
+
+      <!-- channels -->
+      <div class="col" data-panel="ch" hidden>
+        <section>
+          <h3>ערוצים · כל תעלה וכל לב בין התעלות, בכל חצי</h3>
+          <div class="row" id="groups"></div>
+          <div class="chs"><table><thead><tr><th>חלק</th><th>ימין</th><th>שמאל</th></tr></thead><tbody id="chRows"></tbody></table></div>
+          <p class="help">לחיצה בוחרת ערוץ, Ctrl/⌘ מוסיף לבחירה, לחיצה על השם בוחרת את שני החצאים. אפשר גם ללחוץ על הלב בתצוגה.</p>
+        </section>
+        <section>
+          <h3 id="selTitle">הערוצים שנבחרו</h3>
+          <div class="row">
+            <button id="identBtn" aria-pressed="false">🔍 זיהוי על האלמנט</button>
+            <button id="muteBtn">🔇 השתק</button>
+            <button id="unmuteBtn">🔊 בטל השתקה</button>
+            <button id="chReset">↺ איפוס</button>
+          </div>
+          <div class="grid2">
+            <label>אפקט משלו<select id="chFx"></select></label>
+            <label>צבע משלו<span class="row" style="gap:6px"><input type="color" id="chColor" value="#ff2d6f"><button id="chColorOff">ללא</button></span></label>
+          </div>
+          <div class="sl"><label for="chTint">כמות צבע</label><input type="range" id="chTint" min="0" max="100" value="100"><output id="chTintV"></output></div>
+          <div class="sl"><label for="chGain">עוצמה</label><input type="range" id="chGain" min="0" max="200" value="100"><output id="chGainV"></output></div>
+          <p class="help">"זיהוי" מדליק בלבן רק את הערוצים שנבחרו - כך בודקים על הלב האמיתי שכל תעלה וכל פס יושבים בדיוק במקום.</p>
+        </section>
+      </div>
+
+      <!-- geometry -->
+      <div class="col" data-panel="geo" hidden>
+        <section>
+          <h3>המבנה · 240×240 ס״מ</h3>
+          <div class="grid2">
+            <label>צורת הלב<select id="g_shape"></select></label>
+            <label>דפוס התעלות<select id="g_pattern"></select></label>
+            <label>מספר תעלות<input type="number" id="g_count" min="1" max="64" step="1"></label>
+            <label>רוחב תעלה (ס״מ)<input type="number" id="g_width" min="0.3" max="10" step="0.1"></label>
+            <label data-for="scaled">הלב הפנימי (יחס)<input type="number" id="g_inner" min="0.02" max="0.9" step="0.005"></label>
+            <label data-for="scaled">הטבעת החיצונית (יחס)<input type="number" id="g_outer" min="0.3" max="0.999" step="0.005"></label>
+            <label data-for="scaled radial">מרכז X (ס״מ)<input type="number" id="g_cx" min="0" max="240" step="0.5"></label>
+            <label data-for="scaled radial">מרכז Y (ס״מ)<input type="number" id="g_cy" min="0" max="240" step="0.5"></label>
+            <label data-for="parallel chevron">זווית (°)<input type="number" id="g_angle" min="-90" max="180" step="1"></label>
+            <label>קו קונטור (ס״מ)<input type="number" id="g_edge" min="0" max="10" step="0.1"></label>
+            <label>תפר מרכזי (ס״מ)<input type="number" id="g_seam" min="0" max="10" step="0.1"></label>
+            <label>שוליים (ס״מ)<input type="number" id="g_rim" min="0" max="40" step="0.5"></label>
+            <label>תעלת הפרדה (ס״מ)<input type="number" id="g_gap" min="0" max="10" step="0.1"></label>
+          </div>
+          <p class="help" id="geoInfo"></p>
+          <div class="row">
+            <button id="svgBtn">⬇ שרטוט SVG (קווים מופרדים)</button>
+            <button id="jsonBtn">⬇ JSON (נקודות בס״מ)</button>
+            <button id="geoReset">↺ ברירת מחדל של האלמנט</button>
+          </div>
+          <div id="plan" aria-label="שרטוט הלב: קונטור, תפר ותעלות ממוספרות"></div>
+        </section>
+      </div>
+
+      <!-- projector -->
+      <div class="col" data-panel="proj" hidden>
+        <section>
+          <h3>יציאה למקרן</h3>
+          <div class="row">
+            <select id="res" aria-label="רזולוציית מקרן">
+              <option value="1920x1080">1920×1080 (Full HD)</option><option value="1280x720">1280×720</option><option value="1280x800">1280×800 (WXGA)</option>
+              <option value="1920x1200">1920×1200 (WUXGA)</option><option value="1024x768">1024×768 (XGA)</option><option value="3840x2160">3840×2160 (4K)</option>
+            </select>
+            <button id="outBtn2" class="primary">📽️ פתח חלון מקרן</button>
+            <span class="chip" id="outState" style="color:var(--muted)">סגור</span>
+          </div>
+          <p class="help">החלון נפתח, גוררים אותו למסך של המקרן ולוחצים עליו פעמיים למסך מלא. חלון הבקרה צריך להישאר פתוח וגלוי (לא ממוזער).</p>
+        </section>
+        <section>
+          <h3>כיול על האלמנט</h3>
+          <div class="row">
+            <button id="calBtn" aria-pressed="false">📐 מצב כיול (C)</button>
+            <button id="foldBtn" aria-pressed="true">📖 כל חצי בנפרד (קיפול)</button>
+            <button id="calReset">↺ איפוס</button>
+          </div>
+          <p class="help">במצב כיול מוקרנת רשת של 10 ס״מ עם הקונטור, התפר והתעלות. גררו את הנקודות על התצוגה עד שהקווים יושבים על החריצים האמיתיים. נקודה נבחרת זזה בחצים (Shift = 10 פיקסלים). "כל חצי בנפרד" מתאים ללב שהחצאים שלו פתוחים בזווית כמו ספר.</p>
+          <p class="help" id="ptsInfo" style="font-family:var(--mono);direction:ltr;text-align:start"></p>
+        </section>
+        <details class="panel">
+          <summary>איך זה עובד</summary>
+          <ul>
+            <li><b>המודל:</b> קו המתאר נמדד מהתמונות (שקע עליון 14% מהגובה, הרוחב המרבי ב-27%). התעלות הן עותקים מוקטנים של הקונטור שמתכנסים ללב הקטן במרכז, והלב בנוי משני חצאים עם תפר באמצע.</li>
+            <li><b>חדות:</b> כל פיקסל של המקרן מחושב בחזרה לס״מ על הלב, כך שהקווים חדים בכל רזולוציה ואין זליגת אור מחוץ לקונטור.</li>
+            <li><b>סנכרון:</b> השיר מנותח לפני הניגון (טמפו, גריד פעימות שעוקב אחרי שינויי קצב, תיבות, דרופים). "השהיית מקרן" מקדימה את האור כדי לפצות על עיכוב המקרן.</li>
+            <li><b>ערוצים:</b> כל תעלה וכל לב שבין התעלות, בכל חצי, הוא ערוץ נפרד עם אפקט, צבע ועוצמה משלו.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<video id="vid" playsinline muted loop hidden></video>
+<audio id="aud" preload="auto" hidden></audio>
+
+<script type="module">
+import * as G from "./heart-geo.js?v=1";
+import { HeartGL, EFFECTS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
+import { Music, regrid } from "./heart-audio.js?v=1";
+import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
+
+const $ = id => document.getElementById(id);
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold" };
+const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
+let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- renderer ----------
+const out = $("out"), ov = $("ov"), stage = $("stage");
+let gl;
+try { gl = new HeartGL(out); } catch (e) { stage.insertAdjacentHTML("beforeend", `<p class="warn" style="position:absolute;inset:auto 12px 12px">${e.message}</p>`); throw e; }
+const vid = $("vid"), aud = $("aud");
+gl.setVideo(vid);
+const music = new Music();
+const engine = new Engine(music);
+
+// ---------- heart model ----------
+let cfg = { ...G.DEFAULTS, ...store.get(K.cfg, {}) };
+const shapes = {};
+let model;
+function rebuild(keepLevels = true) {
+  if (!keepLevels) cfg.levels = null;
+  const sc = shapes[cfg.shape] ||= (() => { const poly = G.outline(cfg.shape); return { poly, field: G.distanceField(poly) }; })();
+  model = G.rebuild(cfg, sc.poly, sc.field);
+  gl.setModel(model);
+  engine.setRings(model.levels.length);
+  store.set(K.cfg, cfg);
+  renderPlan(); renderChannels(); syncGeoForm();
+}
+
+// ---------- projector points ----------
+const res = () => $("res").value.split("x").map(Number);
+let fold = store.get(K.fold, true);
+let P = store.get(K.pts, null);
+function setRes(v, keep = true) {
+  const [w, h] = v.split("x").map(Number), ow = out.width, oh = out.height;
+  if (P && keep && (ow !== w || oh !== h)) P = P.map(([x, y]) => [x * w / ow, y * h / oh]);
+  out.width = w; out.height = h; stage.style.aspectRatio = w + " / " + h;
+  if (!P) P = defaultPoints(w, h);
+  store.set(K.show, { ...store.get(K.show, {}), res: v }); store.set(K.pts, P);
+}
+const savedRes = store.get(K.show, {}).res;
+if (savedRes) $("res").value = savedRes;
+setRes($("res").value, false);
+$("res").onchange = () => setRes($("res").value);
+function flatten() { if (!fold) P = flatPoints([P[0], P[2], P[3], P[5]]); }
+
+// ---------- show state ----------
+const show = Object.assign({ engmix: 0, palette: "love", speed: 100, intensity: 75, hue: 0, master: 100, outline: 0, vidmix: 0, xfade: 6, latency: 40, phrase: "8", strobe: false }, store.get(K.show, {}));
+let fxA = 1, fxB = 1, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
+function setFx(id, from = "user") {
+  if (id === fxB && mix === 0 && id === fxA) return;
+  if (mix > 0) fxA = fxB;
+  fxB = id; xStart = performance.now(); xDur = Math.max(0.001, show.xfade / 10);
+  if (fxB === fxA) { mix = 0; }
+  else mix = 0.0001;
+  if (from === "user" && recording && music.el && !music.el.paused) addCue(music.time(performance.now() / 1000), id);
+  renderPads();
+}
+const curFx = () => (mix > 0 ? fxB : fxA);
+
+// ---------- pads ----------
+const KEYS = "1234567890";
+const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["3d", "תלת-ממד · מוארים לפי החיתוך"]];
+function renderPads() {
+  const c = curFx();
+  $("pads").innerHTML = FX_GROUPS.map(([g, title]) => `<h4 class="padh">${title}</h4>` + EFFECTS.map((e, i) => (e.g || "base") !== g ? "" :
+    `<button data-fx="${e.id}" aria-pressed="${e.id === c}"><span>${e.ico}</span>${e.name}${i < 10 ? `<kbd>${KEYS[i]}</kbd>` : ""}</button>`).join("")).join("");
+  $("fxChip").textContent = EFFECTS[c].ico + " " + EFFECTS[c].name;
+}
+$("pads").onclick = e => { const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx); };
+renderPads();
+
+// ---------- sliders ----------
+const sliders = { engmix: v => v + "%", speed: v => (v / 100).toFixed(2) + "×", intensity: v => v + "%", hue: v => v + "°", master: v => v + "%", outline: v => v + "%", vidmix: v => v + "%", xfade: v => (v / 10).toFixed(1) + "ש׳", latency: v => v + "ms" };
+for (const [k, f] of Object.entries(sliders)) {
+  const el = $(k); el.value = show[k]; $(k + "V").textContent = f(+el.value);
+  el.oninput = () => { show[k] = +el.value; $(k + "V").textContent = f(show[k]); if (k === "latency") music.offset = show.latency / 1000; saveShow(); };
+}
+music.offset = show.latency / 1000;
+$("phrase").value = show.phrase; $("phrase").onchange = () => { show.phrase = $("phrase").value; saveShow(); planShow(); };
+$("strobeOk").setAttribute("aria-pressed", show.strobe); $("strobeOk").onclick = () => { show.strobe = !show.strobe; $("strobeOk").setAttribute("aria-pressed", show.strobe); saveShow(); planShow(); };
+function saveShow() { store.set(K.show, { ...store.get(K.show, {}), ...show }); }
+function renderPals() {
+  $("pals").innerHTML = Object.entries(PALETTES).map(([k, p]) => `<button data-pal="${k}" aria-pressed="${k === show.palette}"><b style="background:linear-gradient(90deg,${p.c.join(",")})"></b>${p.name}</button>`).join("");
+}
+$("pals").onclick = e => { const b = e.target.closest("[data-pal]"); if (!b) return; show.palette = b.dataset.pal; renderPals(); saveShow(); };
+renderPals();
+
+// ---------- tabs ----------
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
+  if (b.dataset.tab === "geo") renderPlan();
+});
+
+// ---------- channels ----------
+let chState = store.get(K.ch, {});
+let sel = new Set(), ident = false;
+const chList = () => G.channels(model);
+function pushChannels() {
+  const m = {};
+  for (const [id, c] of Object.entries(chState)) m[id] = { ...c };
+  if (ident) for (const id of sel) m[id] = { ...(m[id] || {}), solo: true };
+  gl.setChannels(m); store.set(K.ch, chState);
+}
+function chChip(c) {
+  if (!c) return "<td></td>";
+  const st = chState[c.id] || {}, sw = st.tint ? st.tint : "transparent";
+  const fx = st.fx >= 0 ? EFFECTS[st.fx]?.ico || "" : "";
+  const g = st.gain != null && st.gain !== 1 ? Math.round(st.gain * 100) + "%" : "";
+  return `<td><button class="ch ${sel.has(c.id) ? "sel" : ""} ${st.mute ? "mute" : ""}" data-ch="${c.id}" title="${c.name}"><i style="background:${sw};border:1px solid #445"></i><span>${c.side ? "ימין" : "שמאל"}</span><em>${fx} ${g}</em></button></td>`;
+}
+function renderChannels() {
+  const list = chList(), by = {}; list.forEach(c => by[c.type + c.k + "_" + c.side] = c);
+  const n = model.levels.length, rows = [];
+  const row = (label, type, k, cls = "") => rows.push(`<tr class="${cls}"><td class="n" data-row="${type}:${k}">${label}</td>${chChip(by[type + k + "_1"])}${chChip(by[type + k + "_0"])}</tr>`);
+  row("קונטור", "edge", 0);
+  if (cfg.rim > 0) { row("שוליים", "rim", 0); row("תעלת הפרדה", "sep", 0, "g"); }
+  for (let k = n; k >= 0; k--) { row(k ? `לב ${k}` : "♥ לב פנימי", "band", k); if (k > 0) row(`תעלה ${k}`, "groove", k - 1, "g"); }
+  if (cfg.seam > 0) rows.push(`<tr><td class="n" data-row="seam:0">תפר מרכזי</td><td colspan="2">${chChip(by["seam0_0"]).replace(/^<td>|<\/td>$/g, "")}</td></tr>`);
+  $("chRows").innerHTML = rows.join("");
+  $("selTitle").textContent = sel.size ? `נבחרו ${sel.size} ערוצים` : "לא נבחרו ערוצים";
+  syncChForm(); pushChannels();
+}
+function select(ids, add) { if (!add) sel.clear(); ids.forEach(id => add && sel.has(id) && ids.length === 1 ? sel.delete(id) : sel.add(id)); renderChannels(); }
+$("chRows").onclick = e => {
+  const b = e.target.closest("[data-ch]"); if (b) return select([+b.dataset.ch], e.ctrlKey || e.metaKey || e.shiftKey);
+  const r = e.target.closest("[data-row]"); if (!r) return;
+  const [type, k] = r.dataset.row.split(":"); select(chList().filter(c => c.type === type && c.k === +k).map(c => c.id), e.ctrlKey || e.metaKey || e.shiftKey);
+};
+const GROUPS = [
+  ["הכל", c => true], ["כל התעלות", c => c.type === "groove"], ["כל הלבבות", c => c.type === "band"], ["חצי שמאל", c => c.side === 0 && c.type !== "seam"],
+  ["חצי ימין", c => c.side === 1], ["קונטור", c => c.type === "edge"], ["זוגיים", c => (c.type === "groove" || c.type === "band") && c.k % 2 === 0],
+  ["אי-זוגיים", c => (c.type === "groove" || c.type === "band") && c.k % 2 === 1], ["נקה", null],
+];
+$("groups").innerHTML = GROUPS.map(([n], i) => `<button data-g="${i}">${n}</button>`).join("");
+$("groups").onclick = e => { const b = e.target.closest("[data-g]"); if (!b) return; const f = GROUPS[+b.dataset.g][1]; if (!f) { sel.clear(); renderChannels(); return; } select(chList().filter(f).map(c => c.id), false); };
+$("chFx").innerHTML = `<option value="-1">של ההופעה</option>` + EFFECTS.map(e => `<option value="${e.id}">${e.ico} ${e.name}</option>`).join("");
+function first() { const id = [...sel][0]; return id != null ? chState[id] || {} : {}; }
+function syncChForm() {
+  const f = first();
+  $("chFx").value = f.fx ?? -1; if (f.tint) $("chColor").value = f.tint;
+  $("chTint").value = Math.round((f.tintAmt ?? 1) * 100); $("chTintV").textContent = $("chTint").value + "%";
+  $("chGain").value = Math.round((f.gain ?? 1) * 100); $("chGainV").textContent = $("chGain").value + "%";
+  ["chFx", "chColor", "chTint", "chGain", "muteBtn", "unmuteBtn", "chReset", "chColorOff"].forEach(id => $(id).disabled = !sel.size);
+}
+function edit(fn) { if (!sel.size) return; for (const id of sel) { chState[id] = { ...(chState[id] || {}) }; fn(chState[id]); if (!Object.keys(chState[id]).length) delete chState[id]; } renderChannels(); }
+$("chFx").onchange = () => edit(c => { const v = +$("chFx").value; if (v < 0) delete c.fx; else c.fx = v; });
+$("chColor").oninput = () => edit(c => { c.tint = $("chColor").value; c.tintAmt ??= +$("chTint").value / 100; });
+$("chColorOff").onclick = () => edit(c => { delete c.tint; delete c.tintAmt; });
+$("chTint").oninput = () => { $("chTintV").textContent = $("chTint").value + "%"; edit(c => { c.tintAmt = +$("chTint").value / 100; }); };
+$("chGain").oninput = () => { $("chGainV").textContent = $("chGain").value + "%"; edit(c => { c.gain = +$("chGain").value / 100; if (c.gain === 1) delete c.gain; }); };
+$("muteBtn").onclick = () => edit(c => { c.mute = true; });
+$("unmuteBtn").onclick = () => edit(c => { delete c.mute; });
+$("chReset").onclick = () => edit(c => { for (const k in c) delete c[k]; });
+$("identBtn").onclick = () => { ident = !ident; $("identBtn").setAttribute("aria-pressed", ident); pushChannels(); };
+
+// ---------- ring engine ----------
+const fill = (id, obj) => $(id).innerHTML = Object.entries(obj).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+fill("e_mode", E_MODES); fill("e_halves", HALVES); fill("e_color", COLORS);
+$("e_base").innerHTML = Array.from({ length: 61 }, (_, i) => 24 + i).map(m => `<option value="${m}">${noteName(m)}</option>`).join("");
+const ENG_SL = { gain: v => (v > 0 ? "+" : "") + v + "dB", sens: v => v + "%", gate: v => v + "dB", attack: v => v + "%", release: v => v + "%", contrast: v => (v / 100).toFixed(1), intensity: v => v + "%" };
+const eo = { ...engine.o, ...store.get(K.eng, {}) };
+function routeOpts() {
+  const n = music.inChannels || 2, o = `<option value="-1">מיקס של כל הערוצים</option>` + Array.from({ length: n }, (_, i) => `<option value="${i}">ערוץ ${i + 1}${n === 2 ? (i ? " (ימין)" : " (שמאל)") : ""}</option>`).join("");
+  ["e_routeL", "e_routeR"].forEach(id => { $(id).innerHTML = o; $(id).value = String(eo[id === "e_routeL" ? "routeL" : "routeR"]); if ($(id).selectedIndex < 0) $(id).value = "-1"; });
+}
+function engApply() {
+  const o = { ...eo, contrast: eo.contrast > 10 ? eo.contrast / 100 : eo.contrast };
+  engine.set(o); store.set(K.eng, eo);
+  document.querySelectorAll("[data-e]").forEach(l => l.hidden = !l.dataset.e.split(" ").includes(eo.mode));
+}
+function engForm() {
+  if (eo.contrast <= 10) eo.contrast = Math.round(eo.contrast * 100);
+  ["mode", "halves", "color", "dir", "base", "fMin", "fMax", "midiSplit"].forEach(k => $("e_" + k).value = eo[k]);
+  ["contour", "seam", "drums"].forEach(k => $("e_" + k).checked = !!eo[k]);
+  for (const [k, f] of Object.entries(ENG_SL)) { $("e_" + k).value = eo[k]; $("e_" + k + "V").textContent = f(+eo[k]); }
+  routeOpts();
+}
+["mode", "halves", "color", "dir", "base", "fMin", "fMax", "midiSplit"].forEach(k => $("e_" + k).onchange = () => {
+  const el = $("e_" + k); eo[k] = el.type === "number" || k === "base" ? +el.value : el.value;
+  if (k === "halves" && eo.halves === "stereo" && eo.routeL < 0 && eo.routeR < 0) { eo.routeL = 0; eo.routeR = 1; routeOpts(); }
+  engApply();
+});
+["contour", "seam", "drums"].forEach(k => $("e_" + k).onchange = () => { eo[k] = $("e_" + k).checked; engApply(); });
+for (const [k, f] of Object.entries(ENG_SL)) $("e_" + k).oninput = () => { eo[k] = +$("e_" + k).value; $("e_" + k + "V").textContent = f(eo[k]); engApply(); };
+["e_routeL", "e_routeR"].forEach(id => $(id).onchange = () => { eo[id === "e_routeL" ? "routeL" : "routeR"] = +$(id).value; engApply(); });
+engForm(); engApply();
+window.heartStudio = { engine, music };   // for the console: heartStudio.engine.midiMsg([0x90, 60, 100])
+$("engOn").onclick = () => setFx(21);
+engine.onChord = c => { $("chordChip").textContent = c.name; };
+
+// Cable / sound card input.
+async function listInputs() {
+  const list = await music.inputs().catch(() => []), cur = $("inDev").value || music.deviceId;
+  $("inDev").innerHTML = `<option value="">כניסת ברירת המחדל</option>` + list.map(d => `<option value="${d.id}">${d.name.replace(/</g, "&lt;")}</option>`).join("");
+  $("inDev").value = list.some(d => d.id === cur) ? cur : "";
+}
+$("inConnect").onclick = async () => {
+  try {
+    await music.resume(); await music.useMic($("inDev").value); aud.pause();
+    engApply(); routeOpts(); await listInputs();
+    $("inState").textContent = `מחובר · ${music.inChannels} ערוצים`; $("inState").style.color = "var(--accent)";
+    $("trackInfo").textContent = "כניסה חיה: זיהוי פעימות חי (אפשר לחדד בטאפ או עם MIDI Clock)";
+  } catch (e) { $("inState").textContent = "אין גישה לכניסה"; toast("אין גישה לכניסת הקול: " + e.message); }
+};
+listInputs();
+navigator.mediaDevices?.addEventListener?.("devicechange", listInputs);
+
+// MIDI: notes light rings (engine), CC moves sliders (defaults or learned), programs and drum pads pick effects.
+let learn = false, learnTarget = null, ccMap = store.get(K.cc, {});
+const DEFAULT_CC = { 7: "master", 1: "e_sens", 74: "hue", 11: "e_intensity" };
+const labelOf = id => document.querySelector(`label[for="${id}"]`)?.textContent || id;
+function learnInfo() {
+  const e = Object.entries(ccMap);
+  $("learnInfo").textContent = learn ? (learnTarget ? `עכשיו הזיזו כפתור בבקר עבור "${labelOf(learnTarget)}"` : "הזיזו סליידר בדף כדי לבחור מה לשלוט")
+    : e.length ? "מיפויים: " + e.map(([k, id]) => `ערוץ ${k.split(":")[0]} CC${k.split(":")[1]} → ${labelOf(id)}`).join(" · ") : "";
+}
+document.addEventListener("input", e => { if (learn && e.target.type === "range" && e.target.id) { learnTarget = e.target.id; learnInfo(); } }, true);
+engine.onCC = (ch, cc, v) => {
+  const key = ch + ":" + cc;
+  if (learn && learnTarget) { ccMap[key] = learnTarget; store.set(K.cc, ccMap); toast(`CC${cc} → ${labelOf(learnTarget)}`); learnTarget = null; learnInfo(); return; }
+  const el = $(ccMap[key] || DEFAULT_CC[cc] || ""); if (!el) return;
+  el.value = +el.min + (+el.max - +el.min) * v / 127; el.dispatchEvent(new Event("input"));
+};
+engine.onProgram = (ch, pc) => setFx(EFFECTS[pc % EFFECTS.length].id);
+engine.onDrum = note => { const i = note - 36; if (i >= 0 && i < EFFECTS.length) setFx(EFFECTS[i].id); };
+function midiPorts() {
+  const ports = engine.ports(), cur = $("midiIn").value;
+  $("midiIn").innerHTML = `<option value="all">כל הכניסות</option>` + ports.map(p => `<option value="${p.id}">${p.name.replace(/</g, "&lt;")}</option>`).join("");
+  $("midiIn").value = ports.some(p => p.id === cur) ? cur : "all";
+  $("midiState").textContent = engine.midi ? `${ports.length} כניסות` : "כבוי";
+}
+engine.onPorts = midiPorts;
+$("midiOn").onclick = async () => {
+  try { await engine.enableMidi(); midiPorts(); $("midiState").style.color = "var(--accent)"; if (eo.mode === "spectrum") toast("טיפ: מצב MIDI או תווים + MIDI מדליק טבעת לכל תו"); }
+  catch (e) { toast(e.message || "אין גישה ל-MIDI"); }
+};
+$("midiIn").onchange = () => { engine.midiIn = $("midiIn").value; };
+$("learnBtn").onclick = () => { learn = !learn; learnTarget = null; $("learnBtn").setAttribute("aria-pressed", learn); learnInfo(); };
+$("learnClear").onclick = () => { ccMap = {}; store.set(K.cc, ccMap); learnInfo(); };
+learnInfo();
+
+// Meter: rings of the left half to the left of the centre, right half to the right; grooves drawn thinner.
+function drawEngine(f) {
+  const cv = $("engCv"); if (cv.closest("[data-panel]").hidden) return;
+  const d = devicePixelRatio || 1, W = cv.clientWidth * d, H = cv.clientHeight * d;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"), sn = engine.snapshot({ palette: PALETTES[show.palette].c }), Q = sn.Q, bw = W / 2 / Q;
+  x.clearRect(0, 0, W, H);
+  for (let s = 0; s < 2; s++) for (let q = 0; q < Q; q++) {
+    const v = Math.min(1, sn.lv[s][q]), [r, g, b] = sn.color(s, q, v), groove = q % 2 === 1;
+    const X = s ? W / 2 + q * bw : W / 2 - (q + 1) * bw, w = groove ? bw * 0.5 : bw * 0.9, off = (bw - w) / 2;
+    x.fillStyle = `rgba(${r * 255 | 0},${g * 255 | 0},${b * 255 | 0},${0.25 + 0.75 * v})`;
+    x.fillRect(X + off, H - v * H * 0.92 - 2 * d, w, v * H * 0.92 + 2 * d);
+  }
+  x.fillStyle = "rgba(255,255,255,.5)"; x.fillRect(W / 2 - d / 2, 0, d, H);
+  x.font = `${10 * d}px Heebo`; x.fillStyle = "#8592a6"; x.textBaseline = "top";
+  x.textAlign = "center"; x.fillText("♥ פנימי", W / 2, 2 * d); x.textAlign = "left"; x.fillText("קונטור ←", 2 * d, 2 * d); x.textAlign = "right"; x.fillText("→ קונטור", W - 2 * d, 2 * d);
+  const vu = $("vu"), vw = vu.clientWidth * d, vh = vu.clientHeight * d; if (vu.width !== vw) { vu.width = vw; vu.height = vh; }
+  const y = vu.getContext("2d"); y.clearRect(0, 0, vw, vh);
+  y.fillStyle = f.level > 0.95 ? "#ef6461" : "#35d0ba"; y.fillRect(0, 0, vw * Math.min(1, f.level || 0), vh);
+  y.fillStyle = "rgba(255,255,255,.7)"; y.fillRect(vw * Math.min(1, f.levelS || 0), 0, 2 * d, vh);
+  const held = []; for (let m = 0; m < 128; m++) if (engine.held[0][m] || engine.held[1][m]) held.push(noteName(m));
+  $("engInfo").textContent = [E_MODES[eo.mode], f.clock ? `MIDI Clock ${f.bpm.toFixed(1)} BPM` : "", held.length ? "MIDI: " + held.slice(0, 8).join(" ") : "", engine.lastMsg].filter(Boolean).join(" · ");
+}
+
+// ---------- geometry form ----------
+$("g_shape").innerHTML = Object.entries(G.SHAPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+$("g_pattern").innerHTML = Object.entries(G.PATTERNS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+const GF = ["shape", "pattern", "count", "width", "inner", "outer", "cx", "cy", "angle", "edge", "seam", "rim", "gap"];
+function syncGeoForm() {
+  GF.forEach(k => { const el = $("g_" + k); if (document.activeElement !== el) el.value = cfg[k]; });
+  document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(cfg.pattern));
+  $("g_count").disabled = !!cfg.levels?.length;
+  const sp = cfg.pattern === "scaled" && model.levels.length > 1 ? ((cfg.outer - cfg.inner) / (model.levels.length - 1) * 118).toFixed(1) : null;
+  $("geoInfo").textContent = `${model.grooves.length} תעלות · ${model.stripes} לבבות/פסים · ${model.grooves.reduce((s, g) => s + g.pieces.length, 0)} קווים נפרדים · היקף ${Math.round(model.perimeter)} ס״מ`
+    + (sp ? ` · מרווח בצדדים ≈ ${sp} ס״מ` : "") + (cfg.levels?.length ? " · התעלות מתוך סריקה" : "");
+}
+GF.forEach(k => $("g_" + k).onchange = () => {
+  const el = $("g_" + k), v = el.type === "number" ? +el.value : el.value;
+  if (el.type === "number" && !isFinite(v)) return;
+  cfg[k] = v;
+  if (k === "pattern") { cfg.levels = null; if (v === "chevron" && Math.abs(cfg.angle) > 70) cfg.angle = 30; if (v === "parallel" && cfg.angle === 30) cfg.angle = 90; }
+  if (k === "shape" && !shapes[v]) toast("מחשב את שדה המרחקים…");
+  setTimeout(() => rebuild(k !== "pattern"), 20);
+});
+$("geoReset").onclick = () => { cfg = { ...G.DEFAULTS }; rebuild(false); toast("חזרה למידות האלמנט"); };
+function renderPlan() {
+  if (!model || $("plan").closest("[data-panel]").hidden) return;
+  $("plan").innerHTML = G.toSVG(model, { px: "100%" }).replace(/height="100%"/, "");
+}
+const download = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$("svgBtn").onclick = () => download("heart-240cm-map.svg", G.toSVG(model), "image/svg+xml");
+$("jsonBtn").onclick = () => download("heart-240cm-map.json", JSON.stringify(G.toJSON(model), null, 1), "application/json");
+
+// ---------- projector calibration on the stage ----------
+let cal = false, drag = -1, selPt = -1, hoverCh = null;
+const ovScale = () => ov.width / out.width;
+function sizeOv() { const r = stage.getBoundingClientRect(), d = devicePixelRatio || 1; ov.width = Math.round(r.width * d); ov.height = Math.round(r.height * d); }
+new ResizeObserver(sizeOv).observe(stage); sizeOv();
+const NAMES = ["TL", "TC", "TR", "BR", "BC", "BL"];
+function drawOv() {
+  const x = ov.getContext("2d"); x.clearRect(0, 0, ov.width, ov.height);
+  if (!cal) return;
+  const s = ovScale(), d = devicePixelRatio || 1;
+  x.save(); x.scale(s, s); x.lineWidth = 1.2 * d / s;
+  x.strokeStyle = "rgba(53,208,186,.9)"; x.beginPath(); [0, 1, 2, 3, 4, 5, 0].forEach((i, j) => j ? x.lineTo(...P[i]) : x.moveTo(...P[i])); x.moveTo(...P[1]); x.lineTo(...P[4]); x.stroke();
+  P.forEach((p, i) => {
+    if (!fold && (i === 1 || i === 4)) return;
+    x.fillStyle = i === selPt ? "#ffe600" : "#35d0ba"; x.beginPath(); x.arc(p[0], p[1], 9 * d / s, 0, 7); x.fill();
+    x.fillStyle = "#000"; x.font = `${10 * d / s}px JetBrains Mono`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(NAMES[i], p[0], p[1]);
+  });
+  x.restore();
+}
+function ptsInfo() { $("ptsInfo").textContent = P.map((p, i) => `${NAMES[i]} ${Math.round(p[0])},${Math.round(p[1])}`).join("  "); }
+const stagePt = e => { const r = stage.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * out.width, (e.clientY - r.top) / r.height * out.height]; };
+stage.onpointerdown = e => {
+  if (e.target.closest("button")) return;
+  const [mx, my] = stagePt(e);
+  if (cal) {
+    const tol = 22 / (stage.getBoundingClientRect().width / out.width);
+    drag = P.findIndex((p, i) => (fold || (i !== 1 && i !== 4)) && Math.hypot(p[0] - mx, p[1] - my) < tol);
+    selPt = drag >= 0 ? drag : selPt;
+    if (drag >= 0) stage.setPointerCapture(e.pointerId);
+    return;
+  }
+  const h = toHeart(P, mx, my), c = h && G.channelAt(model, h[0], h[1]);
+  if (c) { select([c.id], e.ctrlKey || e.metaKey || e.shiftKey); toast("נבחר: " + c.name); }
+};
+stage.onpointermove = e => {
+  const [mx, my] = stagePt(e);
+  if (cal && drag >= 0) { P[drag] = [mx, my]; flatten(); store.set(K.pts, P); ptsInfo(); return; }
+  if (!cal) { const h = toHeart(P, mx, my), c = h && G.channelAt(model, h[0], h[1]); $("hoverChip").hidden = !c; if (c) $("hoverChip").textContent = c.name + ` · ${h[0].toFixed(0)},${h[1].toFixed(0)} ס״מ`; }
+};
+stage.onpointerleave = () => { $("hoverChip").hidden = true; };
+stage.onpointerup = () => { drag = -1; };
+let preCalFx = null;
+function setCal(on) {
+  cal = on; $("calBtn").setAttribute("aria-pressed", cal); $("calChip").hidden = !cal;
+  if (cal) { preCalFx = curFx(); setFx(0, "cal"); if (selPt < 0) selPt = 0; } else if (preCalFx != null) setFx(preCalFx, "cal");
+  ptsInfo();
+}
+$("calBtn").onclick = () => setCal(!cal);
+$("foldBtn").setAttribute("aria-pressed", fold);
+$("foldBtn").onclick = () => { fold = !fold; store.set(K.fold, fold); $("foldBtn").setAttribute("aria-pressed", fold); flatten(); store.set(K.pts, P); };
+$("calReset").onclick = () => { P = defaultPoints(out.width, out.height); store.set(K.pts, P); ptsInfo(); };
+ptsInfo();
+
+// ---------- output window ----------
+let outWin = null, outStream = null;
+function openOutput() {
+  outStream ||= out.captureStream(60);
+  outWin = window.open("", "heart-projector", "popup=yes,width=960,height=560");
+  if (!outWin) { toast("הדפדפן חסם את החלון - אשרו חלונות קופצים"); return; }
+  const d = outWin.document;
+  d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Heart · projector</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}video{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><video autoplay muted playsinline></video></body></html>`); d.close();
+  const v = d.querySelector("video"); v.srcObject = outStream; v.play().catch(() => {});
+  v.ondblclick = () => (d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen()).catch(() => {});
+  outWin.onbeforeunload = () => { outWin = null; outState(); };
+  outState();
+}
+function outState() { $("outState").textContent = outWin && !outWin.closed ? "פתוח · לחיצה כפולה למסך מלא" : "סגור"; }
+$("outBtn").onclick = $("outBtn2").onclick = openOutput;
+$("fsBtn").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen().catch(() => {});
+$("blackBtn").onclick = () => { black = !black; $("blackBtn").setAttribute("aria-pressed", black); };
+
+// ---------- music & video ----------
+$("musicBtn").onclick = () => $("musicFile").click();
+$("videoBtn").onclick = () => $("videoFile").click();
+let trackName = "";
+async function loadMusic(file, el) {
+  await music.resume();
+  el.src = URL.createObjectURL(file); el.load();
+  music.attach(el); music.analysis = null; trackName = file.name;
+  $("playBtn").disabled = false; $("trackInfo").textContent = `מנתח את "${file.name}"…`;
+  try {
+    const a = await music.analyse(file, p => { $("trackInfo").textContent = `מנתח את "${file.name}"… ${Math.round(p * 100)}%`; });
+    $("trackInfo").textContent = `"${file.name}" · ${a.bpm.toFixed(1)} BPM · ${a.beats.length} פעימות · ${a.events.filter(e => e.type === "drop").length} דרופים · ${a.events.filter(e => e.type === "break").length} ברייקים`;
+    ["x2Btn", "d2Btn", "halfBtn"].forEach(id => $(id).disabled = false);
+    cues = store.get(K.cues + ":" + file.name, null) || []; planShow();
+  } catch (err) { $("trackInfo").textContent = `"${file.name}" יתנגן עם זיהוי חי (הניתוח המוקדם נכשל: ${err.message})`; }
+}
+$("musicFile").onchange = () => { const f = $("musicFile").files[0]; if (f) loadMusic(f, aud); };
+$("videoFile").onchange = async () => {
+  const f = $("videoFile").files[0]; if (!f) return;
+  vid.src = URL.createObjectURL(f); vid.muted = !$("vidAudio").checked; vid.loop = !$("vidAudio").checked;
+  if ($("vidAudio").checked) { aud.pause(); await loadMusic(f, vid); }
+  else vid.play().catch(() => {});
+  if (show.vidmix === 0 && curFx() !== 18) setFx(18);
+  toast("הווידאו ממופה על הלב");
+};
+$("micBtn").onclick = async () => {
+  try { await music.resume(); await music.useMic($("inDev").value); engApply(); routeOpts(); aud.pause(); $("trackInfo").textContent = "מיקרופון: זיהוי פעימות חי (אפשר לחדד בטאפ)"; $("micBtn").setAttribute("aria-pressed", "true"); }
+  catch { toast("אין גישה למיקרופון"); }
+};
+$("tapBtn").onclick = () => music.tap();
+$("playBtn").onclick = async () => {
+  await music.resume();
+  const el = music.el; if (!el) return;
+  if (el.paused) { await el.play().catch(() => {}); if ($("vidSync").checked && vid.src && el !== vid) vid.play().catch(() => {}); }
+  else { el.pause(); if (el !== vid && $("vidSync").checked) vid.pause(); }
+};
+for (const el of [aud, vid]) { el.onplay = el.onpause = () => { $("playBtn").textContent = music.el && !music.el.paused ? "⏸ השהה" : "▶ נגן"; }; }
+$("x2Btn").onclick = () => { music.analysis = regrid(music.analysis, 2); planShow(); toast(music.analysis.bpm.toFixed(1) + " BPM"); };
+$("d2Btn").onclick = () => { music.analysis = regrid(music.analysis, 0.5); planShow(); toast(music.analysis.bpm.toFixed(1) + " BPM"); };
+$("halfBtn").onclick = () => { const a = music.analysis; a.beats = a.beats.map((t, i) => t + ((a.beats[i + 1] ?? t + 60 / a.bpm) - t) / 2); toast("הגריד זז בחצי פעימה"); };
+
+// ---------- cues & automatic show ----------
+let cues = [], recording = false, cuePlay = false, auto = false, lastCue = -1, plan = [];
+const POOLS = [EFFECTS.filter(e => e.e === 0).map(e => e.id), EFFECTS.filter(e => e.e === 1).map(e => e.id), EFFECTS.filter(e => e.e === 2).map(e => e.id)];
+function rng(seed) { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function pick(pool, avoid, r) { const p = pool.filter(x => x !== avoid); return p[Math.floor(r() * p.length)] ?? pool[0]; }
+// With a beat grid the whole show is planned ahead from the energy curve: a new look every phrase, the big ones on drops.
+function planShow() {
+  plan = [];
+  const a = music.analysis; if (!a) { drawTL(); return; }
+  const r = rng(Math.round(a.bpm * 1000) + a.beats.length), phrase = +show.phrase * 4, pals = Object.keys(PALETTES);
+  let fx = -1, pal = show.palette, nextChange = a.downbeat;
+  const ev = new Map(a.events.map(e => [e.beat, e.type]));
+  for (let i = a.downbeat; i < a.beats.length; i += 4) {
+    const e = mean(a.energy.slice(i, i + 8)), cls = e < 0.42 ? 0 : e < 0.75 ? 1 : 2, kind = ev.get(i);
+    if (kind === "drop") {
+      if (show.strobe) plan.push({ t: a.beats[i], fx: 15, pal });
+      pal = pals[Math.floor(r() * pals.length)]; fx = pick(POOLS[2], fx, r);
+      plan.push({ t: a.beats[i + (show.strobe ? 4 : 0)] ?? a.beats[i], fx, pal }); nextChange = i + phrase + (show.strobe ? 4 : 0);
+    } else if (kind === "break") { fx = pick(POOLS[0], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase; }
+    else if (i >= nextChange) {
+      if (r() < 0.35) pal = pals[Math.floor(r() * pals.length)];
+      fx = pick(POOLS[cls], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase;
+    }
+  }
+  drawTL(); cueInfo();
+}
+const mean = a => a.reduce((s, v) => s + v, 0) / (a.length || 1);
+function addCue(t, fx) { cues = cues.filter(c => Math.abs(c.t - t) > 0.05); cues.push({ t, fx, pal: show.palette }); cues.sort((a, b) => a.t - b.t); saveCues(); }
+function saveCues() { if (trackName) store.set(K.cues + ":" + trackName, cues); cueInfo(); drawTL(); }
+function cueInfo() { $("cueInfo").textContent = (cues.length ? `${cues.length} קיו מוקלטים` : "אין קיו מוקלטים") + (plan.length ? ` · תוכנית אוטומטית: ${plan.length} החלפות` : ""); }
+$("recBtn").onclick = () => { recording = !recording; $("recBtn").setAttribute("aria-pressed", recording); if (recording) { cuePlay = false; $("cueBtn").setAttribute("aria-pressed", false); toast("כל החלפת אפקט בזמן הניגון נשמרת כקיו"); } };
+$("cueBtn").onclick = () => { cuePlay = !cuePlay; $("cueBtn").setAttribute("aria-pressed", cuePlay); lastCue = -1; };
+$("clearCues").onclick = () => { cues = []; saveCues(); };
+$("autoBtn").onclick = () => toggleAuto();
+function toggleAuto() { auto = !auto; $("autoBtn").setAttribute("aria-pressed", auto); lastCue = -1; toast(auto ? "הבמאי האוטומטי פועל" : "שליטה ידנית"); }
+$("saveShow").onclick = () => download("heart-show.json", JSON.stringify({ version: 1, cfg, points: P, fold, channels: chState, show, cues, track: trackName }, null, 1), "application/json");
+$("loadShowBtn").onclick = () => $("loadShow").click();
+$("loadShow").onchange = async () => {
+  try {
+    const s = JSON.parse(await $("loadShow").files[0].text());
+    if (s.cfg) cfg = { ...G.DEFAULTS, ...s.cfg };
+    if (Array.isArray(s.points) && s.points.length === 6) P = s.points;
+    if (typeof s.fold === "boolean") fold = s.fold;
+    if (s.channels) chState = s.channels;
+    if (s.show) Object.assign(show, s.show);
+    if (Array.isArray(s.cues)) cues = s.cues;
+    store.set(K.pts, P); store.set(K.fold, fold); saveShow(); rebuild(); renderPals(); saveCues(); toast("המופע נטען");
+  } catch { toast("קובץ מופע לא תקין"); }
+};
+
+// Live director (microphone, or before a track is analysed): a new look every phrase, picked by the current energy.
+let barCount = 0, lastBarBeat = -1, lastBeatN = null;
+function director(f) {
+  const t = f.t;
+  // Cue list / plan, whichever applies, by music time.
+  const list = cuePlay && cues.length ? cues : auto && plan.length && music.mode === "file" ? plan : null;
+  if (list && music.el && !music.el.paused) {
+    let i = -1; for (let k = 0; k < list.length; k++) if (list[k].t <= t + 0.02) i = k; else break;
+    if (i !== lastCue && i >= 0) { lastCue = i; show.palette = list[i].pal || show.palette; renderPals(); if (!cal) setFx(list[i].fx, "cue"); }
+    return;
+  }
+  if (!auto || cal) return;
+  if (f.beatN !== lastBeatN) {
+    lastBeatN = f.beatN;
+    if (f.barBeat === 0) {
+      barCount++;
+      if (barCount % +show.phrase === 0) {
+        const e = f.energy ?? 0, cls = e < 0.35 ? 0 : e < 0.7 ? 1 : 2, r = Math.random;
+        if (r() < 0.3) { const k = Object.keys(PALETTES); show.palette = k[Math.floor(r() * k.length)]; renderPals(); }
+        setFx(pick(POOLS[cls], curFx(), r), "auto");
+      }
+    }
+  }
+}
+
+// ---------- timeline ----------
+const tl = $("tl");
+function drawTL(f) {
+  const d = devicePixelRatio || 1, W = tl.clientWidth * d, H = tl.clientHeight * d;
+  if (tl.width !== W || tl.height !== H) { tl.width = W; tl.height = H; }
+  const x = tl.getContext("2d"), a = music.analysis, el = music.el;
+  x.clearRect(0, 0, W, H);
+  const dur = a?.duration || el?.duration || 0;
+  if (!dur || !isFinite(dur)) { x.fillStyle = "#8592a6"; x.font = `${12 * d}px Heebo`; x.textAlign = "center"; x.fillText(music.mode === "mic" ? "מיקרופון חי" : "אין שיר טעון", W / 2, H / 2); return; }
+  const top = 16 * d, h = H - top;
+  if (a) {
+    const n = a.peaks.length;
+    x.fillStyle = "rgba(255,79,123,.35)"; x.beginPath(); x.moveTo(0, H);
+    for (let i = 0; i < n; i++) x.lineTo(i / n * W, H - a.loud[i] * h * 0.95); x.lineTo(W, H); x.fill();
+    x.fillStyle = "rgba(230,235,242,.35)";
+    for (let i = 0; i < n; i += 1) { const v = a.peaks[i] * h * 0.48; x.fillRect(i / n * W, top + h / 2 - v, Math.max(1, W / n), v * 2); }
+    const gap = W / (dur / (60 / a.bpm));
+    if (gap > 3 * d) a.beats.forEach((b, i) => { const db = (i - a.downbeat) % 4 === 0; if (!db && gap < 7 * d) return; x.fillStyle = db ? "rgba(255,230,0,.5)" : "rgba(255,255,255,.12)"; x.fillRect(b / dur * W, top, d, h); });
+    a.events.forEach(e => { x.fillStyle = e.type === "drop" ? "#ff3b5c" : "#4aa3ff"; const X = e.t / dur * W; x.beginPath(); x.moveTo(X, top); x.lineTo(X - 5 * d, top + 8 * d); x.lineTo(X + 5 * d, top + 8 * d); x.fill(); });
+  }
+  const list = cuePlay && cues.length ? cues : plan.length ? plan : cues;
+  list.forEach((c, i) => {
+    const X0 = c.t / dur * W, X1 = ((list[i + 1]?.t ?? dur) / dur) * W;
+    x.fillStyle = PALETTES[c.pal]?.c[0] || "#888"; x.globalAlpha = 0.75; x.fillRect(X0, 0, Math.max(1, X1 - X0 - d), top - 3 * d); x.globalAlpha = 1;
+    if (X1 - X0 > 16 * d) { x.font = `${10 * d}px sans-serif`; x.textAlign = "start"; x.textBaseline = "top"; x.fillText(EFFECTS[c.fx]?.ico || "", X0 + 2 * d, 1 * d); }
+  });
+  if (f && el) { const X = (f.t - music.offset) / dur * W; x.fillStyle = "#fff"; x.fillRect(X - d, 0, 2 * d, H); }
+}
+tl.onclick = e => { const el = music.el, dur = music.analysis?.duration || el?.duration; if (!el || !dur) return; const r = tl.getBoundingClientRect(); el.currentTime = (e.clientX - r.left) / r.width * dur; lastCue = -1; };
+addEventListener("resize", () => drawTL());
+
+// ---------- keyboard ----------
+addEventListener("keydown", e => {
+  if (e.target.closest("input,select,textarea")) return;
+  if (cal && selPt >= 0 && e.key.startsWith("Arrow")) {
+    const s = e.shiftKey ? 10 : 1, d = { ArrowLeft: [-s, 0], ArrowRight: [s, 0], ArrowUp: [0, -s], ArrowDown: [0, s] }[e.key];
+    P[selPt] = [P[selPt][0] + d[0], P[selPt][1] + d[1]]; flatten(); store.set(K.pts, P); ptsInfo(); e.preventDefault(); return;
+  }
+  if (cal && e.key === "Tab") { selPt = (selPt + 1) % 6; if (!fold && (selPt === 1 || selPt === 4)) selPt++; e.preventDefault(); return; }
+  const i = KEYS.indexOf(e.key);
+  if (i >= 0 && !e.ctrlKey && !e.metaKey) { setFx(EFFECTS[i].id); return; }
+  const k = e.key.toLowerCase();
+  if (k === " ") { e.preventDefault(); $("playBtn").click(); }
+  else if (k === "b") $("blackBtn").click();
+  else if (k === "f") $("fsBtn").click();
+  else if (k === "t") music.tap();
+  else if (k === "a") toggleAuto();
+  else if (k === "c") setCal(!cal);
+});
+
+// ---------- main loop ----------
+let hudT = 0, lastBeatShown = -1;
+function frame(now) {
+  const f = music.frame(now);
+  director(f);
+  if (mix > 0) { mix = Math.min(1, (now - xStart) / 1000 / xDur); if (mix >= 1) { fxA = fxB; mix = 0; } }
+  blackLv += ((black ? 0 : 1) - blackLv) * 0.2;
+  // Video follows the music clock.
+  if ($("vidSync").checked && vid.src && music.el && music.el !== vid && music.mode === "file" && vid.duration) {
+    const want = (music.el.currentTime % vid.duration);
+    if (Math.abs(vid.currentTime - want) > 0.15 && !vid.seeking) vid.currentTime = want;
+  }
+  engine.update(f, { palette: PALETTES[show.palette].c });
+  gl.setEngine(engine.out);
+  drawEngine(f);
+  gl.render({
+    engMix: show.engmix / 100, fxA, fxB, mix: mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
+    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: f.bass, mid: f.mid, high: f.high, level: f.level, levelS: f.levelS,
+    kick: f.kick * show.intensity / 75, hit: f.hit * show.intensity / 75, spec: f.spec, speed: show.speed / 100, int: show.intensity / 100,
+    master: show.master / 100 * blackLv, outline: show.outline / 100, hue: show.hue / 360, vidMix: show.vidmix / 100, palette: PALETTES[show.palette].c,
+  }, P);
+  drawOv();
+  if (now - hudT > 90) {
+    hudT = now;
+    $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
+    drawTL(f);
+    const el = music.el; $("timeLbl").textContent = el ? `${fmt(el.currentTime)} / ${fmt(el.duration)}` : "0:00 / 0:00";
+    if (outWin && outWin.closed) { outWin = null; outState(); }
+  }
+  if (f.barBeat !== lastBeatShown) { lastBeatShown = f.barBeat; [...$("beatDots").children].forEach((i, k) => i.classList.toggle("on", k === f.barBeat)); }
+  requestAnimationFrame(frame);
+}
+rebuild();
+cueInfo();
+requestAnimationFrame(frame);
+if (reduced) toast("מצב תנועה מופחתת של המערכת פעיל - הסטרובו כבוי כברירת מחדל");
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+/* Light colours. The page keeps its own dark :root; theme.js puts data-theme on <html>, and the light values below win
+   over the page's own (higher specificity). The stage and the meters stay dark on purpose: projector light glows on black. */
+:root {
+  --on-accent: #062a24;   /* text on an accent-coloured button */
+  --btn: #1f2734;         /* plain button */
+  --sel: #12302c;         /* selected row or toggle, tinted with the accent */
+  --well: #0a0e14;        /* text areas, inputs and sunken boxes */
+  --track: #1d2533;       /* empty part of a bar */
+  --warn-text: #f2b84b;
+}
+:root[data-theme="light"] {
+  --bg: #f4f6f9; --panel: #ffffff; --panel2: #eef2f6; --line: #d6dde6;
+  --fg: #17202b; --muted: #5a6677;
+  --accent: #0b7f70; --gold: #a16207; --warn: #a16207; --bad: #c4362f;
+  --good: #15803d; --warm: #b45309; --cold: #1d63c9;
+  --on-accent: #ffffff; --btn: #eef2f6; --sel: #dcf2ee; --well: #f7f9fb; --track: #e2e8f0; --warn-text: #a16207;
+  color-scheme: light;
+}
