@@ -27,7 +27,8 @@ h1 { margin: 0; font-weight: 800; font-size: 1.35rem; }
 h1 small { font-weight: 400; color: var(--muted); font-size: .85rem; }
 a { color: var(--accent); }
 .studio { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr); gap: 12px; align-items: start; }
-@media (max-width: 980px) { .studio { grid-template-columns: 1fr; } }
+.studio.wide { grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.6fr); }   /* the workspace needs room for its network */
+@media (max-width: 980px) { .studio, .studio.wide { grid-template-columns: 1fr; } }
 .col { display: grid; gap: 12px; min-width: 0; }
 section, .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 h3 { margin: 0; font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
@@ -92,6 +93,53 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .grid2 label { display: grid; gap: 2px; font-size: .82rem; color: var(--muted); }
 .grid2 select, .grid2 input { width: 100%; }
+#rxMeters { width: 100%; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
+#rxSpec { width: 100%; height: 130px; display: block; background: #05070a; border-radius: 8px; cursor: crosshair; touch-action: none; }
+.fam { font: 600 .66rem var(--mono); color: #0d1117; padding: 1px 5px; border-radius: 3px; margin-inline-end: 4px; letter-spacing: .04em; }
+.fam.chop { background: #f59f00; } .fam.top { background: #f06595; }
+.exp { display: grid; grid-template-columns: minmax(6.5em, auto) 1fr 1fr minmax(5em, 1.3fr) 3.2em auto; gap: 6px; align-items: center; font-size: .82rem; }
+.exp > b { font-weight: 600; color: var(--muted); }
+.exp select { padding: 5px 6px; font-size: .8rem; min-width: 0; }
+.exp output { font: .78rem var(--mono); color: var(--muted); text-align: end; }
+.exp button { padding: 4px 8px; }
+@media (max-width: 560px) { .exp { grid-template-columns: 1fr 1fr; } .exp > b { grid-column: 1 / -1; } }
+.sl.big { grid-template-columns: 8em 1fr 3.4em; font-size: 1rem; }
+.sl.big input[type=range] { height: 28px; }
+#rxStyles button { flex: 1; min-width: 7em; }
+#rxAdv { padding: 10px 12px; }
+#rxAdv[open] > summary { margin-bottom: 10px; }
+#rxAdv > section { margin-top: 10px; }
+.layer { border: 1px solid var(--line); border-inline-start: 4px solid #f06595; border-radius: 10px; padding: 10px; display: grid; gap: 8px; }
+.layer.off { opacity: .6; }
+.layer header { display: flex; gap: 8px; align-items: center; }
+.layer header b { flex: 1; }
+.wsBar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.wsBar button { padding: 5px 9px; font-size: .8rem; border-inline-start: 3px solid var(--fam, var(--line)); }
+.wsArea { position: relative; height: min(70vh, 640px); overflow: hidden; border-radius: 8px; border: 1px solid var(--line); outline: none; touch-action: none; direction: ltr; cursor: grab;
+  background: #0a0d12 radial-gradient(circle, #1d2430 1px, transparent 1.2px) 0 0 / 22px 22px; }
+.wsArea:focus-visible { border-color: var(--accent); }
+.wsWorld { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.wsWires { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+.wsWires path { fill: none; }
+.wsWires .w { stroke-width: 2; opacity: .85; pointer-events: none; }
+.wsWires .w.aud { stroke-width: 4.5; }
+.wsWires .w.tmp { stroke: #fff; stroke-dasharray: 6 4; }
+.wsWires .hit { stroke: transparent; stroke-width: 12; cursor: pointer; pointer-events: stroke; }
+.wsWires .hit:hover + .w { stroke-width: 4; opacity: 1; }
+.wsNode { position: absolute; background: #1b222d; border: 1px solid #2f3a4b; border-top: 3px solid var(--fam); border-radius: 6px; font: 11px/1.2 var(--mono); color: #d5dce6; box-shadow: 0 4px 12px #0008; user-select: none; -webkit-user-select: none; }
+.wsNode.sel { outline: 2px solid var(--fam); }
+.wsNode.err { border-color: var(--bad); }
+.wsNode header { display: flex; justify-content: space-between; align-items: center; height: 24px; padding: 0 4px 0 8px; font-weight: 600; color: var(--fam); cursor: move; }
+.wsNode header button { padding: 0 6px; border: 0; background: none; color: #8592a6; font-size: 14px; }
+.wsRow { position: relative; height: 19px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+.wsRow > span:first-of-type { color: #aab4c3; }
+.wsOut { display: flex; gap: 5px; align-items: center; margin-inline-start: auto; }
+.wsOut b { font-weight: 400; color: #e6ebf2; min-width: 3.2em; text-align: end; background: linear-gradient(90deg, color-mix(in srgb, var(--fam) 45%, transparent) calc(var(--v, 0) * 100%), transparent 0); border-radius: 2px; padding: 0 2px; }
+.wsPort { position: absolute; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: #0a0d12; border: 2px solid var(--fam); cursor: crosshair; }
+.wsPort.in { left: -6px; border-color: #aab4c3; } .wsPort.out { right: -6px; }
+.wsPort.aud { border-radius: 2px; }
+.wsPort:hover { background: var(--fam); }
+#wsParams { display: grid; gap: 8px; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
@@ -150,6 +198,9 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
     <div class="col">
       <div class="tabs" role="tablist">
         <button role="tab" aria-selected="true" data-tab="show">🎛️ הופעה</button>
+        <button role="tab" aria-selected="false" data-tab="rx">🔊 סאונד</button>
+        <button role="tab" aria-selected="false" data-tab="lay">🧱 שכבות</button>
+        <button role="tab" aria-selected="false" data-tab="ws">🕸️ שולחן עבודה</button>
         <button role="tab" aria-selected="false" data-tab="eng">🎚️ מנוע</button>
         <button role="tab" aria-selected="false" data-tab="ch">🧩 ערוצים</button>
         <button role="tab" aria-selected="false" data-tab="geo">❤️ מבנה הלב</button>
@@ -192,6 +243,91 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
         </section>
+      </div>
+
+      <!-- sound: a TouchDesigner-style audio chain, one band per channel. Simple controls first, the full chain under "advanced". -->
+      <div class="col" data-panel="rx" hidden>
+        <section>
+          <h3><span class="fam chop">CHOP</span>תגובה לסאונד</h3>
+          <div class="row" id="rxStyles"></div>
+          <div class="sl big"><label for="rx_boost">רגישות</label><input type="range" id="rx_boost" min="0" max="300" value="150"><output id="rx_boostV"></output></div>
+          <div class="sl big"><label for="rx_punch">חדות</label><input type="range" id="rx_punch" min="0" max="100" value="50"><output id="rx_punchV"></output></div>
+          <div class="sl big"><label for="rx_speed">מהירות דעיכה</label><input type="range" id="rx_speed" min="0" max="100" value="50"><output id="rx_speedV"></output></div>
+          <div class="sl big"><label for="rx_fKick">קיק ומכות</label><input type="range" id="rx_fKick" min="0" max="300" value="100"><output id="rx_fKickV"></output></div>
+          <div class="sl big"><label for="rx_fBass">בס</label><input type="range" id="rx_fBass" min="0" max="300" value="100"><output id="rx_fBassV"></output></div>
+          <div class="sl big"><label for="rx_fHigh">אמצע וגבוהים</label><input type="range" id="rx_fHigh" min="0" max="300" value="100"><output id="rx_fHighV"></output></div>
+          <canvas id="rxMeters" aria-label="מדי הערוצים: עוצמה גולמית, עוצמה אחרי Attack/Release ופולס של כל ערוץ. לחיצה בוחרת ערוץ"></canvas>
+          <p class="help">רגישות = כמה חזק האור מגיב. חדות = הבדל גדול בין שקט לחזק. מהירות דעיכה = כמה מהר האור נכבה אחרי מכה. לא מגיב? מעלים רגישות. מהבהב כל הזמן? מורידים חדות.</p>
+          <div class="row"><button id="rxOn" aria-pressed="true">🔊 מנוע תגובה חדש</button><button id="rxReset">↺ ברירת מחדל</button></div>
+        </section>
+        <details class="panel" id="rxAdv">
+          <summary>⚙️ מתקדם · ערוצי תדר, Export ומודולציה</summary>
+        <section>
+          <h3>ערוצים · כל ערוץ הוא פס תדרים עם עוצמה ופולס משלו</h3>
+          <div class="row">
+            <button id="rxAdd">➕ ערוץ</button>
+            <button id="rxDel">🗑 מחק ערוץ</button>
+          </div>
+          <canvas id="rxSpec" aria-label="ספקטרום הכניסה עם פסי התדרים של הערוצים. גרירה קובעת את הפס של הערוץ הנבחר"></canvas>
+          <p class="help">לחיצה על ערוץ במדים בוחרת אותו, גרירה על הספקטרום קובעת את פס התדרים שלו. פס עמום = עוצמה גולמית, פס מלא = אחרי Attack/Release, עיגול = פולס.</p>
+          <div class="sl"><label for="rx_input">הגברת כניסה</label><input type="range" id="rx_input" min="-24" max="24" value="0"><output id="rx_inputV"></output></div>
+        </section>
+        <section>
+          <h3>ערוץ נבחר · <span id="rxName"></span></h3>
+          <div class="grid2">
+            <label>שם<input type="text" id="rc_name" maxlength="24"></label>
+            <label>מקור<select id="rc_src"></select></label>
+            <label>תדר נמוך (Hz)<input type="number" id="rc_lo" min="10" max="20000" step="1"></label>
+            <label>תדר גבוה (Hz)<input type="number" id="rc_hi" min="10" max="20000" step="1"></label>
+          </div>
+          <div id="rcLevel"></div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="rc_auto"> כיול אוטומטי לעוצמת השיר</label>
+            <label class="row help"><input type="checkbox" id="rc_inv"> הפוך</label>
+            <label class="row help"><input type="checkbox" id="rc_mute"> השתק</label>
+          </div>
+          <div class="grid2"><label>טריגר (פולס)<select id="rc_trig"></select></label></div>
+          <div id="rcTrig"></div>
+          <div id="rcOut"></div>
+          <p class="help">טווח דינמי קטן = תגובה חדה ודרמטית, גדול = עדינה. כיול אוטומטי עוקב אחרי השיא של הערוץ, כך ששיר שקט ושיר רועש ממלאים את כל הטווח; בלעדיו הטווח מתחיל בסף הרעש.</p>
+        </section>
+        <section>
+          <h3>חיבור לאפקטים · Export</h3>
+          <div class="exp" id="rxExp"></div>
+          <div class="sl"><label for="rx_sgain">ספקטרום · הגברה</label><input type="range" id="rx_sgain" min="0" max="300" value="120"><output id="rx_sgainV"></output></div>
+          <div class="sl"><label for="rx_sfloor">ספקטרום · סף</label><input type="range" id="rx_sfloor" min="0" max="80" value="10"><output id="rx_sfloorV"></output></div>
+          <div class="sl"><label for="rx_scurve">ספקטרום · ניגודיות</label><input type="range" id="rx_scurve" min="30" max="300" value="130"><output id="rx_scurveV"></output></div>
+          <p class="help">כל אפקט קורא קיק, מכה, בס, אמצע, גבוהים ועוצמה. כאן בוחרים איזה ערוץ מזין כל אחד, ובאיזו כמות. "ניתוח מקורי" משאיר את הזיהוי הקודם.</p>
+        </section>
+        <section>
+          <h3>מודולציה · ערוץ מזיז פרמטר</h3>
+          <div class="exp" id="rxMods"></div>
+          <div class="row"><button id="rxModAdd">➕ מודולציה</button></div>
+          <p class="help">כמו Export ב-TouchDesigner: ערוץ מזיז בהירות, גוון, מהירות, קונטור לבן ועוד, מעל הערך של הסליידר. עומק שלילי הופך את הכיוון.</p>
+        </section>
+        </details>
+      </div>
+
+      <!-- layers -->
+      <div class="col" data-panel="lay" hidden>
+        <section>
+          <h3><span class="fam top">TOP</span>שכבות · Layer Mix</h3>
+          <div class="layer"><header><b>שכבה 1 · ההופעה</b><span class="chip" id="lyBase"></span></header>
+            <p class="help">האפקט שנבחר בלשונית הופעה (או בבמאי האוטומטי), עם המעברים שלו. מעליו עד 3 שכבות.</p></div>
+          <div id="layers" class="col"></div>
+          <p class="help">לכל שכבה אפקט, מצב מיזוג, שקיפות, מסכה לפי חלקי החיתוך (תעלות, לבבות, קונטור, חצי) וערוץ סאונד שמניע אותה: האפקט של השכבה מגיב רק לערוץ הזה, והשקיפות נפתחת איתו לפי העומק.</p>
+        </section>
+      </div>
+
+      <!-- workspace: a TouchDesigner-style network of operators and wires -->
+      <div class="col" data-panel="ws" hidden>
+        <section>
+          <h3>שולחן עבודה · אופרטורים וחיבורים</h3>
+          <div class="wsBar" id="wsBar"></div>
+          <div class="wsArea" id="wsArea" tabindex="0" aria-label="רשת האופרטורים. גרירת רקע מזיזה, גלגלת מגדילה, Delete מוחק את האופרטור הנבחר"></div>
+          <div class="row"><label class="row help"><input type="checkbox" id="wsOn" checked> הרשת שולטת בלב</label><span class="help" id="wsInfo"></span></div>
+        </section>
+        <section id="wsParams"></section>
       </div>
 
       <!-- ring engine -->
@@ -255,7 +391,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
           </div>
           <div class="row"><button id="learnBtn" aria-pressed="false">🎓 MIDI Learn</button><button id="learnClear">נקה מיפויים</button></div>
           <p class="help" id="learnInfo"></p>
-          <p class="help">תו MIDI מדליק את הטבעת שלו (כמו במצב תווים), עוצמת הלחיצה = בהירות, פדל (CC64) מחזיק. בלי מיפוי: CC7 בהירות, CC1 רגישות, CC74 גוון, Program Change בוחר אפקט. MIDI Clock מתוכנת הדיג'יי מסנכרן את הביט במדויק. ב-Learn: מזיזים סליידר כאן ואז כפתור בבקר.</p>
+          <p class="help">תו MIDI מדליק את הטבעת שלו (כמו במצב תווים), עוצמת הלחיצה = בהירות, פדל (CC64) מחזיק. בלי מיפוי: CC7 בהירות, CC1 חיזוק התגובה לסאונד, CC74 גוון, Program Change בוחר אפקט. MIDI Clock מתוכנת הדיג'יי מסנכרן את הביט במדויק. ב-Learn: מזיזים סליידר כאן ואז כפתור בבקר.</p>
         </section>
       </div>
 
@@ -362,10 +498,12 @@ import { ELEMENTS, ELEMENT_BASE, partsOf } from "./heart-elements.js?v=1";
 import { HeartGL, EFFECTS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
+import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
+import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES } from "./heart-nodes.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -428,7 +566,7 @@ const curFx = () => (mix > 0 ? fxB : fxA);
 
 // ---------- pads ----------
 const KEYS = "1234567890";
-const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["3d", "תלת-ממד · מוארים לפי החיתוך"], ["parts", "פסל אור-קול נושם · כל חלק קול משלו"]];
+const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"], ["parts", "פסל אור-קול נושם · כל חלק קול משלו"]];
 function renderPads() {
   const c = curFx();
   $("pads").innerHTML = FX_GROUPS.map(([g, title]) => `<h4 class="padh">${title}</h4>` + EFFECTS.map((e, i) => (e.g || "base") !== g ? "" :
@@ -459,6 +597,7 @@ document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
   document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
   document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
   if (b.dataset.tab === "geo") renderPlan();
+  document.querySelector(".studio").classList.toggle("wide", b.dataset.tab === "ws");
 });
 
 // ---------- channels ----------
@@ -559,6 +698,194 @@ window.heartStudio = { engine, music };   // for the console: heartStudio.engine
 $("engOn").onclick = () => setFx(21);
 engine.onChord = c => { $("chordChip").textContent = c.name; };
 
+// ---------- sound: TouchDesigner-style channels, exports, modulations, layers ----------
+const rx = new React(music);
+rx.load(store.get(K.rx, null));
+window.heartStudio.rx = rx;
+const saveRx = () => store.set(K.rx, rx.o);
+const rxSel = () => rx.chan(rx.o.sel);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const opts = (obj, cur) => Object.entries(obj).map(([k, v]) => `<option value="${k}"${k === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+const chOpts = (cur, none) => `<option value="">${none}</option>` + rx.o.ch.map(c => `<option value="${c.id}"${c.id === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("")
+  + `<optgroup label="קריאה מוזיקלית">` + Object.entries(TRANCE).map(([k, l]) => `<option value="${k}"${k === cur ? " selected" : ""}>${esc(l)}</option>`).join("") + `</optgroup>`;
+const hzFmt = v => v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + "k" : Math.round(v) + "";
+// Selected-channel sliders: [key, label, min, max, unit, scale from slider to setting]
+const RC = {
+  rcLevel: [["gain", "הגברה", -24, 36, "dB"], ["range", "טווח דינמי", 3, 60, "dB"], ["gate", "סף רעש", -120, -20, "dB"], ["curve", "קימור", 20, 300, "", 100],
+    ["attack", "Attack", 0, 500, "ms"], ["release", "Release", 10, 3000, "ms"]],
+  rcTrig: [["sens", "רגישות טריגר", 0, 100, "%"], ["tlevel", "סף טריגר", 0, 100, "%"], ["hold", "מרווח מינימלי", 20, 1000, "ms"], ["decay", "דעיכת פולס", 20, 2000, "ms"]],
+  rcOut: [["min", "יציאה מינימום", 0, 100, "%"], ["max", "יציאה מקסימום", 0, 300, "%"]],
+};
+const rcFmt = (k, v) => { const r = Object.values(RC).flat().find(x => x[0] === k); return (r[5] ? (v / r[5]).toFixed(2) : (v > 0 && r[4] === "dB" && k === "gain" ? "+" : "") + v) + r[4]; };
+for (const [box, list] of Object.entries(RC))
+  $(box).innerHTML = list.map(([k, l, a, b]) => `<div class="sl"><label for="rc_${k}">${l}</label><input type="range" id="rc_${k}" min="${a}" max="${b}"><output id="rc_${k}V"></output></div>`).join("");
+$("rc_trig").innerHTML = opts(TRIG);
+$("rxStyles").innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-style="${k}">${esc(p.name)}</button>`).join("");
+function rcForm() {
+  const c = rxSel(); if (!c) return;
+  $("rxName").textContent = c.name; $("rxName").style.color = rx.color(c.id);
+  if (document.activeElement !== $("rc_name")) $("rc_name").value = c.name;
+  const n = Math.max(2, music.inChannels || 2);
+  $("rc_src").innerHTML = `<option value="-1">מיקס של כל הערוצים</option>` + Array.from({ length: n }, (_, i) => `<option value="${i}">כניסה ${i + 1}${n === 2 ? (i ? " (ימין)" : " (שמאל)") : ""}</option>`).join("");
+  $("rc_src").value = String(c.src); if ($("rc_src").selectedIndex < 0) $("rc_src").value = "-1";
+  $("rc_lo").value = Math.round(c.lo); $("rc_hi").value = Math.round(c.hi);
+  for (const [k, , , , , sc] of Object.values(RC).flat()) { const v = Math.round(c[k] * (sc || 1)); $("rc_" + k).value = v; $("rc_" + k + "V").textContent = rcFmt(k, v); }
+  ["auto", "inv", "mute"].forEach(k => $("rc_" + k).checked = !!c[k]);
+  $("rc_trig").value = c.trig;
+  $("rc_sens").closest(".sl").hidden = c.trig !== "onset"; $("rc_tlevel").closest(".sl").hidden = c.trig !== "level";
+  ["hold", "decay"].forEach(k => $("rc_" + k).closest(".sl").hidden = c.trig === "off");
+  $("rc_gate").previousElementSibling.textContent = c.auto ? "סף רעש" : "סף רעש (תחילת הטווח)";
+  $("rxDel").disabled = rx.o.ch.length < 2;
+}
+for (const [k, , , , , sc] of Object.values(RC).flat())
+  $("rc_" + k).oninput = () => { const c = rxSel(), v = +$("rc_" + k).value; if (!c) return; c[k] = v / (sc || 1); $("rc_" + k + "V").textContent = rcFmt(k, v); saveRx(); };
+["auto", "inv", "mute"].forEach(k => $("rc_" + k).onchange = () => { const c = rxSel(); if (c) { c[k] = $("rc_" + k).checked; saveRx(); rcForm(); } });
+$("rc_trig").onchange = () => { const c = rxSel(); if (c) { c.trig = $("rc_trig").value; saveRx(); rcForm(); } };
+$("rc_src").onchange = () => { const c = rxSel(); if (c) { c.src = +$("rc_src").value; saveRx(); } };
+["lo", "hi"].forEach(k => $("rc_" + k).onchange = () => { const c = rxSel(), v = +$("rc_" + k).value; if (c && isFinite(v) && v > 0) { c[k] = Math.min(20000, Math.max(10, v)); saveRx(); } });
+$("rc_name").oninput = () => { const c = rxSel(); if (c) { c.name = $("rc_name").value || "ערוץ"; $("rxName").textContent = c.name; saveRx(); rxLists(); } };
+$("rxStyles").onclick = e => { const b = e.target.closest("[data-style]"); if (!b) return; rx.preset(b.dataset.style); saveRx(); rxAll(); toast("סגנון: " + PRESETS[b.dataset.style].name); };
+$("rxReset").onclick = () => { rx.load({ layers: rx.o.layers }); saveRx(); rxAll(); toast("הגדרות הסאונד חזרו לברירת המחדל"); };
+$("rxAdd").onclick = () => { if (rx.o.ch.length >= 16) return toast("עד 16 ערוצים"); rx.add(); saveRx(); rxAll(); };
+$("rxDel").onclick = () => { rx.remove(rx.o.sel); saveRx(); rxAll(); };
+$("rxOn").onclick = () => { rx.o.on = !rx.o.on; saveRx(); rxTop(); };
+const RX_SL = { boost: ["boost", v => v + "%"], punch: ["punch", v => v + "%"], speed: ["speed", v => v + "%"], sgain: ["spec.gain", v => v + "%"], sfloor: ["spec.floor", v => v + "%"], scurve: ["spec.curve", v => (v / 100).toFixed(2)] };
+const deep = (o, path, v) => { const ks = path.split("."), last = ks.pop(), t = ks.reduce((a, k) => a[k], o); if (v === undefined) return t[last]; t[last] = v; };
+for (const [id, [path, f]] of Object.entries(RX_SL)) $("rx_" + id).oninput = () => { const v = +$("rx_" + id).value; deep(rx.o, path, v); $("rx_" + id + "V").textContent = f(v); saveRx(); };
+// The input gain is the ring engine's, shown here too.
+$("rx_input").oninput = () => { eo.gain = +$("rx_input").value; $("e_gain").value = eo.gain; $("e_gainV").textContent = ENG_SL.gain(eo.gain); $("rx_inputV").textContent = ENG_SL.gain(eo.gain); engApply(); };
+$("e_gain").addEventListener("input", () => { $("rx_input").value = eo.gain; $("rx_inputV").textContent = ENG_SL.gain(eo.gain); });
+// Simple faders: how much each part of the song moves the effects, written into the export amounts.
+const RX_F = { fKick: ["kick", "hit"], fBass: ["bass"], fHigh: ["mid", "high"] };
+for (const [id, keys] of Object.entries(RX_F)) $("rx_" + id).oninput = () => {
+  const v = +$("rx_" + id).value; $("rx_" + id + "V").textContent = v + "%";
+  for (const k of keys) { rx.o.exp[k].amt = v; const el = $(`ex_${k}_amt`); if (el) { el.value = v; $(`ex_${k}_amtV`).textContent = v + "%"; } }
+  saveRx();
+};
+function rxTop() {
+  for (const [id, keys] of Object.entries(RX_F)) { const v = rx.o.exp[keys[0]].amt; $("rx_" + id).value = v; $("rx_" + id + "V").textContent = v + "%"; }
+  document.querySelectorAll("[data-style]").forEach(b => b.setAttribute("aria-pressed", b.dataset.style === rx.o.preset));
+  $("rxOn").setAttribute("aria-pressed", rx.o.on); $("rxOn").textContent = rx.o.on ? "🔊 מנוע תגובה חדש · פעיל" : "🔈 מנוע תגובה חדש · כבוי (ניתוח מקורי)";
+  for (const [id, [path, f]] of Object.entries(RX_SL)) { const v = deep(rx.o, path); $("rx_" + id).value = v; $("rx_" + id + "V").textContent = f(v); }
+  $("rx_input").value = eo.gain; $("rx_inputV").textContent = ENG_SL.gain(eo.gain);
+}
+// Export, modulation and layer rows: rebuilt when channels are added, removed or renamed.
+function rxLists() {
+  $("rxExp").innerHTML = Object.entries(EXPORTS).map(([k, name]) => { const e = rx.o.exp[k];
+    return `<b>${name}</b><select id="ex_${k}_ch" aria-label="ערוץ ל${name}">${chOpts(e.ch, "ניתוח מקורי")}</select><select id="ex_${k}_out" aria-label="יציאה">${opts(OUTS, e.out)}</select>`
+      + `<input type="range" id="ex_${k}_amt" min="0" max="300" value="${e.amt}" aria-label="כמות ${name}"><output id="ex_${k}_amtV">${e.amt}%</output><span></span>`; }).join("");
+  $("rxMods").innerHTML = rx.o.mods.map((m, i) => `<select id="md${i}_tgt" aria-label="פרמטר">${opts(Object.fromEntries(Object.entries(TARGETS).map(([k, t]) => [k, t.name])), m.tgt)}</select>`
+    + `<select id="md${i}_ch" aria-label="ערוץ">${chOpts(m.ch, "—")}</select><select id="md${i}_out" aria-label="יציאה">${opts(OUTS, m.out)}</select>`
+    + `<input type="range" id="md${i}_depth" min="-100" max="100" value="${m.depth}" aria-label="עומק"><output id="md${i}_depthV">${m.depth}%</output><button data-mdel="${i}" aria-label="מחק מודולציה">🗑</button>`).join("")
+    || `<span class="help" style="grid-column:1/-1">אין מודולציות</span>`;
+  const fxOpts = cur => EFFECTS.filter(e => e.id > 0).map(e => `<option value="${e.id}"${e.id === cur ? " selected" : ""}>${e.ico} ${esc(e.name)}</option>`).join("");
+  $("layers").innerHTML = rx.o.layers.map((l, i) => `<div class="layer ${l.on ? "" : "off"}" style="border-inline-start-color:${l.drive && rx.chan(l.drive) ? rx.color(l.drive) : "#f06595"}">
+    <header><button id="ly${i}_on" aria-pressed="${l.on}" aria-label="הצג שכבה ${i + 2}">${l.on ? "👁" : "🚫"}</button><b>שכבה ${i + 2}</b><select id="ly${i}_fx" aria-label="אפקט">${fxOpts(l.fx)}</select></header>
+    <div class="grid2"><label>מיזוג<select id="ly${i}_blend">${opts(BLENDS, l.blend)}</select></label><label>מסכה<select id="ly${i}_mask">${opts(MASKS, l.mask)}</select></label>
+    <label>ערוץ מניע<select id="ly${i}_drive">${chOpts(l.drive, "כמו ההופעה")}</select></label><label>השקיפות לפי<select id="ly${i}_out">${opts(OUTS, l.out)}</select></label></div>
+    <div class="sl"><label for="ly${i}_op">שקיפות</label><input type="range" id="ly${i}_op" min="0" max="100" value="${l.op}"><output id="ly${i}_opV">${l.op}%</output></div>
+    <div class="sl"><label for="ly${i}_depth">פתיחה עם הערוץ</label><input type="range" id="ly${i}_depth" min="0" max="100" value="${l.depth}"><output id="ly${i}_depthV">${l.depth}%</output></div></div>`).join("");
+}
+function rxAll() { rxTop(); rcForm(); rxLists(); }
+const rxRow = id => { const m = /^(ex|md|ly)(?:_(\w+?)|(\d+))_(\w+)$/.exec(id); return m && { kind: m[1], key: m[2] ?? +m[3], f: m[4] }; };
+function rxEdit(e) {
+  const r = rxRow(e.target.id || ""); if (!r) return;
+  const obj = r.kind === "ex" ? rx.o.exp[r.key] : r.kind === "md" ? rx.o.mods[r.key] : rx.o.layers[r.key]; if (!obj) return;
+  const el = e.target, v = el.type === "range" || r.f === "fx" ? +el.value : el.value;
+  obj[r.f] = v;
+  if (el.type === "range") $(el.id + "V").textContent = v + "%";
+  saveRx();
+  if (r.kind === "ex") rxTop();
+  if (r.kind === "ly" && (r.f === "drive" || e.type === "change")) rxLists();
+}
+for (const box of ["rxExp", "rxMods", "layers"]) { $(box).addEventListener("input", rxEdit); $(box).addEventListener("change", e => e.target.type !== "range" && rxEdit(e)); }
+$("layers").addEventListener("click", e => { const b = e.target.closest("[id$=_on]"); if (!b) return; const l = rx.o.layers[+b.id.slice(2, -3)]; l.on = !l.on; saveRx(); rxLists(); });
+$("rxMods").addEventListener("click", e => { const b = e.target.closest("[data-mdel]"); if (!b) return; rx.o.mods.splice(+b.dataset.mdel, 1); saveRx(); rxLists(); });
+$("rxModAdd").onclick = () => { rx.o.mods.push({ tgt: "master", ch: rx.o.sel, out: "env", depth: 50 }); saveRx(); rxLists(); };
+rxAll();
+
+// Meters: one row per channel, raw level dim, the lagged level bright, the pulse as a lamp. Click selects.
+const RX_ROW = 22;
+function drawRx() {
+  const cv = $("rxMeters"); if (cv.closest("[data-panel]").hidden) return;
+  const d = devicePixelRatio || 1, n = rx.o.ch.length, cssH = n * RX_ROW + 6;
+  if (cv.style.height !== cssH + "px") cv.style.height = cssH + "px";
+  const W = cv.clientWidth * d, H = cssH * d; if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"), rh = RX_ROW * d, lab = 112 * d, bx = 6 * d, bw = W - lab - bx - 34 * d;
+  x.clearRect(0, 0, W, H); x.textBaseline = "middle";
+  rx.o.ch.forEach((c, i) => {
+    const s = rx.st.get(c.id) || {}, y = 3 * d + i * rh, col = rx.color(c.id), sel = c.id === rx.o.sel;
+    if (sel) { x.fillStyle = "rgba(255,79,123,.14)"; x.fillRect(0, y, W, rh); }
+    x.fillStyle = "#151b24"; x.fillRect(bx, y + 4 * d, bw, rh - 8 * d);
+    x.globalAlpha = c.mute ? 0.25 : 0.35; x.fillStyle = col; x.fillRect(bx, y + 4 * d, bw * Math.min(1, s.raw || 0), rh - 8 * d);
+    x.globalAlpha = c.mute ? 0.3 : 1; x.fillRect(bx, y + 7 * d, bw * Math.min(1, rx.get(c.id, "env")), rh - 14 * d);
+    if (c.trig === "level") { x.fillStyle = "#fff"; x.fillRect(bx + bw * c.tlevel / 100 - d, y + 3 * d, 2 * d, rh - 6 * d); }
+    x.globalAlpha = 1;
+    if (c.trig !== "off") { const t = s.trig || 0; x.fillStyle = `rgba(255,255,255,${0.12 + 0.88 * t})`; x.beginPath(); x.arc(bx + bw + 14 * d, y + rh / 2, 6 * d, 0, 7); x.fill(); }
+    x.fillStyle = sel ? "#fff" : "#c7d0dc"; x.font = `${sel ? 600 : 400} ${12 * d}px Heebo`; x.textAlign = "right";
+    x.fillText(c.name + (c.src >= 0 ? ` ·${c.src + 1}` : ""), W - 4 * d, y + rh / 2);
+    x.fillStyle = "#8592a6"; x.font = `${10 * d}px JetBrains Mono`; x.textAlign = "left";
+    x.fillText(`${hzFmt(c.lo)}-${hzFmt(c.hi)}`, bx + 4 * d, y + rh / 2);
+  });
+  drawSpec();
+}
+$("rxMeters").onclick = e => { const r = $("rxMeters").getBoundingClientRect(), i = Math.floor((e.clientY - r.top - 3) / RX_ROW), c = rx.o.ch[i]; if (c) { rx.o.sel = c.id; saveRx(); rcForm(); } };
+// Spectrum of the mix on a log axis (20 Hz - 20 kHz) with every channel's band; dragging sets the selected channel's band.
+const F0 = 20, F1 = 20000, hzAt = (px, W) => F0 * Math.pow(F1 / F0, Math.min(1, Math.max(0, px / W))), xAt = (hz, W) => Math.log(hz / F0) / Math.log(F1 / F0) * W;
+function drawSpec() {
+  const cv = $("rxSpec"), d = devicePixelRatio || 1, W = cv.clientWidth * d, H = cv.clientHeight * d;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const x = cv.getContext("2d"); x.clearRect(0, 0, W, H);
+  rx.o.ch.forEach(c => {
+    const a = xAt(Math.min(c.lo, c.hi), W), b = xAt(Math.max(c.lo, c.hi), W), sel = c.id === rx.o.sel;
+    x.globalAlpha = sel ? 0.32 : 0.1 + 0.25 * rx.get(c.id, "env"); x.fillStyle = rx.color(c.id); x.fillRect(a, 0, Math.max(d, b - a), H);
+    if (sel) { x.globalAlpha = 1; x.fillRect(a, 0, d, H); x.fillRect(b - d, 0, d, H); }
+  });
+  x.globalAlpha = 1;
+  const sp = rx.spectrum();
+  if (sp) {
+    x.strokeStyle = "#e6ebf2"; x.lineWidth = 1.2 * d; x.beginPath();
+    for (let px = 0; px < W; px += 2 * d) { const k = Math.max(1, Math.min(sp.buf.length - 1, Math.round(hzAt(px, W) / sp.hz))), db = sp.buf[k], y = H - (Math.max(-120, db) + 120) / 100 * H; px ? x.lineTo(px, y) : x.moveTo(px, y); }
+    x.stroke();
+  } else { x.fillStyle = "#8592a6"; x.font = `${12 * d}px Heebo`; x.textAlign = "center"; x.fillText("אין קול עדיין: טענו שיר או חברו מיקרופון", W / 2, H / 2); }
+  x.fillStyle = "#8592a6"; x.font = `${9 * d}px JetBrains Mono`; x.textAlign = "center";
+  for (const f of [50, 100, 250, 500, 1000, 2500, 5000, 10000]) x.fillText(hzFmt(f), xAt(f, W), H - 6 * d);
+}
+let specDrag = null;
+const specHz = e => { const r = $("rxSpec").getBoundingClientRect(); return Math.round(hzAt(e.clientX - r.left, r.width)); };
+$("rxSpec").onpointerdown = e => { const c = rxSel(); if (!c) return; specDrag = specHz(e); c.lo = c.hi = specDrag; $("rxSpec").setPointerCapture(e.pointerId); };
+$("rxSpec").onpointermove = e => { const c = rxSel(); if (specDrag == null || !c) return; const h = specHz(e); c.lo = Math.min(specDrag, h); c.hi = Math.max(specDrag, h, c.lo + 5); rcForm(); };
+$("rxSpec").onpointerup = () => { if (specDrag == null) return; specDrag = null; saveRx(); rcForm(); };
+
+// ---------- workspace ----------
+const wsOps = makeOps({
+  rx, music, blends: BLENDS, masks: MASKS,
+  inputs: () => Array.from({ length: Math.max(2, music.inChannels || 2) }, (_, i) => `כניסה ${i + 1}`),
+  channels: () => [...rx.o.ch.map(c => [c.id, c.name]), ...Object.entries(TRANCE)],
+  effects: () => EFFECTS.filter(e => e.id > 0).map(e => [String(e.id), e.ico + " " + e.name]),
+});
+const wsNet = new Network(wsOps);
+let wsSave = 0;
+const wsStored = store.get(K.ws, null);
+if (wsStored) wsNet.load(wsStored); else TEMPLATES.trance.build(wsNet);
+const ws = new Editor($("wsArea"), $("wsParams"), wsNet, () => { clearTimeout(wsSave); wsSave = setTimeout(() => store.set(K.ws, { ...wsNet.save(), on: $("wsOn").checked }), 300); });
+ws.onWarn = toast;
+$("wsOn").checked = wsStored?.on ?? false;
+$("wsOn").onchange = () => ws.changed();
+const WS_ADD = [["audioin", "audio"], ["filter", "audio"], ["analyze", "audio"], ["channel", "audio"], ["trance", "audio"], ["beat", "time"], ["lfo", "time"],
+  ["constant", "signal"], ["math", "signal"], ["lag", "signal"], ["trigger", "signal"], ["count", "signal"], ["logic", "signal"], ["combine", "signal"], ["jumper", "signal"], ["nul", "signal"],
+  ["exporter", "out"], ["layer", "out"]];
+$("wsBar").innerHTML = WS_ADD.map(([t, f]) => `<button data-add="${t}" style="--fam:${WS_FAMS[f].col}" title="${esc(wsOps[t].he)}">${esc(wsOps[t].name)}</button>`).join("")
+  + Object.entries(TEMPLATES).map(([k, t]) => `<button data-tpl="${k}">${esc(t.name)}</button>`).join("") + `<button id="wsFit">⤢ התאם</button><button id="wsClear">🗑 נקה</button>`;
+$("wsBar").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.add) ws.add(b.dataset.add);
+  else if (b.dataset.tpl) { wsNet.load(null); TEMPLATES[b.dataset.tpl].build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); toast("תבנית: " + TEMPLATES[b.dataset.tpl].name); }
+  else if (b.id === "wsFit") ws.fit();
+  else if (b.id === "wsClear") { wsNet.load(null); ws.sel = null; ws.render(); ws.changed(); }
+};
+document.querySelector('[data-tab="ws"]').addEventListener("click", () => setTimeout(() => ws.fit(), 0));
+
 // Cable / sound card input.
 async function listInputs() {
   const list = await music.inputs().catch(() => []), cur = $("inDev").value || music.deviceId;
@@ -578,7 +905,7 @@ navigator.mediaDevices?.addEventListener?.("devicechange", listInputs);
 
 // MIDI: notes light rings (engine), CC moves sliders (defaults or learned), programs and drum pads pick effects.
 let learn = false, learnTarget = null, ccMap = store.get(K.cc, {});
-const DEFAULT_CC = { 7: "master", 1: "e_sens", 74: "hue", 11: "e_intensity" };
+const DEFAULT_CC = { 7: "master", 1: "rx_boost", 74: "hue", 11: "e_intensity" };
 const labelOf = id => document.querySelector(`label[for="${id}"]`)?.textContent || id;
 function learnInfo() {
   const e = Object.entries(ccMap);
@@ -644,7 +971,7 @@ function syncGeoForm() {
   document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(cfg.pattern) || (model.multi && l.querySelector("#g_cx,#g_cy") && cfg.pattern === "scaled"));
   document.querySelectorAll("[data-multi]").forEach(l => l.hidden = !model.multi);
   $("g_count").disabled = !!cfg.levels?.length;
-  const sp = cfg.pattern === "scaled" && model.levels.length > 1 ? ((cfg.outer - cfg.inner) / (model.levels.length - 1) * 118).toFixed(1) : null;
+  const sp = !model.multi && cfg.pattern === "scaled" && model.levels.length > 1 ? ((cfg.outer - cfg.inner) / (model.levels.length - 1) * 118).toFixed(1) : null;
   $("geoInfo").textContent = (model.multi ? `${model.parts.length} חלקים נפרדים · ` : "") + `${model.grooves.length} תעלות · ${model.stripes} לבבות/פסים · ${model.grooves.reduce((s, g) => s + g.pieces.length, 0)} קווים נפרדים · היקף ${Math.round(model.perimeter)} ס״מ`
     + (sp ? ` · מרווח בצדדים ≈ ${sp} ס״מ` : "") + (cfg.levels?.length ? " · התעלות מתוך סריקה" : "");
 }
@@ -817,7 +1144,7 @@ $("cueBtn").onclick = () => { cuePlay = !cuePlay; $("cueBtn").setAttribute("aria
 $("clearCues").onclick = () => { cues = []; saveCues(); };
 $("autoBtn").onclick = () => toggleAuto();
 function toggleAuto() { auto = !auto; $("autoBtn").setAttribute("aria-pressed", auto); lastCue = -1; toast(auto ? "הבמאי האוטומטי פועל" : "שליטה ידנית"); }
-$("saveShow").onclick = () => download("heart-show.json", JSON.stringify({ version: 1, cfg, points: P, fold, channels: chState, show, cues, track: trackName }, null, 1), "application/json");
+$("saveShow").onclick = () => download("heart-show.json", JSON.stringify({ version: 1, cfg, points: P, fold, channels: chState, show, cues, track: trackName, react: rx.o, workspace: { ...wsNet.save(), on: $("wsOn").checked } }, null, 1), "application/json");
 $("loadShowBtn").onclick = () => $("loadShow").click();
 $("loadShow").onchange = async () => {
   try {
@@ -828,6 +1155,8 @@ $("loadShow").onchange = async () => {
     if (s.channels) chState = s.channels;
     if (s.show) Object.assign(show, s.show);
     if (Array.isArray(s.cues)) cues = s.cues;
+    if (s.react) { rx.load(s.react); saveRx(); rxAll(); }
+    if (s.workspace) { wsNet.load(s.workspace); $("wsOn").checked = !!s.workspace.on; ws.sel = null; ws.render(); ws.changed(); }
     store.set(K.pts, P); store.set(K.fold, fold); saveShow(); rebuild(); renderPals(); saveCues(); toast("המופע נטען");
   } catch { toast("קובץ מופע לא תקין"); }
 };
@@ -911,6 +1240,10 @@ addEventListener("keydown", e => {
 let hudT = 0, lastBeatShown = -1;
 function frame(now) {
   const f = music.frame(now);
+  rx.update(now); rx.apply(f);
+  const wsOut = wsNet.cook({ f, nowMs: now, dt: Math.min(0.1, Math.max(0.001, (now - (frame.last ?? now)) / 1000)) || 1 / 60 }); frame.last = now;
+  const wsLive = $("wsOn").checked;
+  if (wsLive) for (const [k, v] of Object.entries(wsOut.feats)) f[k] = v * rx.o.boost / 100;
   director(f);
   if (mix > 0) { mix = Math.min(1, (now - xStart) / 1000 / xDur); if (mix >= 1) { fxA = fxB; mix = 0; } }
   blackLv += ((black ? 0 : 1) - blackLv) * 0.2;
@@ -921,18 +1254,33 @@ function frame(now) {
   }
   engine.update(f, { palette: PALETTES[show.palette].c });
   gl.setEngine(engine.out);
-  drawEngine(f);
-  gl.render({
-    engMix: show.engmix / 100, fxA, fxB, mix: mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
-    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: f.bass, mid: f.mid, high: f.high, level: f.level, levelS: f.levelS,
-    kick: f.kick * show.intensity / 75, hit: f.hit * show.intensity / 75, spec: f.spec, speed: show.speed / 100, int: show.intensity / 100,
-    master: show.master / 100 * blackLv, outline: show.outline / 100, hue: show.hue / 360, vidMix: show.vidmix / 100, palette: PALETTES[show.palette].c,
-  }, P);
+  drawEngine(f); drawRx();
+  // Show sliders after the sound modulations, then the show itself and the layers over it.
+  const sv = Object.assign(rx.modulate(show), wsLive ? wsOut.params : {}), c01 = v => Math.min(1, Math.max(0, v));
+  const state = (a, fx) => ({
+    engMix: c01(sv.engmix / 100), fxA: fx ?? fxA, fxB: fx ?? fxB, mix: fx == null && mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
+    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
+    kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
+    master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
+  });
+  gl.render(state(f), P);
+  if (curFx() !== 0 && fxA !== 0) for (const l of rx.o.layers) {
+    if (!l.on) continue;
+    const { s, op } = rx.layer(l, f);
+    if (op > 0.003) gl.render(state(s, l.fx), P, { blend: l.blend, op, mask: MASK_ID[l.mask] });
+  }
+  if (wsLive && curFx() !== 0 && fxA !== 0) for (const l of wsOut.layers.slice(0, 4)) {
+    if (l.op <= 0.003) continue;
+    const a = { ...f, kick: l.kick ?? f.kick, hit: l.kick ?? f.hit, level: l.level ?? f.level, bass: l.level ?? f.bass, mid: l.level ?? f.mid, high: l.level ?? f.high };
+    gl.render(state(a, l.fx), P, { blend: l.blend, op: Math.min(1, l.op), mask: MASK_ID[l.mask] });
+  }
+  if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
   drawOv();
   if (now - hudT > 90) {
     hudT = now;
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
     drawTL(f);
+    $("lyBase").textContent = EFFECTS[curFx()].ico + " " + EFFECTS[curFx()].name + (rx.o.layers.some(l => l.on) ? ` · +${rx.o.layers.filter(l => l.on).length} שכבות` : "");
     const el = music.el; $("timeLbl").textContent = el ? `${fmt(el.currentTime)} / ${fmt(el.duration)}` : "0:00 / 0:00";
     if (outWin && outWin.closed) { outWin = null; outState(); }
   }
