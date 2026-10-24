@@ -64,6 +64,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pads button kbd { position: absolute; top: 3px; inset-inline-end: 5px; font: .66rem var(--mono); color: var(--muted); }
 .pads button.next { border-style: dashed; border-color: var(--accent); }
 .padh { grid-column: 1 / -1; margin: 6px 0 0; font-size: .74rem; font-weight: 600; color: var(--muted); letter-spacing: .06em; }
+.pads button.padh { display: flex; justify-items: initial; gap: 6px; align-items: baseline; padding: 4px 2px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; text-align: start; cursor: pointer; color: var(--muted); font-size: .74rem; }
+.pads button.padh i { font-style: normal; font-weight: 400; opacity: .7; margin-inline-start: auto; }
 .transport { display: grid; gap: 8px; }
 #tl { width: 100%; height: 92px; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
 .time { font: .85rem var(--mono); color: var(--muted); direction: ltr; }
@@ -495,7 +497,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 <script type="module">
 import * as G from "./heart-geo.js?v=1";
 import { ELEMENTS, ELEMENT_BASE, partsOf } from "./heart-elements.js?v=1";
-import { HeartGL, EFFECTS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
+import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
 import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
@@ -503,7 +505,7 @@ import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES } from "./heart-no
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -566,14 +568,22 @@ const curFx = () => (mix > 0 ? fxB : fxA);
 
 // ---------- pads ----------
 const KEYS = "1234567890";
-const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"], ["parts", "פסל אור-קול נושם · כל חלק קול משלו"]];
+// Groups fold by a click on their title (remembered), so the long list of effects stays easy to scan.
+const fxFold = new Set(store.get(K.fxFold, []));
 function renderPads() {
   const c = curFx();
-  $("pads").innerHTML = FX_GROUPS.map(([g, title]) => `<h4 class="padh">${title}</h4>` + EFFECTS.map((e, i) => (e.g || "base") !== g ? "" :
-    `<button data-fx="${e.id}" aria-pressed="${e.id === c}"><span>${e.ico}</span>${e.name}${i < 10 ? `<kbd>${KEYS[i]}</kbd>` : ""}</button>`).join("")).join("");
+  $("pads").innerHTML = FX_GROUPS.map(([g, title]) => {
+    const list = EFFECTS.filter(e => (e.g || "base") === g), open = !fxFold.has(g), here = list.some(e => e.id === c);
+    return `<button class="padh" data-grp="${g}" aria-expanded="${open}">${open ? "▾" : "▸"} ${title}${here && !open ? " ●" : ""}<i>${list.length}</i></button>` + (!open ? "" : list.map(e =>
+      `<button data-fx="${e.id}" aria-pressed="${e.id === c}"><span>${e.ico}</span>${e.name}${e.id < 10 ? `<kbd>${KEYS[e.id]}</kbd>` : ""}</button>`).join(""));
+  }).join("");
   $("fxChip").textContent = EFFECTS[c].ico + " " + EFFECTS[c].name;
 }
-$("pads").onclick = e => { const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx); };
+$("pads").onclick = e => {
+  const h = e.target.closest("[data-grp]");
+  if (h) { const g = h.dataset.grp; fxFold.has(g) ? fxFold.delete(g) : fxFold.add(g); store.set(K.fxFold, [...fxFold]); renderPads(); return; }
+  const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx);
+};
 renderPads();
 
 // ---------- sliders ----------
@@ -643,7 +653,8 @@ const GROUPS = [
 ];
 $("groups").innerHTML = GROUPS.map(([n], i) => `<button data-g="${i}">${n}</button>`).join("");
 $("groups").onclick = e => { const b = e.target.closest("[data-g]"); if (!b) return; const f = GROUPS[+b.dataset.g][1]; if (!f) { sel.clear(); renderChannels(); return; } select(chList().filter(f).map(c => c.id), false); };
-$("chFx").innerHTML = `<option value="-1">של ההופעה</option>` + EFFECTS.map(e => `<option value="${e.id}">${e.ico} ${e.name}</option>`).join("");
+$("chFx").innerHTML = `<option value="-1">של ההופעה</option>` + FX_GROUPS.map(([g, t]) => `<optgroup label="${t}">` +
+  EFFECTS.filter(e => (e.g || "base") === g).map(e => `<option value="${e.id}">${e.ico} ${e.name}</option>`).join("") + "</optgroup>").join("");
 function first() { const id = [...sel][0]; return id != null ? chState[id] || {} : {}; }
 function syncChForm() {
   const f = first();

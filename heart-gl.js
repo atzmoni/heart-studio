@@ -3,7 +3,9 @@
 // 4-corner warp sharing the seam), then looks up the distance field of the contour and works out which part it lies on
 // (edge, seam, rim, separation groove, ring/groove k, stripe k). Effects are GLSL functions of that
 // part plus the music clock, so lines stay razor sharp at any projector resolution. Two effects render at once for crossfades.
+// The effects come in banks (the built-in 64, then the ten banks of heart-fx.js); each set of banks in use is its own program.
 import { SIZE, MARGIN, RES } from "./heart-geo.js?v=1";
+import { FX_COMMON, FX_BANKS } from "./heart-fx.js?v=1";
 
 // id, Hebrew name, icon, energy class (0 calm, 1 medium, 2 intense) for the automatic show.
 export const EFFECTS = [
@@ -77,6 +79,11 @@ export const EFFECTS = [
   { id: 62, name: "תבליט פאנלים", ico: "🧱", e: 1, g: "parts" },
   { id: 63, name: "שכבות מרחפות", ico: "🪐", e: 0, g: "parts" },
 ];
+EFFECTS.forEach(e => e.bank = 0);
+FX_BANKS.forEach((b, i) => b.fx.forEach(([id, name, ico, e, fn]) => { EFFECTS[id] = { id, name, ico, e, g: b.g, bank: i + 1, fn }; }));
+// Effect groups for the pads, in the order they show.
+export const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"],
+  ["parts", "פסל אור-קול נושם · כל חלק קול משלו"], ...FX_BANKS.map(b => [b.g, b.title])];
 
 export const PALETTES = {
   love: { name: "אהבה", c: ["#ff1744", "#ff6fa5", "#ffd1dc", "#c2185b"] },
@@ -92,7 +99,10 @@ export const PALETTES = {
 const VS = `#version 300 es
 in vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`;
 
-const FS = `#version 300 es
+// GLSL function of every built-in effect, by id.
+const CORE_FN = ["fxCalib", "fxHeartbeat", "fxRunners", "fxEq", "fxContour", "fxLiquid", "fxRipples", "fxFlip", "fxFire", "fxNeon", "fxLaser", "fxHalves", "fxPlasma", "fxSparkle", "fxRainbow", "fxStrobe", "fxHeartRain", "fxLadder", "fxVideo", "fxTunnel", "fxEcho", "fxEngine", "fxVU", "fxKickBurst", "fxBassHigh", "fxSpiral", "fxRadar", "fxSpecRings", "fxBreath", "fxECG", "fxSparks", "fxFireworks", "fxKaleido", "fxThermal", "fxSeamWaves", "fxRingFlow", "fxDigitalRain", "fxLightning", "fxTwinPulse", "fxRunStrobe", "fxGold", "fxBarWipe", "fxTerrace", "fxPillow", "fxChrome", "fxGlass", "fxTunnel3D", "fxRotHeart", "fxSpecRelief", "fxSpot", "fxShock", "fxHolo", "fxTrLaser", "fxTrPump", "fxTrBuild", "fxTrGate", "fxTrArp", "fxTrHyper", "fxBreathe", "fxChoir", "fxWave", "fxCards", "fxBlocks", "fxFloat"];
+
+const FS_HEAD = `#version 300 es
 precision highp float;
 precision highp int;
 precision highp sampler2D;
@@ -219,7 +229,6 @@ vec3 video(vec2 p) {
   return uVidOn > 0.5 ? texture(uVid, uv + 0.5).rgb : vec3(0.0);
 }
 
-// ---------------- effects ----------------
 vec3 fxCalib(H h) {
   float aa = h.aa * 1.5;
   vec2 g10 = abs(fract(h.p / 10.0 + 0.5) - 0.5) * 10.0, g50 = abs(fract(h.p / 50.0 + 0.5) - 0.5) * 50.0;
@@ -236,6 +245,83 @@ vec3 fxCalib(H h) {
   return mix(bg, hc + vec3(grid) * 0.4 * h.stripe, h.inside);
 }
 
+
+// ---------------- shared by every effect bank ----------------
+float ringN() { return max(float(uNLev) * 2.0 + 1.0, 1.0); }
+float ringIdx(H h) { return h.groove > 0.5 ? float(h.gi) * 2.0 + 1.0 : float(h.si) * 2.0; }   // 0 inner heart, groove, heart ...
+float specAt(float x) { float fi = clamp(x, 0.0, 1.0) * 31.0; int i = int(fi); return mix(uSpec[i], uSpec[min(i + 1, 31)], fract(fi)); }
+float kk() { return clamp(uKick, 0.0, 1.0); }
+// The 3D effects light the real cut: the surface normal comes from the heart's own grooves (each groove a V cut with an
+// inner and an outer wall) and from a dome over the whole heart, so light, shadow and depth land exactly on the channels.
+vec3 nCut(H h, float steep) {
+  float t = clamp(h.gt / (uGW * 0.5), -1.0, 1.0);
+  return normalize(vec3(h.gP * (t < 0.0 ? 1.0 : -1.0) * steep * h.groove + h.tilt, 1.0));
+}
+// The dome of the heart, or of every part on its own, leaning the way the part's facet faces.
+vec3 nDome(H h, float hm) { vec2 g = hm * 0.5 / sqrt(max(h.dn, 0.015)) * h.gD / h.dm; return normalize(vec3(-g + h.tilt, 1.0)); }
+vec3 nMix(vec3 a, vec3 b) { return normalize(vec3(a.xy + b.xy, 1.0)); }
+float ao(H h) { return 1.0 - 0.65 * h.groove * (1.0 - abs(clamp(h.gt / (uGW * 0.5), -1.0, 1.0))); }
+float dif(vec3 n, vec3 L) { return max(dot(n, L), 0.0); }
+float spc(vec3 n, vec3 L, float sh) { return pow(max(dot(n, normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), sh); }
+vec3 orbitL(float a, float z) { return normalize(vec3(cos(a), sin(a), z)); }
+vec3 envMap(vec3 R) {
+  float sky = smoothstep(-0.3, 0.7, -R.y);
+  vec3 c = mix(pal(0.6) * 0.15, pal(0.0), sky);
+  c += vec3(1.0) * smoothstep(0.93, 0.98, sin(R.x * 7.0 + uTime * 0.7 * uSpeed)) * sky;
+  c += pal(0.5) * smoothstep(0.96, 0.99, sin(R.y * 9.0 - uTime * 0.4)) * 0.6;
+  return c;
+}
+// A piece is a part of an element, or a ring of the heart. Each sound channel has one job, smoothed so it moves and never jumps:
+// uBassS breathes (how deep and bright), uMidS turns the colour flow (uFlow), uHighS shimmers on the cut lines, the kick pulses,
+// the spectrum gives every piece its own voice, and uBreath is a slow breath whose pace follows the music's energy.
+// The trance reading joins in: a build-up deepens the breath and speeds the wave, a drop floods every piece at once.
+float pK(H h) { return uParts > 1 ? h.pk : ringIdx(h) / ringN(); }                       // where the piece is in the sequence
+float pB(H h) { return uParts > 1 ? h.pb : ringIdx(h) / ringN(); }                       // its slice of the spectrum
+float pSeed(H h) { return uParts > 1 ? hash11(float(h.part) * 7.31 + 0.4) : hash11(ringIdx(h) * 3.7 + 0.4); }
+float breathV(float off) { float x = fract(uBreath + off); return x < 0.4 ? smoothstep(0.0, 0.4, x) : 1.0 - smoothstep(0.4, 1.0, x); }   // in 40%, out 60%
+float shimmer(H h) { return pow(noise(h.p * 0.55 + vec2(uTime * 2.3, -uTime * 1.7)), 6.0) * uHighS * 3.5; }
+
+// ---------------- ring engine ----------------
+// Row 2 of the channel texture: the engine's colour for every channel this frame (heart-engine.js), already scaled by level.
+vec3 chE(int id) { return texelFetch(uCh, ivec2(id, 2), 0).rgb; }
+// The six parts a pixel can belong to (it blends between them at edges): 0 edge, 1 seam, 2 rim, 3 separation, 4 groove, 5 band.
+// Written as functions rather than local arrays: some phone GPUs reject arrays without an explicit precision.
+int chId(H h, int i) {
+  int sd = int(h.side);
+  if (i == 0) return sd;
+  if (i == 1) return 2;
+  if (i == 2) return 3 + sd;
+  if (i == 3) return 5 + sd;
+  if (i == 4) return 8 + max(h.gi, 0) * 2 + sd;
+  return 136 + h.si * 2 + sd;
+}
+float chW(H h, int i) {
+  if (i == 0) return h.edge;
+  if (i == 1) return h.seam;
+  if (i == 2) return h.rim;
+  if (i == 3) return h.sep;
+  if (i == 4) return h.groove;
+  return h.stripe;
+}
+vec3 engineAt(H h) {
+  vec3 c = vec3(0.0);
+  for (int i = 0; i < 6; i++) { float w = chW(h, i); if (w > 0.001) c += w * chE(chId(h, i)); }
+  return c;
+}
+vec3 fxEngine(H h) {
+  vec3 c = engineAt(h);
+  // A little life inside each ring: a soft sheen running along it, brightest in the middle of the groove.
+  float sheen = 0.86 + 0.14 * sin(h.s * TAU * 5.0 - uTime * 1.7);
+  float core = 1.0 + 0.35 * h.groove * (1.0 - smoothstep(0.0, uGW * 0.5, h.gd));
+  return c * sheen * core;
+}
+
+// A classic trance gate: 16 steps, on/off. The pattern reads from the lowest bit, one step per 16th note.
+float gateAt(int i) { return float((0x6DB5 >> (i & 15)) & 1); }
+float gate16() { float st = clockB() * 4.0; return gateAt(int(mod(floor(st), 16.0))) * (1.0 - smoothstep(0.5, 0.72, fract(st))); }
+`;
+
+const CORE_GLSL = `
 vec3 fxHeartbeat(H h) {
   float ph = uBeat;
   float env = exp(-ph * 8.0) + 0.65 * exp(-max(ph - 0.2, 0.0) * 9.0) * step(0.2, ph);
@@ -473,10 +559,6 @@ vec3 fxEcho(H h) {
 }
 
 // ================= live music effects (22-41) =================
-float ringN() { return max(float(uNLev) * 2.0 + 1.0, 1.0); }
-float ringIdx(H h) { return h.groove > 0.5 ? float(h.gi) * 2.0 + 1.0 : float(h.si) * 2.0; }   // 0 inner heart, groove, heart ...
-float specAt(float x) { float fi = clamp(x, 0.0, 1.0) * 31.0; int i = int(fi); return mix(uSpec[i], uSpec[min(i + 1, 31)], fract(fi)); }
-float kk() { return clamp(uKick, 0.0, 1.0); }
 
 vec3 fxVU(H h) {                 // loudness fills the rings from the inner heart outwards, a peak ring floats above
   float k = ringIdx(h) / ringN(), lv = clamp(uLevel * (0.6 + 0.8 * uInt), 0.0, 1.0);
@@ -595,19 +677,6 @@ vec3 fxBarWipe(H h) {            // each new bar wipes a new colour up from the 
 }
 
 // ================= 3D effects (42-51) =================
-// All of them light the real cut: the surface normal comes from the heart's own grooves (each groove a V cut with an
-// inner and an outer wall) and from a dome over the whole heart, so light, shadow and depth land exactly on the channels.
-vec3 nCut(H h, float steep) {
-  float t = clamp(h.gt / (uGW * 0.5), -1.0, 1.0);
-  return normalize(vec3(h.gP * (t < 0.0 ? 1.0 : -1.0) * steep * h.groove + h.tilt, 1.0));
-}
-// The dome of the heart, or of every part on its own, leaning the way the part's facet faces.
-vec3 nDome(H h, float hm) { vec2 g = hm * 0.5 / sqrt(max(h.dn, 0.015)) * h.gD / h.dm; return normalize(vec3(-g + h.tilt, 1.0)); }
-vec3 nMix(vec3 a, vec3 b) { return normalize(vec3(a.xy + b.xy, 1.0)); }
-float ao(H h) { return 1.0 - 0.65 * h.groove * (1.0 - abs(clamp(h.gt / (uGW * 0.5), -1.0, 1.0))); }
-float dif(vec3 n, vec3 L) { return max(dot(n, L), 0.0); }
-float spc(vec3 n, vec3 L, float sh) { return pow(max(dot(n, normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), sh); }
-vec3 orbitL(float a, float z) { return normalize(vec3(cos(a), sin(a), z)); }
 
 vec3 fxTerrace(H h) {            // stepped relief like the real piece: every heart a raised step, light turning every two bars
   float k = ringIdx(h) / ringN(), T = clockB();
@@ -620,13 +689,6 @@ vec3 fxPillow(H h) {             // the heart as a soft dome with the grooves en
   vec3 n = nMix(nDome(h, 60.0), nCut(h, 1.8)), L = normalize(vec3(-0.4 + 0.35 * sin(uTime * 0.5 * uSpeed), -0.6, 0.9));
   vec3 base = pal(h.rad * 0.4 + uTime * 0.02);
   return base * (0.12 + 0.88 * dif(n, L)) * ao(h) + vec3(1.0) * spc(n, L, 40.0) * (0.4 + 0.6 * kk()) + pal(0.5) * (1.0 - n.z) * 0.5 * uBass;
-}
-vec3 envMap(vec3 R) {
-  float sky = smoothstep(-0.3, 0.7, -R.y);
-  vec3 c = mix(pal(0.6) * 0.15, pal(0.0), sky);
-  c += vec3(1.0) * smoothstep(0.93, 0.98, sin(R.x * 7.0 + uTime * 0.7 * uSpeed)) * sky;
-  c += pal(0.5) * smoothstep(0.96, 0.99, sin(R.y * 9.0 - uTime * 0.4)) * 0.6;
-  return c;
 }
 vec3 fxChrome(H h) {             // liquid chrome reflecting moving studio lights, rippling with the bass
   vec3 n = nMix(nDome(h, 70.0), nCut(h, 2.2));
@@ -712,15 +774,6 @@ vec3 fxHolo(H h) {               // a hologram: rainbow edges, scan lines and gl
 }
 
 // ================= breathing sound sculpture (58-63) =================
-// A piece is a part of an element, or a ring of the heart. Each sound channel has one job, smoothed so it moves and never jumps:
-// uBassS breathes (how deep and bright), uMidS turns the colour flow (uFlow), uHighS shimmers on the cut lines, the kick pulses,
-// the spectrum gives every piece its own voice, and uBreath is a slow breath whose pace follows the music's energy.
-// The trance reading joins in: a build-up deepens the breath and speeds the wave, a drop floods every piece at once.
-float pK(H h) { return uParts > 1 ? h.pk : ringIdx(h) / ringN(); }                       // where the piece is in the sequence
-float pB(H h) { return uParts > 1 ? h.pb : ringIdx(h) / ringN(); }                       // its slice of the spectrum
-float pSeed(H h) { return uParts > 1 ? hash11(float(h.part) * 7.31 + 0.4) : hash11(ringIdx(h) * 3.7 + 0.4); }
-float breathV(float off) { float x = fract(uBreath + off); return x < 0.4 ? smoothstep(0.0, 0.4, x) : 1.0 - smoothstep(0.4, 1.0, x); }   // in 40%, out 60%
-float shimmer(H h) { return pow(noise(h.p * 0.55 + vec2(uTime * 2.3, -uTime * 1.7)), 6.0) * uHighS * 3.5; }
 
 vec3 fxBreathe(H h) {            // every piece breathes light out from its core, one after another; the kick beats inside it
   float k = pK(h), br = breathV(-k * 0.35), amp = 0.35 + 0.65 * uBassS, reach = min(br * (0.55 + 0.45 * amp) + uBuild * 0.3, 1.2);
@@ -778,45 +831,7 @@ vec3 fxFloat(H h) {              // one flowing picture seen through all the pie
   return c * (h.stripe + h.groove * 1.2) + col * h.edge * 0.25;
 }
 
-// ---------------- ring engine ----------------
-// Row 2 of the channel texture: the engine's colour for every channel this frame (heart-engine.js), already scaled by level.
-vec3 chE(int id) { return texelFetch(uCh, ivec2(id, 2), 0).rgb; }
-// The six parts a pixel can belong to (it blends between them at edges): 0 edge, 1 seam, 2 rim, 3 separation, 4 groove, 5 band.
-// Written as functions rather than local arrays: some phone GPUs reject arrays without an explicit precision.
-int chId(H h, int i) {
-  int sd = int(h.side);
-  if (i == 0) return sd;
-  if (i == 1) return 2;
-  if (i == 2) return 3 + sd;
-  if (i == 3) return 5 + sd;
-  if (i == 4) return 8 + max(h.gi, 0) * 2 + sd;
-  return 136 + h.si * 2 + sd;
-}
-float chW(H h, int i) {
-  if (i == 0) return h.edge;
-  if (i == 1) return h.seam;
-  if (i == 2) return h.rim;
-  if (i == 3) return h.sep;
-  if (i == 4) return h.groove;
-  return h.stripe;
-}
-vec3 engineAt(H h) {
-  vec3 c = vec3(0.0);
-  for (int i = 0; i < 6; i++) { float w = chW(h, i); if (w > 0.001) c += w * chE(chId(h, i)); }
-  return c;
-}
-vec3 fxEngine(H h) {
-  vec3 c = engineAt(h);
-  // A little life inside each ring: a soft sheen running along it, brightest in the middle of the groove.
-  float sheen = 0.86 + 0.14 * sin(h.s * TAU * 5.0 - uTime * 1.7);
-  float core = 1.0 + 0.35 * h.groove * (1.0 - smoothstep(0.0, uGW * 0.5, h.gd));
-  return c * sheen * core;
-}
-
 // ================= trance (52-57) =================
-// A classic trance gate: 16 steps, on/off. The pattern reads from the lowest bit, one step per 16th note.
-float gateAt(int i) { return float((0x6DB5 >> (i & 15)) & 1); }
-float gate16() { float st = clockB() * 4.0; return gateAt(int(mod(floor(st), 16.0))) * (1.0 - smoothstep(0.5, 0.72, fract(st))); }
 vec3 fxTrLaser(H h) {            // a fan of beams from the heart's tip, sweeping over two bars; the cut grooves catch them
   vec2 q = h.p - vec2(S * 0.5, S * 0.97);
   float a = atan(q.x, -q.y), sw = sin(clockB() * TAU / 8.0) * 0.45, n = 7.0;
@@ -857,77 +872,27 @@ vec3 fxTrHyper(H h) {            // hyperspace: rings rush out of the core, fast
   float streak = pow(noise(vec2(h.s * 60.0, uTime * sp * 4.0 - k * 20.0)), 3.0) * 2.0;
   return mix(pal(0.5), pal(0.0), k) * (rv * (h.groove * 1.4 + h.stripe * 0.6) + streak * h.groove * (0.5 + kk())) + vec3(1.0) * h.edge * kk() * 0.8;
 }
+`;
 
+// The fragment shader for a set of banks (0 = the built-in effects, i = FX_BANKS[i - 1]): only their effects are in it.
+function fsSource(banks) {
+  const cases = [], code = [];
+  for (const b of banks) {
+    if (b === 0) { code.push(CORE_GLSL); CORE_FN.forEach((f, id) => cases.push(`    case ${id}: return ${f}(h);`)); }
+    else { const B = FX_BANKS[b - 1]; code.push(B.glsl); B.fx.forEach(([id, , , , f]) => cases.push(`    case ${id}: return ${f}(h);`)); }
+  }
+  if (!banks.includes(0)) cases.unshift("    case 0: return fxCalib(h);");
+  return FS_HEAD + FX_COMMON + code.join("") + `
 vec3 fx(int id, H h) {
   switch (id) {
-    case 0: return fxCalib(h);
-    case 1: return fxHeartbeat(h);
-    case 2: return fxRunners(h);
-    case 3: return fxEq(h);
-    case 4: return fxContour(h);
-    case 5: return fxLiquid(h);
-    case 6: return fxRipples(h);
-    case 7: return fxFlip(h);
-    case 8: return fxFire(h);
-    case 9: return fxNeon(h);
-    case 10: return fxLaser(h);
-    case 11: return fxHalves(h);
-    case 12: return fxPlasma(h);
-    case 13: return fxSparkle(h);
-    case 14: return fxRainbow(h);
-    case 15: return fxStrobe(h);
-    case 16: return fxHeartRain(h);
-    case 17: return fxLadder(h);
-    case 18: return fxVideo(h);
-    case 19: return fxTunnel(h);
-    case 20: return fxEcho(h);
-    case 21: return fxEngine(h);
-    case 22: return fxVU(h);
-    case 23: return fxKickBurst(h);
-    case 24: return fxBassHigh(h);
-    case 25: return fxSpiral(h);
-    case 26: return fxRadar(h);
-    case 27: return fxSpecRings(h);
-    case 28: return fxBreath(h);
-    case 29: return fxECG(h);
-    case 30: return fxSparks(h);
-    case 31: return fxFireworks(h);
-    case 32: return fxKaleido(h);
-    case 33: return fxThermal(h);
-    case 34: return fxSeamWaves(h);
-    case 35: return fxRingFlow(h);
-    case 36: return fxDigitalRain(h);
-    case 37: return fxLightning(h);
-    case 38: return fxTwinPulse(h);
-    case 39: return fxRunStrobe(h);
-    case 40: return fxGold(h);
-    case 41: return fxBarWipe(h);
-    case 42: return fxTerrace(h);
-    case 43: return fxPillow(h);
-    case 44: return fxChrome(h);
-    case 45: return fxGlass(h);
-    case 46: return fxTunnel3D(h);
-    case 47: return fxRotHeart(h);
-    case 48: return fxSpecRelief(h);
-    case 49: return fxSpot(h);
-    case 50: return fxShock(h);
-    case 51: return fxHolo(h);
-    case 52: return fxTrLaser(h);
-    case 53: return fxTrPump(h);
-    case 54: return fxTrBuild(h);
-    case 55: return fxTrGate(h);
-    case 56: return fxTrArp(h);
-    case 57: return fxTrHyper(h);
-    case 58: return fxBreathe(h);
-    case 59: return fxChoir(h);
-    case 60: return fxWave(h);
-    case 61: return fxCards(h);
-    case 62: return fxBlocks(h);
-    case 63: return fxFloat(h);
+${cases.join("\n")}
   }
   return vec3(0.0);
 }
+` + FS_TAIL;
+}
 
+const FS_TAIL = `
 vec3 layer(int id, H h) {
   vec3 c = fx(id, h);
   if (id == 0) return c;   // calibration also draws the box and grid around the heart
@@ -1046,22 +1011,16 @@ export class HeartGL {
     const gl = this.gl = canvas.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL2 לא זמין בדפדפן הזה");
     this.linearFloat = !!gl.getExtension("OES_texture_float_linear");
-    const sh = (type, src) => {
-      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-      return s;
-    };
-    const p = this.prog = gl.createProgram();
-    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
-    gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-    gl.useProgram(p);
+    // Programs by set of banks ("0", "3", "0,3"...). The built-in bank is built now, so a broken GPU still fails here as before;
+    // the others start compiling in the background where the browser can (KHR_parallel_shader_compile), else on first use.
+    this.parallel = !!gl.getExtension("KHR_parallel_shader_compile");
+    this.vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(this.vs, VS); gl.compileShader(this.vs);
+    this.progs = new Map(); this.bad = new Set(); this.chBanks = [];
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const a = gl.getAttribLocation(p, "a"); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
-    this.loc = {};
-    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
-    for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(p, i), name = u.name.replace(/\[0\]$/, ""); this.loc[name] = gl.getUniformLocation(p, u.name); }
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    this.use("0");
+    if (this.parallel) FX_BANKS.forEach((_, i) => this.build(String(i + 1)));
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
     this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
@@ -1077,10 +1036,33 @@ export class HeartGL {
       for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
       for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
     }
-    gl.uniform1i(this.loc.uField, 0); gl.uniform1i(this.loc.uVid, 1); gl.uniform1i(this.loc.uCh, 2);
-    gl.uniform1i(this.loc.uPartMap, 3); gl.uniform1i(this.loc.uPartD, 4);
     this.videoEl = null;
   }
+
+  build(key) {
+    const gl = this.gl, p = gl.createProgram(), fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, fsSource(key.split(",").map(Number))); gl.compileShader(fs);
+    gl.attachShader(p, this.vs); gl.attachShader(p, fs); gl.bindAttribLocation(p, 0, "a"); gl.linkProgram(p);
+    const pr = { p, fs, loc: null }; this.progs.set(key, pr); return pr;
+  }
+  // Make the program for a set of banks current (building it if needed) and return its uniform locations.
+  use(key) {
+    const gl = this.gl, pr = this.progs.get(key) || this.build(key);
+    if (!pr.loc) {
+      if (!gl.getProgramParameter(pr.p, gl.LINK_STATUS)) {
+        const msg = gl.getShaderInfoLog(pr.fs) || gl.getShaderInfoLog(this.vs) || gl.getProgramInfoLog(pr.p);
+        this.progs.delete(key); throw new Error(msg);
+      }
+      gl.useProgram(pr.p); pr.loc = {};
+      const n = gl.getProgramParameter(pr.p, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(pr.p, i), name = u.name.replace(/\[0\]$/, ""); pr.loc[name] = gl.getUniformLocation(pr.p, u.name); }
+      gl.uniform1i(pr.loc.uField, 0); gl.uniform1i(pr.loc.uVid, 1); gl.uniform1i(pr.loc.uCh, 2);
+      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4);
+    }
+    gl.useProgram(pr.p); this.loc = pr.loc; return pr.loc;
+  }
+  bankOf(id) { return EFFECTS[id]?.bank ?? 0; }
+  keyFor(ids) { return [...new Set(ids.map(id => this.bankOf(id)))].sort((a, b) => a - b).join(","); }
 
   // Upload the distance field of a model built by heart-geo.js; the groove settings go in as uniforms each frame.
   setModel(model) {
@@ -1124,15 +1106,33 @@ export class HeartGL {
       D[o] = Math.round(Math.max(0, Math.min(2, c.gain ?? 1)) * 127.5); D[o + 1] = (c.fx ?? -1) + 1; D[o + 2] = c.mute ? 255 : 0; D[o + 3] = c.solo ? 255 : 0;
       if (c.solo) solo = 1;
     }
+    this.chFx = Object.values(map).map(c => c.fx ?? -1).filter(f => f >= 0);
     this.anySolo = solo; this.chDirty = true;
   }
 
   // points: the six calibration points (see halves()), in output pixels.
+  // A crossfade between effects of different banks is drawn as two passes, the second blended over the first by the mix.
   render(s, points, pass = null) {
-    const gl = this.gl, L = this.loc, c = this.canvas, m = this.model;
-    if (!m) return;
-    gl.uniform1i(L.uPass, pass ? 1 : 0);
-    if (pass) {
+    if (!this.model) return;
+    const fxA = s.fxA, fxB = s.mix > 0.001 ? s.fxB : s.fxA, own = pass ? [] : this.chFx || [];
+    if (this.bankOf(fxA) === this.bankOf(fxB)) return this.draw(s, points, pass, this.keyFor([fxA, fxB, ...own]));
+    this.draw({ ...s, fxB: fxA, mix: 0 }, points, null, this.keyFor([fxA, ...own]));
+    this.draw({ ...s, fxA: fxB, mix: 0 }, points, { xfade: s.mix }, this.keyFor([fxB, ...own]));
+  }
+  draw(s, points, pass, key) {
+    let L;
+    try { L = this.use(key); }
+    catch (e) {   // a bank this GPU cannot build: say so once and show the heartbeat instead, so the show goes on
+      if (!this.bad.has(key)) { this.bad.add(key); console.error("heart-gl: effect bank " + key + " failed to build", e.message); }
+      L = this.use("0"); s = { ...s, fxA: this.bankOf(s.fxA) ? 1 : s.fxA, fxB: this.bankOf(s.fxB) ? 1 : s.fxB };
+    }
+    const gl = this.gl, c = this.canvas, m = this.model;
+    const layerPass = pass && pass.xfade == null;
+    gl.uniform1i(L.uPass, layerPass ? 1 : 0);
+    if (pass && !layerPass) {
+      gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendColor(0, 0, 0, pass.xfade);
+      gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+    } else if (pass) {
       gl.uniform1i(L.uMask, pass.mask || 0); gl.uniform1f(L.uLayOp, pass.op);
       gl.uniform1i(L.uLayMode, { multiply: 2, screen: 1, lighten: 1 }[pass.blend] ?? 0);
       gl.enable(gl.BLEND);
