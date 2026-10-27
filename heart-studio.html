@@ -2648,7 +2648,10 @@ const EFFECTS = [
   { id: 62, name: "תבליט פאנלים", ico: "🧱", e: 1, g: "parts" },
   { id: 63, name: "שכבות מרחפות", ico: "🪐", e: 0, g: "parts" },
 ];
-EFFECTS.forEach(e => e.bank = 0);
+// The built-in effects compile in small chunks of 8 (banks -1, -2...), so start-up only waits for the tiny bank 0
+// (calibration and the heartbeat) and the rest builds in the background instead of one giant shader freezing the first load.
+EFFECTS.forEach(e => e.bank = e.id < 2 ? 0 : -1 - (e.id >> 3));
+const CORE_CHUNKS = [...new Set(EFFECTS.map(e => e.bank))].filter(b => b < 0);
 FX_BANKS.forEach((b, i) => b.fx.forEach(([id, name, ico, e, fn]) => { EFFECTS[id] = { id, name, ico, e, g: b.g, bank: i + 1, fn }; }));
 // Effect groups for the pads, in the order they show.
 const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"],
@@ -3445,11 +3448,15 @@ vec3 fxTrHyper(H h) {            // hyperspace: rings rush out of the core, fast
 }
 `;
 
-// The fragment shader for a set of banks (0 = the built-in effects, i = FX_BANKS[i - 1]): only their effects are in it.
+// The fragment shader for a set of banks (0 and below = chunks of the built-in effects, i = FX_BANKS[i - 1]): only their effects
+// are in the switch; the compiler drops the built-in functions nothing calls.
 function fsSource(banks) {
   const cases = [], code = [];
   for (const b of banks) {
-    if (b === 0) { code.push(CORE_GLSL); CORE_FN.forEach((f, id) => cases.push(`    case ${id}: return ${f}(h);`)); }
+    if (b <= 0) {
+      if (!code.includes(CORE_GLSL)) code.push(CORE_GLSL);
+      CORE_FN.forEach((f, id) => { if (EFFECTS[id].bank === b) cases.push(`    case ${id}: return ${f}(h);`); });
+    }
     else { const B = FX_BANKS[b - 1]; code.push(B.glsl); B.fx.forEach(([id, , , , f]) => cases.push(`    case ${id}: return ${f}(h);`)); }
   }
   if (!banks.includes(0)) cases.unshift("    case 0: return fxCalib(h);");
@@ -3592,7 +3599,7 @@ class HeartGL {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     this.use("0");
-    if (this.parallel) this.prewarm(["td", ...FX_BANKS.map((_, i) => String(i + 1))]);
+    if (this.parallel) this.prewarm([...CORE_CHUNKS.map(String), "td", ...FX_BANKS.map((_, i) => String(i + 1))]);
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
     this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
@@ -3752,6 +3759,7 @@ class HeartGL {
     if (!pass) {
       if (this.ready(this.keyFor([fxA, ...own])) && this.ready(this.keyFor([fxB, ...own]))) this.shown = [fxA, fxB, s.mix];
       else if (this.shown) { [fxA, fxB] = this.shown; s = { ...s, fxA, fxB, mix: this.shown[2] }; if (fxA === fxB) s.mix = 0; }
+      else { fxA = fxB = 1; s = { ...s, fxA: 1, fxB: 1, mix: 0 }; return this.draw(s, points, null, "0"); }   // first seconds: the heartbeat
     } else if (!this.ready(this.keyFor([fxA, fxB]))) return;
     if (this.bankOf(fxA) === this.bankOf(fxB)) return this.draw(s, points, pass, this.keyFor([fxA, fxB, ...own]));
     this.draw({ ...s, fxB: fxA, mix: 0 }, points, null, this.keyFor([fxA, ...own]));
