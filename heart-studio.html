@@ -2432,7 +2432,7 @@ float tdInject(H h) {
   else if (src == 3) c = (smoothstep(7.0, 0.0, h.d) * (0.03 + 0.25 * kk()) + h.seam * 0.15 * kk()) + w * 0.4 * uTd[11];
   else if (src == 4) {
     float t = uTime * uTd[7] * uSpeed, n = 1.0 - abs(fbm(h.p * 0.012 * uTd[6] + vec2(t, -t * 0.7)) * 2.0 - 1.0);
-    c = smoothstep(0.8 - 0.22 * uLevelS - 0.25 * kk(), 1.0, n) * 0.07 + w * 0.6 * uTd[11];
+    c = smoothstep(0.88 - 0.12 * uLevelS - 0.2 * kk(), 1.0, n) * 0.035 + w * 0.6 * uTd[11];
   }
   else if (src == 5) c = w * 0.3;
   else if (src == 6) { float core = 1.0 - smoothstep(0.08, 0.2, h.rad); for (int i = 0; i < 6; i++) if (uPulse[i].y > 0.0 && uPulse[i].z < 1.5) c += core * tdEnv(uPulse[i].x) * uPulse[i].y * 0.35; }
@@ -2520,7 +2520,7 @@ vec3 fxRealHeart(H h) {
   float yav = rhAv(u.x), atr = smoothstep(0.012, -0.012, u.y - yav);
   // Muscle: fibres that spiral round the ventricles, and the softer wall of the atria.
   float fib = 0.55 + 0.45 * sin((u.x * 1.4 * sign(u.x + 1e-4) + u.y * 0.9) * 140.0 + fbm(u * 9.0) * 5.0);
-  vec3 muscle = mix(vec3(0.42, 0.03, 0.05), vec3(0.62, 0.08, 0.1), fib * 0.6) * (1.0 - atr) + vec3(0.55, 0.1, 0.16) * atr;
+  vec3 muscle = mix(vec3(0.26, 0.02, 0.035), vec3(0.72, 0.11, 0.12), fib * fib) * (1.0 - atr) + mix(vec3(0.4, 0.06, 0.12), vec3(0.7, 0.16, 0.24), fib) * atr;
   muscle *= 1.0 + 0.9 * lub * (1.0 - atr) + 0.7 * dub * atr;                // the flush of each beat
   float fat = exp(-pow((u.y - yav) / 0.03, 2.0)) * 0.7;                      // fat along the groove, as on a real heart
   vec3 col = mix(muscle, vec3(0.85, 0.7, 0.35), fat * 0.45);
@@ -2534,16 +2534,17 @@ vec3 fxRealHeart(H h) {
   }
   float dC = abs(u.y - yav) + 0.004;                                           // the coronary artery round the groove
   if (dC < dA) { dA = dC; along = yav + abs(u.x); }
-  float dAo = rhSeg(u, vec2(0.02, yav - 0.02), vec2(0.07, 0.17)) - 0.045;      // aorta and pulmonary trunk rising in the cleft
-  float dPu = rhSeg(u, vec2(-0.03, yav - 0.01), vec2(-0.08, 0.18)) - 0.04;
-  float dVc = rhSeg(u, vec2(-0.27, 0.12), vec2(-0.25, yav - 0.03)) - 0.03;     // the vena cava into the right atrium
+  float dAo = rhSeg(u, vec2(0.02, yav - 0.02), vec2(0.08, 0.18)) - 0.034;      // aorta and pulmonary trunk rising in the cleft
+  float dPu = rhSeg(u, vec2(-0.035, yav - 0.01), vec2(-0.09, 0.19)) - 0.03;
+  float dVc = rhSeg(u, vec2(-0.27, 0.13), vec2(-0.25, yav - 0.03)) - 0.022;     // the vena cava into the right atrium
   float art = 1.0 - smoothstep(0.004, 0.011, dA), big = 1.0 - smoothstep(0.0, 0.006, min(dAo, dPu)), vein = 1.0 - smoothstep(0.0, 0.006, dVc);
   float rim = exp(-abs(min(dAo, dPu)) * 220.0) + exp(-abs(dVc) * 220.0);
   // Blood: a wave runs out along the arteries after every lub, and up the great vessels.
   float wave = 0.0; for (int i = 0; i < 6; i++) { vec4 P = uPulse[i]; if (P.y > 0.0 && P.z < 0.5) wave += exp(-pow((along - (yav + P.x * 1.2)) / 0.05, 2.0)) * exp(-P.x * 2.0) * P.y; }
   float flowA = 0.6 + 0.4 * sin(along * 60.0 - t * 6.0);
-  vec3 blood = vec3(0.95, 0.08, 0.06) * (0.55 + 0.45 * flowA + 1.4 * wave), veinC = vec3(0.25, 0.2, 0.62) * (0.7 + 0.5 * dub);
-  col = mix(col, blood, art * 0.9); col = mix(col, vec3(0.8, 0.12, 0.12) * (0.6 + 1.2 * lub), big); col = mix(col, veinC, vein);
+  vec3 blood = vec3(1.0, 0.22, 0.12) * (0.6 + 0.45 * flowA + 1.6 * wave), veinC = vec3(0.22, 0.2, 0.7) * (0.7 + 0.5 * dub);
+  col *= 1.0 - 0.65 * exp(-pow((dA - 0.012) / 0.004, 2.0));                    // a dark edge, so every artery stands out of the muscle
+  col = mix(col, blood, art); col = mix(col, vec3(0.8, 0.12, 0.12) * (0.6 + 1.2 * lub), big); col = mix(col, veinC, vein);
   col += vec3(1.0, 0.85, 0.8) * rim * 0.3;
   // Light over the heart's dome and its cut grooves, so it reads as a solid organ; the liquid adds a glow of blood.
   vec3 lit = litMat(h, col, normalize(vec3(-0.4, -0.6, 0.7)), 40.0 + 12.0 * lub, 0.9, 30.0, 0.25);
@@ -2553,7 +2554,7 @@ vec3 fxRealHeart(H h) {
     float ln = max(max(art, rim), exp(-abs(u.y - yav) * 300.0));
     lit = pal(along + uFlow) * ln * (0.5 + 1.2 * wave + 0.6 * lub) + pal(0.5 + uFlow) * (1.0 - atr) * lub * 0.25 + pal(0.0) * atr * dub * 0.3;
   }
-  return lit * (h.groove * 1.3 + (h.stripe + h.rim) * 0.95) + vec3(1.0, 0.4, 0.45) * h.edge * (0.25 + 0.8 * lub);
+  return lit * (h.groove * 1.3 + (h.stripe + h.rim) * 0.95 + h.seam * 1.1) + vec3(1.0, 0.4, 0.45) * h.edge * (0.25 + 0.8 * lub);
 }
 ` };
 
