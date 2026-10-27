@@ -1018,15 +1018,16 @@ export class HeartGL {
     if (!gl) throw new Error("WebGL2 לא זמין בדפדפן הזה");
     this.linearFloat = !!gl.getExtension("OES_texture_float_linear");
     // Programs by set of banks ("0", "3", "0,3"...). The built-in bank is built now, so a broken GPU still fails here as before;
-    // the others start compiling in the background where the browser can (KHR_parallel_shader_compile), else on first use.
-    this.parallel = !!gl.getExtension("KHR_parallel_shader_compile");
+    // the others compile in the background where the browser can (KHR_parallel_shader_compile), one at a time after start-up
+    // (see prewarm), and until a program is ready the previous picture keeps playing instead of the show freezing.
+    this.pcx = gl.getExtension("KHR_parallel_shader_compile"); this.parallel = !!this.pcx;
     this.vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(this.vs, VS); gl.compileShader(this.vs);
     this.progs = new Map(); this.bad = new Set(); this.chBanks = [];
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     this.use("0");
-    if (this.parallel) { FX_BANKS.forEach((_, i) => this.build(String(i + 1))); this.build("td"); }
+    if (this.parallel) this.prewarm(["td", ...FX_BANKS.map((_, i) => String(i + 1))]);
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
     this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
@@ -1064,7 +1065,7 @@ export class HeartGL {
   // One step of the liquid, before the show is drawn. T = TdDriver.uniforms(settings). Nothing happens if the GPU cannot
   // build the pass: the liquid effects then show black instead of stopping the show.
   tdStep(s, points, T) {
-    if (!this.model || this.tdBad) return;
+    if (!this.model || this.tdBad || !this.ready("td")) return;
     try { this.use("td"); } catch (e) { this.tdBad = true; console.error("heart-gl: liquid pass failed to build", e.message); return; }
     const t = s.time ?? 0; this.tdDt = this.tdT == null ? 1 / 60 : Math.min(0.05, Math.max(0.001, t - this.tdT)); this.tdT = t;
     this.tdU = T; this.draw(s, points, { td: true }, "td");
@@ -1101,6 +1102,16 @@ export class HeartGL {
     gl.shaderSource(fs, key === "td" ? FS_HEAD + FX_COMMON + TD_SIM_GLSL : fsSource(key.split(",").map(Number))); gl.compileShader(fs);
     gl.attachShader(p, this.vs); gl.attachShader(p, fs); gl.bindAttribLocation(p, 0, "a"); gl.linkProgram(p);
     const pr = { p, fs, loc: null }; this.progs.set(key, pr); return pr;
+  }
+  // Start compiling the given programs in the background, one every few hundred ms, so start-up stays smooth.
+  prewarm(keys) {
+    const next = () => { const k = keys.shift(); if (k == null) return; if (!this.progs.has(k)) this.build(k); setTimeout(next, 350); };
+    setTimeout(next, 1500);
+  }
+  // True when a program can be used without waiting (always true without the parallel-compile extension: then it just builds).
+  ready(key) {
+    const pr = this.progs.get(key) || this.build(key);
+    return !this.parallel || !!pr.loc || this.gl.getProgramParameter(pr.p, this.pcx.COMPLETION_STATUS_KHR);
   }
   // Make the program for a set of banks current (building it if needed) and return its uniform locations.
   use(key) {
@@ -1171,7 +1182,12 @@ export class HeartGL {
   // A crossfade between effects of different banks is drawn as two passes, the second blended over the first by the mix.
   render(s, points, pass = null) {
     if (!this.model) return;
-    const fxA = s.fxA, fxB = s.mix > 0.001 ? s.fxB : s.fxA, own = pass ? [] : this.chFx || [];
+    let fxA = s.fxA, fxB = s.mix > 0.001 ? s.fxB : s.fxA; const own = pass ? [] : this.chFx || [];
+    // A bank still compiling: keep showing the last effect that was on screen until it is ready (the main pass only).
+    if (!pass) {
+      if (this.ready(this.keyFor([fxA, ...own])) && this.ready(this.keyFor([fxB, ...own]))) this.shown = [fxA, fxB, s.mix];
+      else if (this.shown) { [fxA, fxB] = this.shown; s = { ...s, fxA, fxB, mix: this.shown[2] }; if (fxA === fxB) s.mix = 0; }
+    } else if (!this.ready(this.keyFor([fxA, fxB]))) return;
     if (this.bankOf(fxA) === this.bankOf(fxB)) return this.draw(s, points, pass, this.keyFor([fxA, fxB, ...own]));
     this.draw({ ...s, fxB: fxA, mix: 0 }, points, null, this.keyFor([fxA, ...own]));
     this.draw({ ...s, fxA: fxB, mix: 0 }, points, { xfade: s.mix }, this.keyFor([fxB, ...own]));
