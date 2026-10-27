@@ -3,7 +3,7 @@
 # Run from the repository root:  python3 tools/build-heart-studio.py
 import base64, re
 
-MODS = [("geo", "heart-geo.js"), ("elements", "heart-elements.js"), ("fx", "heart-fx.js"), ("gl", "heart-gl.js"), ("audio", "heart-audio.js"), ("engine", "heart-engine.js"), ("react", "heart-react.js"), ("nodes", "heart-nodes.js")]
+MODS = [("geo", "heart-geo.js"), ("elements", "heart-elements.js"), ("fx", "heart-fx.js"), ("td", "heart-td.js"), ("gl", "heart-gl.js"), ("audio", "heart-audio.js"), ("engine", "heart-engine.js"), ("react", "heart-react.js"), ("nodes", "heart-nodes.js")]
 VAR = {f: "M_" + n for n, f in MODS}
 
 def imports_to_consts(code):

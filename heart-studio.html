@@ -204,6 +204,59 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 .wsPort.aud { border-radius: 2px; }
 .wsPort:hover { background: var(--fam); }
 #wsParams { display: grid; gap: 8px; }
+.wsMenu { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #0a0d12; }
+.wsMenu h4 { margin: 0 0 4px; font: 600 .7rem var(--mono); color: var(--muted); letter-spacing: .06em; }
+.wsMenu div { display: grid; gap: 3px; align-content: start; }
+.wsMenu button { text-align: start; padding: 4px 8px; font: 500 .78rem var(--mono); border-inline-start: 3px solid var(--fam); direction: ltr; }
+.wsKind { font: 700 8px var(--mono); font-style: normal; background: var(--fam); color: #0d1117; padding: 0 3px; border-radius: 2px; margin-inline-end: 5px; vertical-align: 1px; }
+.wsNode header > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wsNode header small { font-weight: 400; color: #6b778a; font-size: 9.5px; margin-inline-start: auto; padding-inline-start: 4px; }
+.wsView { display: block; margin: 0 4px 6px; width: calc(100% - 8px); height: 50px; background: #05070a; border-radius: 3px; }
+.wsPort.img { border-radius: 2px; width: 13px; height: 13px; margin-top: -6.5px; border-color: #9775fa; }
+.wsPort.in.img { left: -7px; } .wsPort.out.img { right: -7px; }
+.wsWires .w.img { stroke-width: 5; opacity: .9; }
+.wsWires .w.exp { stroke-dasharray: 5 4; }
+/* Effects: one button that opens the browser; recent effects and the mechanisms under it. */
+.fxbar { gap: 8px; }
+.fxCur { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: start; padding: 8px 12px; }
+.fxCur > span:first-child { font-size: 1.9rem; line-height: 1; }
+.fxCur .t { display: grid; flex: 1; min-width: 0; } .fxCur .t b { font-size: 1.05rem; } .fxCur .t small { color: var(--muted); font-weight: 400; font-size: .76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fxCur > i { font-style: normal; color: var(--muted); }
+.recent { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.recent button { padding: 3px 8px; font-size: .8rem; font-weight: 400; white-space: nowrap; }
+.mechs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.mechs button { padding: 6px 2px 4px; display: grid; justify-items: center; font-size: .7rem; font-weight: 600; position: relative; user-select: none; -webkit-user-select: none; touch-action: none;
+  box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--accent) calc(var(--m, 0) * 45%), transparent); }
+.mechs button span { font-size: 1.25rem; line-height: 1.1; }
+.mechs button kbd { position: absolute; top: 2px; inset-inline-end: 4px; font: .6rem var(--mono); color: var(--muted); text-transform: uppercase; }
+@media (max-width: 560px) { .mechs { grid-template-columns: repeat(4, 1fr); } }
+dialog.fxDlg { width: min(920px, calc(100vw - 32px)); max-height: min(80vh, 760px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg); }
+dialog.fxDlg::backdrop { background: #000a; }
+.fxDlg form { display: grid; grid-template-rows: auto auto 1fr; max-height: min(80vh, 760px); }
+.fxDlg header { padding: 12px 12px 6px; display: flex; gap: 8px; }
+.fxDlg header input { flex: 1; }
+.fxGroups { display: flex; gap: 4px; padding: 0 12px 8px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.fxGroups button { padding: 4px 10px; font-size: .78rem; white-space: nowrap; }
+.fxGroups button i { font-style: normal; font-weight: 400; color: var(--muted); margin-inline-start: 4px; }
+.fxDlg .pads { padding: 12px; overflow: auto; align-content: start; }
+input[type=search] { font: 600 .92rem var(--display); color: var(--fg); background: var(--btn, #1f2734); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+/* Clean mode: explanations hidden until asked for, and every panel section folds by its title. */
+body:not(.helpOn) p.help:not(.keep) { display: none; }
+section > h3.fold { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+section > h3.fold::before { content: "▾"; font-size: .9em; }
+section.folded > h3.fold::before { content: "▸"; }
+section.folded > :not(h3) { display: none !important; }
+section.folded { padding-block: 8px; }
+/* Perform mode (as TouchDesigner's): only the output and the live controls. */
+body.perform .studio > .col:last-child, body.perform .transport, body.perform main > header h1 small { display: none; }
+body.perform .studio { grid-template-columns: 1fr; }
+.screens { display: grid; gap: 6px; }
+.screens button { display: flex; justify-content: space-between; gap: 8px; text-align: start; font-weight: 400; }
+.screens button b { font-weight: 600; }
+.screens button span { font: .8rem var(--mono); color: var(--muted); }
+.stat { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.stat div { background: var(--well, #0a0e14); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; display: grid; }
+.stat div small { color: var(--muted); font-size: .72rem; } .stat div b { font: 600 .9rem var(--mono); }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
@@ -213,8 +266,11 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
   <header>
     <h1>מיפוי לב <small>· מקרן · 240×240 ס״מ · מוזיקה ווידאו</small></h1>
     <div class="row">
+      <span class="chip" id="fpsChip" title="פריימים לשנייה">— FPS</span>
       <span class="chip" id="bpmChip">— BPM</span>
       <span class="chip beat" id="beatDots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <button id="helpBtn" aria-pressed="false" title="הצגת ההסברים בכל הפאנלים">❔ הסברים</button>
+      <button id="perfBtn" aria-pressed="false" title="מצב הופעה: רק הפלט והשליטה החיה (P, Esc ליציאה)">🎭 הופעה</button>
     </div>
   </header>
 
@@ -252,11 +308,23 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
         </div>
       </section>
 
-      <section>
-        <div class="row" style="justify-content:space-between"><h3>אפקטים</h3><span class="help">מקשים 1-9, 0 · רווח = נגן · B החשכה · T טאפ · A במאי · C כיול</span></div>
-        <div class="pads" id="pads"></div>
+      <section class="fxbar">
+        <div class="row">
+          <button id="fxOpen" class="fxCur" aria-haspopup="dialog" title="כל האפקטים (/)"><span id="fxCurIco"></span><span class="t"><b id="fxCurName"></b><small id="fxCurGrp"></small></span><i>▾ כל האפקטים</i></button>
+          <button id="fxPrev" aria-label="האפקט הקודם בקבוצה" title="הקודם (,)">‹</button><button id="fxNext" aria-label="האפקט הבא בקבוצה" title="הבא (.)">›</button>
+        </div>
+        <div class="recent" id="recent" aria-label="אפקטים אחרונים"></div>
+        <div class="mechs" id="mechs" aria-label="מנגנונים: לחיצה מפעילה, החזקה משאירה דולק"></div>
         <div class="sl"><label for="xfade">מעבר</label><input type="range" id="xfade" min="0" max="40" value="6"><output id="xfadeV"></output></div>
+        <p class="help">מקשים: 1-9, 0 אפקטים · / חיפוש · , . הקודם והבא · Q W E R Y U I O מנגנונים · רווח נגן · B החשכה · T טאפ · A במאי · C כיול · P מצב הופעה</p>
       </section>
+      <dialog class="fxDlg" id="fxDlg" aria-label="בחירת אפקט">
+        <form method="dialog">
+          <header><input type="search" id="fxSearch" placeholder="חיפוש אפקט…" aria-label="חיפוש אפקט" autocomplete="off"><button value="close" aria-label="סגירה">✕</button></header>
+          <nav class="fxGroups" id="fxGroups"></nav>
+          <div class="pads" id="pads"></div>
+        </form>
+      </dialog>
     </div>
 
     <div class="col">
@@ -388,6 +456,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
         <section>
           <h3>שולחן עבודה · אופרטורים וחיבורים</h3>
           <div class="wsBar" id="wsBar"></div>
+          <div class="wsMenu" id="wsMenu" hidden></div>
           <div class="wsArea" id="wsArea" tabindex="0" aria-label="רשת האופרטורים. גרירת רקע מזיזה, גלגלת מגדילה, Delete מוחק את האופרטור הנבחר"></div>
           <div class="row"><label class="row help"><input type="checkbox" id="wsOn" checked> הרשת שולטת בלב</label><span class="help" id="wsInfo"></span></div>
         </section>
@@ -518,7 +587,17 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
       <!-- projector -->
       <div class="col" data-panel="proj" hidden>
         <section>
-          <h3>יציאה למקרן</h3>
+          <h3>פלט למקרן · כמו Window COMP</h3>
+          <div class="stat" id="outStat"></div>
+          <div class="row">
+            <button id="scrBtn">🖥️ זיהוי מסכים</button>
+            <label class="row help"><input type="checkbox" id="outCursor" checked> הסתרת סמן בחלון המקרן</label>
+          </div>
+          <div class="screens" id="screens"></div>
+          <p class="help">כמו ב-TouchDesigner: בוחרים את המסך של המקרן, והחלון נפתח עליו בגודל המלא שלו (Chrome ו-Edge שואלים פעם אחת על ניהול חלונות). בלי זיהוי, גוררים את החלון ולוחצים פעמיים למסך מלא. למקרן Epson EB-X14 בחרו 1024×768 (הרזולוציה הטבעית שלו).</p>
+        </section>
+        <section>
+          <h3>רזולוציה ופתיחה</h3>
           <div class="row">
             <select id="res" aria-label="רזולוציית מקרן">
               <option value="1920x1080">1920×1080 (Full HD)</option><option value="1280x720">1280×720</option><option value="1280x800">1280×800 (WXGA)</option>
@@ -2186,6 +2265,301 @@ vec3 fxFRiver(H h) {             // rivers of colour flow down from the cleft to
 return { FX_COMMON, FX_BANKS };
 })();
 
+// ===== heart-td.js =====
+const M_td = (() => {
+// TouchDesigner-style liquid for the heart: a feedback simulation, after the audio-reactive "viscous liquid" networks built in
+// TouchDesigner (Audio Device In -> Analyze -> Math "snare" -> Export, driving a TOP chain of Feedback, Displace, Blur and a fire
+// Lookup, with Geo, Camera, Light and Render for a 3D height map). Written from scratch for the heart.
+//
+// How it runs: every frame one extra pass simulates the liquid in heart space (a square texture over the 240 x 240 cm box, so
+// every texel is a fixed spot on the heart, not on the projector). The pass reads last frame's texture, moves it (curl-noise
+// flow, a push across the rings, zoom and twist about each part's centre), blurs it a little (viscosity), lets it cool, and
+// pours in new heat from the music: heartbeat waves (a lub and a dub on every hit), blooms, the grooves, the contour walls...
+// The show pass then reads the texture at each pixel's spot on the heart and cuts it to the real grooves, the hearts between
+// them and the contour, through a fire lookup (or the show palette, or green), with veins, chromatic split, zoom blur or a lit
+// 3D height map. So the liquid moves freely but the light only ever lands on the cut.
+//
+// Texture channels: r = heat, g = sparks, b = height (slow heat, for the 3D look and the veins).
+
+// Parameters, in the order of the uniform arrays. Simulation (uTd[16]) then look (uTdO[8]).
+const TD_SIM = ["src", "gain", "decay", "zoom", "rot", "flow", "nscale", "nspeed", "push", "visc", "mirror", "react", "bright", "gamma", "wave", "spark"];
+const TD_LOOK = ["ramp", "chroma", "zblur", "look", "gG", "sG", "edge", "vein"];
+const TD_DEFAULT = {
+  src: 0, gain: 1, decay: 0.9, zoom: 0.6, rot: 0, flow: 1, nscale: 1, nspeed: 0.3, push: 0.3, visc: 0.3, mirror: 0, react: 0.8,
+  bright: 1, gamma: 1, wave: 0.9, spark: 0,
+  ramp: 0, chroma: 0, zblur: 0, look: 0, gG: 1.4, sG: 0.55, edge: 0.3, vein: 1,
+};
+// Sources of heat, by number (TD_DEFAULT.src).
+const TD_SOURCES = ["פעימות לב · גלים מהמרכז", "בועות על כל מכה", "התעלות לפי הספקטרום", "קירות אש · הקונטור", "לבה · רעש חי", "ניצוצות מהמרכז", "משאבה · הלב הפנימי", "וידאו"];
+const TD_RAMPS = ["אש", "צבעי ההופעה", "ירוק"];
+const TD_LOOKS = ["לבה", "ורידים", "תלת-ממד"];
+
+// The 20 ready effects. Each is a full setting of the simulation and the look, as in the reel: liquid, fire lookup, chromatic
+// fringes, sparks, walls of fire, a 3D height map. [id, name, icon, energy class, settings]
+const P = (o) => ({ ...TD_DEFAULT, ...o });
+const TD_FX = [
+  [164, "לבה צמיגה", "🌋", 1, P({ src: 4, decay: 0.94, flow: 1.4, visc: 0.45, look: 1, push: 0, zoom: 0.2, react: 0.7 })],
+  [165, "גלי פעימת לב", "💓", 1, P({ src: 0, decay: 0.9, push: 0.8, zoom: 0.8, flow: 0.6, wave: 0.8 })],
+  [166, "לב בוער", "❤️‍🔥", 2, P({ src: 2, decay: 0.88, flow: 0.8, push: 0.4, gain: 1.2, look: 1 })],
+  [167, "קירות אש", "🧱", 2, P({ src: 3, decay: 0.9, push: -0.9, zoom: -0.6, flow: 1.2, edge: 0.6 })],
+  [168, "התפרצות ניצוצות", "🎆", 2, P({ src: 5, decay: 0.86, spark: 1, flow: 0.8, zoom: 0.4 })],
+  [169, "גל צמיג", "🌊", 0, P({ src: 0, decay: 0.95, visc: 0.7, flow: 2.2, nscale: 0.6, nspeed: 0.15, wave: 0.6, push: 0.4 })],
+  [170, "סנר בוער", "🔥", 2, P({ src: 1, decay: 0.9, flow: 1.2, visc: 0.4, look: 1 })],
+  [171, "טופוגרפיה", "🗻", 1, P({ src: 4, decay: 0.95, flow: 1.2, visc: 0.55, look: 2, gG: 1.2, sG: 0.8 })],
+  [172, "סדקים במגמה", "🌑", 1, P({ src: 4, decay: 0.93, flow: 1, look: 1, vein: 2.2, gamma: 1.6, bright: 0.8 })],
+  [173, "עיוות כרומטי", "🌈", 2, P({ src: 1, decay: 0.9, chroma: 4, flow: 1.4, look: 1 })],
+  [174, "זום בליץ", "💥", 3, P({ src: 0, decay: 0.88, zblur: 1, zoom: 1.4, push: 0.6, spark: 0.5 })],
+  [175, "לבה ירוקה", "🧪", 1, P({ src: 4, ramp: 2, decay: 0.94, flow: 1.4, visc: 0.45, look: 1, chroma: 1.5 })],
+  [176, "מערבולת מגמה", "🌀", 1, P({ src: 4, decay: 0.95, rot: 1.6, zoom: 0.5, flow: 0.8, look: 1 })],
+  [177, "מראת לבה", "🦋", 1, P({ src: 1, decay: 0.92, mirror: 1, flow: 1.3, look: 1 })],
+  [178, "עורקים", "🩸", 1, P({ src: 6, decay: 0.93, push: 1.4, flow: 0.5, visc: 0.2, look: 1, gG: 1.8, sG: 0.25 })],
+  [179, "מטאורים", "☄️", 2, P({ src: 5, decay: 0.92, spark: 1, flow: 2, push: 0.5, chroma: 1.5 })],
+  [180, "בועות מגמה", "🫧", 0, P({ src: 1, decay: 0.96, visc: 0.8, flow: 0.4, gain: 0.8, react: 0.4 })],
+  [181, "עשן חם", "🌫️", 0, P({ src: 4, ramp: 1, decay: 0.97, visc: 0.8, gain: 0.5, flow: 1.8, nspeed: 0.12, react: 0.3, look: 0 })],
+  [182, "וידאו מותך", "📽️", -1, P({ src: 7, decay: 0.85, flow: 1.2, visc: 0.3, chroma: 1.5 })],
+  [183, "לבה בצבעי ההופעה", "🎨", 1, P({ src: 0, ramp: 1, decay: 0.93, flow: 1.4, look: 1, push: 0.5, spark: 0.3 })],
+  // A real heart built into the element: the seam is the septum, the two top lobes the atria. It beats lub-dub with the music.
+  [184, "לב אמיתי פועם", "🫀", 1, P({ src: 6, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
+  [185, "לב אמיתי · ניאון", "💗", 1, P({ src: 6, ramp: 1, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
+];
+const TD_PRESET = Object.fromEntries(TD_FX.map(([id, , , , o]) => [id, o]));
+const isTd = id => TD_PRESET[id] != null;
+
+// Mechanisms: things the performer fires by hand (pad, keyboard, MIDI note through the workspace). Held = stays on.
+// [key, icon, name, keyboard key, release seconds]
+const MECHS = [
+  ["beat", "💓", "פעימה", "q", 0.3], ["shock", "💥", "גל הלם", "w", 0.6], ["freeze", "🧊", "הקפאה", "e", 0.8], ["twist", "🌀", "מערבולת", "r", 0.9],
+  ["erupt", "🌋", "התפרצות", "y", 0.7], ["flash", "⚡", "הבזק", "u", 0.18], ["wipe", "🧽", "ניקוי", "i", 0.5], ["sparks", "🎆", "ניצוצות", "o", 0.3],
+];
+
+// The heartbeat and the mechanisms, from the music. A hit (the kick, or a sharp onset, as the reel's "snare" channel) starts a
+// lub; a softer dub follows a third of a beat later. With no hits for a while, the music clock keeps a quiet heartbeat going.
+class TdDriver {
+  constructor() {
+    this.pulses = []; this.mech = new Float32Array(8); this.held = new Array(8).fill(false); this.ext = new Array(8).fill(0);
+    this.on = false; this.lastHit = -9; this.dub = null; this.beatN = null; this.lub = 0; this.dubFire = 0; this.env = 0; this.t = 0;
+  }
+  add(kind, s) { this.pulses.unshift({ t0: this.t, s, kind, seed: Math.random() }); if (this.pulses.length > 6) this.pulses.length = 6; }
+  beat(s, bpm) {
+    this.add(0, s); this.lub = 1; this.lastHit = this.t;
+    this.dub = { at: this.t + Math.min(0.3, Math.max(0.12, 60 / (bpm || 120) / 3)), s: s * 0.6 };
+  }
+  // Mechanisms: press / release (pads and keys) or a value from the workspace (0..1, fires on the way up through 0.5).
+  press(i, on = true) {
+    this.held[i] = on;
+    if (!on) return;
+    if (i === 0) this.beat(1, this.bpm); else if (i === 1) this.add(3, 1.6); else if (i === 7) this.add(2, 1);
+    this.mech[i] = 1;
+  }
+  frame(f, t, ext) {
+    const dt = Math.min(0.1, Math.max(0, t - this.t)); this.t = t; this.bpm = f.bpm; this.lub = 0; this.dubFire = 0;
+    const k = Math.max(f.kick ?? 0, (f.hit ?? 0) * 0.9);
+    if (k > 0.55 && !this.on && t - this.lastHit > 0.2) this.beat(Math.min(1, 0.45 + k * 0.55), f.bpm);
+    this.on = k > 0.4;
+    if (f.beatN != null && f.beatN !== this.beatN) { if (this.beatN != null && t - this.lastHit > 1.5 * 60 / (f.bpm || 120)) this.beat(0.45, f.bpm); this.beatN = f.beatN; }
+    if (this.dub && t >= this.dub.at) { this.add(1, this.dub.s); this.dub = null; this.dubFire = 1; }
+    for (let i = 0; i < 8; i++) {
+      const v = Math.min(1, Math.max(0, ext?.[i] ?? 0));
+      if (v >= 0.5 && this.ext[i] < 0.5) this.press(i, true), this.held[i] = false;
+      this.ext[i] = v;
+      this.mech[i] = this.held[i] ? 1 : Math.max(v, this.mech[i] * Math.exp(-dt / MECHS[i][4]));
+    }
+    this.pulses = this.pulses.filter(p => t - p.t0 < 3);
+    const p = this.pulses.find(p => p.kind < 2); this.env = p ? p.s * Math.exp(-(t - p.t0) * 3) : 0;
+  }
+  // Uniform data: per pulse [age s, strength, kind, seed]; unused slots have strength 0.
+  pulseData() {
+    const a = new Float32Array(24);
+    this.pulses.forEach((p, i) => a.set([this.t - p.t0, p.s, p.kind, p.seed], i * 4));
+    return a;
+  }
+  uniforms(o) {
+    const s = { ...TD_DEFAULT, ...o };
+    return { td: Float32Array.from(TD_SIM, k => +s[k] || 0), look: Float32Array.from(TD_LOOK, k => +s[k] || 0), pulse: this.pulseData(), mech: this.mech };
+  }
+}
+
+// ---------------- GLSL ----------------
+// Shared by the simulation pass and the show pass (after FX_COMMON, so ringIdx, specAt, kk, fbm... are there).
+const TD_COMMON = `
+vec4 tdAt(vec2 p) { return texture(uFb, p / S); }
+float tdEnv(float age) { return smoothstep(0.0, 0.1, age) * exp(-age * 2.6); }   // a viscous swell: soft in, slow out
+vec2 tdRandPt(float s) { return uCenter + (vec2(hash11(s * 91.7), hash11(s * 13.3 + 4.1)) - 0.5) * S * vec2(0.62, 0.55) + vec2(0.0, S * 0.04); }
+`;
+
+// The simulation pass. gl_FragCoord is a texel of the heart-space texture; heart() maps it to cm through uInvHL, which the
+// renderer sets to a plain scale for this pass.
+const TD_SIM_GLSL = TD_COMMON + `
+float tdWaves(H h) {
+  float c = 0.0;
+  for (int i = 0; i < 6; i++) {
+    vec4 P = uPulse[i]; if (P.y <= 0.0 || P.z > 1.5 && P.z < 2.5) continue;
+    float R = P.x * uTd[14] * (P.z > 2.5 ? 1.6 : 1.0), d = (h.rad - R) / (P.z > 2.5 ? 0.08 : 0.05);
+    c += exp(-d * d) * P.y * exp(-P.x * 1.2) * (P.z > 0.5 && P.z < 1.5 ? 0.8 : 1.0);
+  }
+  return c * 0.35;
+}
+float tdBlooms(H h) {
+  float c = 0.0;
+  for (int i = 0; i < 6; i++) {
+    vec4 P = uPulse[i]; if (P.y <= 0.0 || P.z > 1.5) continue;
+    vec2 q = h.p - tdRandPt(P.w + P.z * 0.37); float r = 10.0 + 22.0 * hash11(P.w * 7.1) * P.y;
+    float w = fbm(q * 0.06 + P.w * 9.0) * 14.0;
+    c += smoothstep(r, r * 0.25, length(q) + w - 7.0) * tdEnv(P.x) * P.y;
+  }
+  return c * 0.22;
+}
+float tdSparks(H h) {
+  float c = 0.0;
+  for (int i = 0; i < 6; i++) {
+    vec4 P = uPulse[i]; if (P.y <= 0.0 || P.x > 1.4) continue;
+    if (!(P.z > 1.5 && P.z < 2.5) && uTd[15] < 0.01 && int(uTd[0] + 0.5) != 5) continue;
+    vec2 o = hash11(P.w * 3.3) < 0.5 ? h.pc : tdRandPt(P.w);
+    for (int j = 0; j < 16; j++) {
+      float fj = float(j), a = P.w * TAU + fj * TAU / 16.0 + hash11(fj + P.w * 31.0) * 0.4, sp = 40.0 + 90.0 * hash11(fj * 1.7 + P.w);
+      vec2 at = o + vec2(cos(a), sin(a)) * sp * P.x * (1.0 - 0.3 * P.x) + vec2(0.0, 25.0 * P.x * P.x);
+      c += exp(-dot2(h.p - at) / 3.0) * (1.0 - P.x / 1.4);
+    }
+  }
+  return c * max(uTd[15], 0.6);
+}
+float tdInject(H h) {
+  int src = int(uTd[0] + 0.5);
+  float lv = 0.6 + 0.6 * uLevelS + 0.4 * uBuild, c = 0.0, w = tdWaves(h);
+  if (src == 0) c = w * 1.6;
+  else if (src == 1) c = tdBlooms(h) + w * 0.3 * uTd[11];
+  else if (src == 2) c = h.groove * pow(specAt(ringIdx(h) / ringN()), 1.5) * 0.08 + w * h.groove * 1.4;
+  else if (src == 3) c = (smoothstep(7.0, 0.0, h.d) * (0.03 + 0.25 * kk()) + h.seam * 0.15 * kk()) + w * 0.4 * uTd[11];
+  else if (src == 4) {
+    float t = uTime * uTd[7] * uSpeed, n = 1.0 - abs(fbm(h.p * 0.012 * uTd[6] + vec2(t, -t * 0.7)) * 2.0 - 1.0);
+    c = smoothstep(0.8 - 0.22 * uLevelS - 0.25 * kk(), 1.0, n) * 0.07 + w * 0.6 * uTd[11];
+  }
+  else if (src == 5) c = w * 0.3;
+  else if (src == 6) { float core = 1.0 - smoothstep(0.08, 0.2, h.rad); for (int i = 0; i < 6; i++) if (uPulse[i].y > 0.0 && uPulse[i].z < 1.5) c += core * tdEnv(uPulse[i].x) * uPulse[i].y * 0.35; }
+  else if (src == 7) c = dot(video(h.p), vec3(0.3, 0.5, 0.2)) * 0.12 + w * 0.4 * uTd[11];
+  return c * lv;
+}
+void main() {
+  H h = heart(gl_FragCoord.xy);
+  vec2 p = h.p, c = h.pc;
+  float tx = S / uTdN, fr = uTdDt * 60.0, t = uTime * uTd[7] * uSpeed;
+  // Flow: curl of a slow noise field (divergence free, so the liquid swirls instead of piling up), stronger with the bass.
+  vec2 np = p * 0.01 * uTd[6]; float e = 0.6;
+  float n1 = noise(np + vec2(0.0, e) + t) + 0.5 * noise(np * 2.3 + vec2(0.0, e) - t), n2 = noise(np - vec2(0.0, e) + t) + 0.5 * noise(np * 2.3 - vec2(0.0, e) - t);
+  float n3 = noise(np + vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 + vec2(e, 0.0) - t), n4 = noise(np - vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 - vec2(e, 0.0) - t);
+  vec2 vel = vec2(n1 - n2, n4 - n3) * uTd[5] * (0.6 + uTd[11] * (uBassS + 0.8 * kk())) * 1.2;
+  vel += h.gP * uTd[8] * (0.35 + uTd[11] * (0.5 * uLevelS + 0.5 * kk())) + h.gP * uMech[1] * 2.5;
+  // Feedback transform about the part's centre: zoom, twist (and the shock and twist mechanisms).
+  float z = (uTd[3] * (0.6 + 0.6 * uTd[11] * kk()) + 5.0 * uMech[1] - 3.0 * uMech[6]) * 0.003, a = (uTd[4] + 4.0 * uMech[3]) * 0.003;
+  vec2 d = p - c; d = mat2(cos(a), -sin(a), sin(a), cos(a)) * d * (1.0 - z * fr);
+  vec2 q = c + d - vel * fr;
+  if (uTd[10] > 0.5 && p.x > S * 0.5) q.x = S - q.x;
+  vec4 P0 = tdAt(q);
+  vec4 bl = (tdAt(q + vec2(tx, 0.0) * 1.5) + tdAt(q - vec2(tx, 0.0) * 1.5) + tdAt(q + vec2(0.0, tx) * 1.5) + tdAt(q - vec2(0.0, tx) * 1.5)) * 0.25;
+  vec4 F = mix(P0, bl, uTd[9]);
+  float keep = pow(clamp(mix(uTd[2], 1.0, uMech[2]), 0.0, 1.0), fr) * (1.0 - 0.3 * uMech[6]);
+  float heat = F.r * keep, sp = F.g * pow(0.88, fr) * (1.0 - 0.3 * uMech[6]);
+  float pour = (1.0 - uMech[2]) * fr;
+  heat += tdInject(h) * uTd[1] * pour;
+  heat += uMech[4] * smoothstep(0.35, 0.8, fbm(p * 0.025 + uTime * 0.6)) * 0.25 * pour;     // eruption: the whole heart boils over
+  sp += tdSparks(h) * pour;
+  float hgt = mix(F.b, heat, 0.12 * fr);
+  float inside = smoothstep(-6.0, -2.0, h.d);
+  o = vec4(min(heat, 3.0), min(sp, 3.0), min(hgt, 3.0), 1.0) * inside;
+}
+`;
+
+// The show pass: one function for all 20 effects; their settings come in as uniforms.
+const TD_BANK = { g: "td", title: "טאץ' דיזיינר · לבה צמיגה ופעימות לב", fx: TD_FX.map(([id, name, ico, e, , fn]) => [id, name, ico, e, fn || "fxTd"]), glsl: TD_COMMON + `
+vec3 tdRamp(float x, int r) {
+  x = max(x, 0.0);
+  if (r == 1) return mix(mix(mix(vec3(0.0), pal(0.0) * 0.5, smoothstep(0.0, 0.3, x)), pal(0.3), smoothstep(0.25, 0.7, x)), vec3(1.0), smoothstep(0.9, 1.7, x));
+  if (r == 2) return mix(mix(mix(vec3(0.0), vec3(0.0, 0.22, 0.12), smoothstep(0.0, 0.25, x)), vec3(0.1, 0.9, 0.55), smoothstep(0.2, 0.7, x)), vec3(0.85, 1.0, 0.95), smoothstep(0.75, 1.5, x));
+  vec3 c = mix(vec3(0.0), vec3(0.35, 0.0, 0.0), smoothstep(0.0, 0.2, x));
+  c = mix(c, vec3(0.85, 0.08, 0.0), smoothstep(0.15, 0.45, x));
+  c = mix(c, vec3(1.0, 0.45, 0.0), smoothstep(0.4, 0.75, x));
+  c = mix(c, vec3(1.0, 0.82, 0.25), smoothstep(0.7, 1.1, x));
+  return mix(c, vec3(1.0, 1.0, 0.92), smoothstep(1.05, 1.6, x));
+}
+float tdHeat(vec4 F) { return pow(max(F.r, 0.0), uTd[13]) * uTd[12]; }
+vec3 fxTd(H h) {
+  vec2 p = h.p; float tx = S / uTdN;
+  int ramp = int(uTdO[0] + 0.5), look = int(uTdO[3] + 0.5);
+  vec4 F = tdAt(p);
+  float zb = uTdO[2] * (0.25 + kk() + uMech[1]);                       // zoom blur towards the part's centre on the hits
+  if (zb > 0.02) { vec4 acc = F; for (int i = 1; i < 7; i++) acc += tdAt(h.pc + (p - h.pc) * (1.0 - zb * 0.035 * float(i))); F = acc / 7.0; }
+  float heat = tdHeat(F);
+  float hx = tdAt(p + vec2(tx, 0.0)).b - tdAt(p - vec2(tx, 0.0)).b, hy = tdAt(p + vec2(0.0, tx)).b - tdAt(p - vec2(0.0, tx)).b;
+  vec3 col;
+  if (look == 1) col = tdRamp(heat * 0.7 + length(vec2(hx, hy)) * 9.0 * uTdO[7], ramp);              // veins: bright rims on every blob
+  else if (look == 2) {                                                                              // 3D: the heat as a lit height map
+    vec3 n = normalize(vec3(-hx * 14.0, -hy * 14.0, 1.0)), L = normalize(vec3(-0.5, -0.6, 0.65));
+    float df = max(dot(n, L), 0.0), sp = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
+    col = vec3(0.6) * (0.12 + 0.88 * df) * smoothstep(0.02, 0.35, F.b) + vec3(sp * 0.7) + tdRamp(heat, ramp) * 0.45;
+  } else col = tdRamp(heat, ramp);
+  if (uTdO[1] > 0.0) {                                                                               // chromatic split, wider on the hits
+    vec2 o = normalize(p - h.pc + 1e-3) * uTdO[1] * (1.0 + 2.0 * kk());
+    col = vec3(tdRamp(tdHeat(tdAt(p + o)), ramp).r, col.g, max(col.b, tdRamp(tdHeat(tdAt(p - o)), ramp).b * 1.3));
+  }
+  col += tdRamp(0.9 + F.g, ramp) * min(F.g, 1.5);                                                   // sparks
+  col += vec3(1.0) * uMech[5] * (h.groove + h.edge);                                                 // flash
+  return col * (h.groove * uTdO[4] + (h.stripe + h.rim) * uTdO[5]) + tdRamp(1.2, ramp) * h.edge * uTdO[6] * (0.3 + kk() + heat * 0.5);
+}
+// ---- a real heart, built into the element ----
+// Front view in element units u (x -0.5..0.5 from the seam, y 0 top .. 1 tip): the seam is the septum with the anterior artery
+// on it, the two top lobes are the atria (right atrium on the viewer's left), the ventricles fill the rest down to the apex,
+// the great vessels rise inside the cleft and the coronary artery runs in the groove between atria and ventricles.
+// Every lub squeezes the ventricles towards the apex and pushes a flush of blood up the vessels; the dub lights the atria.
+float rhBeat(int k) { float c = 0.0; for (int i = 0; i < 6; i++) { vec4 P = uPulse[i]; if (P.y > 0.0 && (int(P.z + 0.5) == k || k == 0 && P.z > 2.5)) c += smoothstep(0.0, 0.04, P.x) * exp(-P.x * 5.0) * P.y; } return min(c, 1.5); }
+float rhSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0)); }
+float rhAv(float x) { return 0.36 + 0.5 * x * x; }                         // the groove between atria and ventricles
+vec3 fxRealHeart(H h) {
+  float lub = rhBeat(0), dub = rhBeat(1), t = uTime;
+  vec2 apex = vec2(S * 0.5, S * 0.92), q = apex + (h.p - apex) / (1.0 - 0.06 * lub);   // systole: the muscle draws towards the apex
+  vec2 u = vec2(q.x / S - 0.5, q.y / S);
+  float yav = rhAv(u.x), atr = smoothstep(0.012, -0.012, u.y - yav);
+  // Muscle: fibres that spiral round the ventricles, and the softer wall of the atria.
+  float fib = 0.55 + 0.45 * sin((u.x * 1.4 * sign(u.x + 1e-4) + u.y * 0.9) * 140.0 + fbm(u * 9.0) * 5.0);
+  vec3 muscle = mix(vec3(0.42, 0.03, 0.05), vec3(0.62, 0.08, 0.1), fib * 0.6) * (1.0 - atr) + vec3(0.55, 0.1, 0.16) * atr;
+  muscle *= 1.0 + 0.9 * lub * (1.0 - atr) + 0.7 * dub * atr;                // the flush of each beat
+  float fat = exp(-pow((u.y - yav) / 0.03, 2.0)) * 0.7;                      // fat along the groove, as on a real heart
+  vec3 col = mix(muscle, vec3(0.85, 0.7, 0.35), fat * 0.45);
+  // Vessels: distance in element units, and how far along each one the blood has come.
+  float lx = 0.012 * sin(u.y * 11.0);
+  float dA = abs(u.x - lx) + step(u.y, yav) * 9.0 + step(0.9, u.y) * (u.y - 0.9) * 4.0, along = u.y;   // anterior artery on the septum
+  for (int i = 0; i < 6; i++) {                                                 // its branches over both ventricles
+    float fi = float(i), y0 = yav + 0.05 + fi * 0.075, sx = mod(fi, 2.0) < 0.5 ? 1.0 : -1.0;
+    float d = rhSeg(u, vec2(lx, y0), vec2(sx * (0.2 + 0.05 * hash11(fi)), y0 + 0.17 + 0.04 * hash11(fi + 3.0)));
+    if (d < dA) { dA = d * 1.3; along = y0 + length(u - vec2(lx, y0)); }
+  }
+  float dC = abs(u.y - yav) + 0.004;                                           // the coronary artery round the groove
+  if (dC < dA) { dA = dC; along = yav + abs(u.x); }
+  float dAo = rhSeg(u, vec2(0.02, yav - 0.02), vec2(0.07, 0.17)) - 0.045;      // aorta and pulmonary trunk rising in the cleft
+  float dPu = rhSeg(u, vec2(-0.03, yav - 0.01), vec2(-0.08, 0.18)) - 0.04;
+  float dVc = rhSeg(u, vec2(-0.27, 0.12), vec2(-0.25, yav - 0.03)) - 0.03;     // the vena cava into the right atrium
+  float art = 1.0 - smoothstep(0.004, 0.011, dA), big = 1.0 - smoothstep(0.0, 0.006, min(dAo, dPu)), vein = 1.0 - smoothstep(0.0, 0.006, dVc);
+  float rim = exp(-abs(min(dAo, dPu)) * 220.0) + exp(-abs(dVc) * 220.0);
+  // Blood: a wave runs out along the arteries after every lub, and up the great vessels.
+  float wave = 0.0; for (int i = 0; i < 6; i++) { vec4 P = uPulse[i]; if (P.y > 0.0 && P.z < 0.5) wave += exp(-pow((along - (yav + P.x * 1.2)) / 0.05, 2.0)) * exp(-P.x * 2.0) * P.y; }
+  float flowA = 0.6 + 0.4 * sin(along * 60.0 - t * 6.0);
+  vec3 blood = vec3(0.95, 0.08, 0.06) * (0.55 + 0.45 * flowA + 1.4 * wave), veinC = vec3(0.25, 0.2, 0.62) * (0.7 + 0.5 * dub);
+  col = mix(col, blood, art * 0.9); col = mix(col, vec3(0.8, 0.12, 0.12) * (0.6 + 1.2 * lub), big); col = mix(col, veinC, vein);
+  col += vec3(1.0, 0.85, 0.8) * rim * 0.3;
+  // Light over the heart's dome and its cut grooves, so it reads as a solid organ; the liquid adds a glow of blood.
+  vec3 lit = litMat(h, col, normalize(vec3(-0.4, -0.6, 0.7)), 40.0 + 12.0 * lub, 0.9, 30.0, 0.25);
+  float heat = tdHeat(tdAt(h.p));
+  lit += vec3(0.9, 0.05, 0.03) * heat * 0.35 * (art + big);
+  if (int(uTdO[0] + 0.5) == 1) {   // neon: only the outlines, the vessels and the groove, in the show's colours
+    float ln = max(max(art, rim), exp(-abs(u.y - yav) * 300.0));
+    lit = pal(along + uFlow) * ln * (0.5 + 1.2 * wave + 0.6 * lub) + pal(0.5 + uFlow) * (1.0 - atr) * lub * 0.25 + pal(0.0) * atr * dub * 0.3;
+  }
+  return lit * (h.groove * 1.3 + (h.stripe + h.rim) * 0.95) + vec3(1.0, 0.4, 0.45) * h.edge * (0.25 + 0.8 * lub);
+}
+` };
+
+return { TD_SIM, TD_LOOK, TD_DEFAULT, TD_SOURCES, TD_RAMPS, TD_LOOKS, TD_FX, TD_PRESET, isTd, MECHS, TdDriver, TD_SIM_GLSL, TD_BANK };
+})();
+
 // ===== heart-gl.js =====
 const M_gl = (() => {
 // Projector renderer for the heart. One full-screen fragment shader: every output pixel is mapped back to centimetres on the
@@ -2193,9 +2567,13 @@ const M_gl = (() => {
 // 4-corner warp sharing the seam), then looks up the distance field of the contour and works out which part it lies on
 // (edge, seam, rim, separation groove, ring/groove k, stripe k). Effects are GLSL functions of that
 // part plus the music clock, so lines stay razor sharp at any projector resolution. Two effects render at once for crossfades.
-// The effects come in banks (the built-in 64, then the ten banks of heart-fx.js); each set of banks in use is its own program.
+// The effects come in banks (the built-in 64, the ten banks of heart-fx.js, the liquid of heart-td.js); each set of banks in use
+// is its own program. The liquid also has a simulation pass of its own, drawn into a texture in heart space (see tdStep).
 const { SIZE, MARGIN, RES } = M_geo;
-const { FX_COMMON, FX_BANKS } = M_fx;
+const { FX_COMMON, FX_BANKS: FX_BANKS_100 } = M_fx;
+const { TD_BANK, TD_SIM_GLSL } = M_td;
+// The banks after the built-in one: the 100 of heart-fx.js, then the TouchDesigner liquid of heart-td.js.
+const FX_BANKS = [...FX_BANKS_100, TD_BANK];
 
 // id, Hebrew name, icon, energy class (0 calm, 1 medium, 2 intense) for the automatic show.
 const EFFECTS = [
@@ -2297,7 +2675,9 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 out vec4 o;
-uniform sampler2D uField, uVid, uCh, uPartMap, uPartD;
+uniform sampler2D uField, uVid, uCh, uPartMap, uPartD, uFb;
+uniform float uTd[16], uTdO[8], uMech[8], uTdN, uTdDt;   // the liquid (heart-td.js): simulation, look, mechanisms
+uniform vec4 uPulse[6];                                   // heartbeat pulses: age, strength, kind, seed
 uniform int uParts;
 uniform float uBassS, uMidS, uHighS, uBreath, uFlow;
 uniform int uAnySolo;
@@ -3210,7 +3590,7 @@ class HeartGL {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     this.use("0");
-    if (this.parallel) FX_BANKS.forEach((_, i) => this.build(String(i + 1)));
+    if (this.parallel) { FX_BANKS.forEach((_, i) => this.build(String(i + 1))); this.build("td"); }
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
     this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
@@ -3227,11 +3607,62 @@ class HeartGL {
       for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
     }
     this.videoEl = null;
+    // The liquid: two heart-space textures, read one and write the other each frame. Half float where the GPU can draw into it.
+    const TN = 512, half = !!gl.getExtension("EXT_color_buffer_float");
+    this.tdN = TN; this.td = { i: 0, tex: [], fbo: [], half };
+    gl.activeTexture(gl.TEXTURE5);
+    for (let k = 0; k < 2; k++) {
+      const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, half ? gl.RGBA16F : gl.RGBA8, TN, TN, 0, gl.RGBA, half ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+      for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.LINEAR);
+      for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+      const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      this.td.tex.push(t); this.td.fbo.push(fb);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.tdU = null; this.tdBad = false;
+  }
+
+  // One step of the liquid, before the show is drawn. T = TdDriver.uniforms(settings). Nothing happens if the GPU cannot
+  // build the pass: the liquid effects then show black instead of stopping the show.
+  tdStep(s, points, T) {
+    if (!this.model || this.tdBad) return;
+    try { this.use("td"); } catch (e) { this.tdBad = true; console.error("heart-gl: liquid pass failed to build", e.message); return; }
+    const t = s.time ?? 0; this.tdDt = this.tdT == null ? 1 / 60 : Math.min(0.05, Math.max(0.001, t - this.tdT)); this.tdT = t;
+    this.tdU = T; this.draw(s, points, { td: true }, "td");
+  }
+  // A small picture of the liquid for the workspace viewers: { w, h, data: Uint8ClampedArray RGBA } of the heat channel.
+  tdPreview(n = 72) {
+    const gl = this.gl, T = this.td; if (!this.tdU) return null;
+    if (!T.sfb) {   // a small target of the same format (a blit cannot change it), read back as float or bytes
+      const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, T.half ? gl.RGBA16F : gl.RGBA8, n, n, 0, gl.RGBA, T.half ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+      T.sfb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, T.sfb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      T.sn = n; T.px = new Uint8Array(n * n * 4); T.pxF = T.half ? new Float32Array(n * n * 4) : null;
+    }
+    const m = T.sn, dst = T.sfb;
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, T.fbo[T.i]); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst);
+    gl.blitFramebuffer(0, 0, this.tdN, this.tdN, 0, 0, m, m, gl.COLOR_BUFFER_BIT, gl.LINEAR);
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, dst);
+    const out = new Uint8ClampedArray(m * m * 4);
+    if (T.half) { gl.readPixels(0, 0, m, m, gl.RGBA, gl.FLOAT, T.pxF); for (let k = 0; k < m * m * 4; k++) T.px[k] = Math.min(255, T.pxF[k] * 255); }
+    else gl.readPixels(0, 0, m, m, gl.RGBA, gl.UNSIGNED_BYTE, T.px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // Rows come bottom-up in GL but the texture's row 0 is the top of the heart (y = 0 cm), so they are already in order.
+    for (let k = 0; k < m * m; k++) {
+      const x = (T.px[k * 4] + T.px[k * 4 + 1] * 0.6) / 255;
+      out[k * 4] = Math.min(255, x * 3 * 255); out[k * 4 + 1] = Math.min(255, Math.max(0, x * 3 - 1) * 255); out[k * 4 + 2] = Math.min(255, Math.max(0, x * 3 - 2) * 255); out[k * 4 + 3] = 255;
+    }
+    return { w: m, h: m, data: out };
   }
 
   build(key) {
     const gl = this.gl, p = gl.createProgram(), fs = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fs, fsSource(key.split(",").map(Number))); gl.compileShader(fs);
+    gl.shaderSource(fs, key === "td" ? FS_HEAD + FX_COMMON + TD_SIM_GLSL : fsSource(key.split(",").map(Number))); gl.compileShader(fs);
     gl.attachShader(p, this.vs); gl.attachShader(p, fs); gl.bindAttribLocation(p, 0, "a"); gl.linkProgram(p);
     const pr = { p, fs, loc: null }; this.progs.set(key, pr); return pr;
   }
@@ -3247,7 +3678,7 @@ class HeartGL {
       const n = gl.getProgramParameter(pr.p, gl.ACTIVE_UNIFORMS);
       for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(pr.p, i), name = u.name.replace(/\[0\]$/, ""); pr.loc[name] = gl.getUniformLocation(pr.p, u.name); }
       gl.uniform1i(pr.loc.uField, 0); gl.uniform1i(pr.loc.uVid, 1); gl.uniform1i(pr.loc.uCh, 2);
-      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4);
+      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5);
     }
     gl.useProgram(pr.p); this.loc = pr.loc; return pr.loc;
   }
@@ -3317,9 +3748,10 @@ class HeartGL {
       L = this.use("0"); s = { ...s, fxA: this.bankOf(s.fxA) ? 1 : s.fxA, fxB: this.bankOf(s.fxB) ? 1 : s.fxB };
     }
     const gl = this.gl, c = this.canvas, m = this.model;
-    const layerPass = pass && pass.xfade == null;
+    const tdPass = !!pass?.td, layerPass = pass && !tdPass && pass.xfade == null;
     gl.uniform1i(L.uPass, layerPass ? 1 : 0);
-    if (pass && !layerPass) {
+    if (tdPass) { gl.disable(gl.BLEND); gl.bindFramebuffer(gl.FRAMEBUFFER, this.td.fbo[1 - this.td.i]); }
+    else if (pass && !layerPass) {
       gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendColor(0, 0, 0, pass.xfade);
       gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
     } else if (pass) {
@@ -3331,11 +3763,15 @@ class HeartGL {
         screen: [gl.ONE, gl.ONE_MINUS_SRC_COLOR], lighten: [gl.ONE, gl.ONE], multiply: [gl.DST_COLOR, gl.ZERO] }[pass.blend] || [gl.ONE, gl.ONE_MINUS_SRC_COLOR];
       gl.blendFunc(F[0], F[1]);
     } else gl.disable(gl.BLEND);
-    gl.viewport(0, 0, c.width, c.height);
+    const TN = this.tdN;
+    gl.viewport(0, 0, tdPass ? TN : c.width, tdPass ? TN : c.height);
     const { L: pl, R: pr } = halves(points), col = H => [H[0], H[3], H[6], H[1], H[4], H[7], H[2], H[5], H[8]];
-    gl.uniformMatrix3fv(L.uInvHL, false, col(homography(pl, BOX_L)));
-    gl.uniformMatrix3fv(L.uInvHR, false, col(homography(pr, BOX_R)));
-    gl.uniform2f(L.uRes, c.width, c.height);
+    if (tdPass) { const k = SIZE / TN, M = [k, 0, 0, 0, k, 0, 0, 0, 1]; gl.uniformMatrix3fv(L.uInvHL, false, M); gl.uniformMatrix3fv(L.uInvHR, false, M); }   // texel -> cm
+    else {
+      gl.uniformMatrix3fv(L.uInvHL, false, col(homography(pl, BOX_L)));
+      gl.uniformMatrix3fv(L.uInvHR, false, col(homography(pr, BOX_R)));
+    }
+    gl.uniform2f(L.uRes, tdPass ? TN : c.width, tdPass ? TN : c.height);
     gl.uniform1f(L.uN, this.N); gl.uniform1f(L.uDMax, this.dmax);
     const cfg = m.cfg, lev = new Float32Array(64); m.levels.slice(0, 64).forEach((v, i) => lev[i] = v);
     gl.uniform1i(L.uPattern, PATTERN_ID[cfg.pattern] ?? 0); gl.uniform1i(L.uNLev, Math.min(64, m.levels.length));
@@ -3344,7 +3780,8 @@ class HeartGL {
     gl.uniform1f(L.uSeam, cfg.seam || 0); gl.uniform1f(L.uCleft, m.cleft ?? m.poly[0][1]);
     gl.uniform1i(L.uParts, this.nParts || 1);
     // Smoothed sound for the breathing effects: fast in, slow out, so the light swells and settles instead of flickering.
-    const t = s.time ?? 0, dt = this.tPrev == null ? 0 : Math.min(0.1, Math.max(0, t - this.tPrev)); this.tPrev = t;
+    // (The liquid's pass runs first in a frame and only reads these, so the show's own pass still sees the time move.)
+    const t = s.time ?? 0, dt = tdPass || this.tPrev == null ? 0 : Math.min(0.1, Math.max(0, t - this.tPrev)); if (!tdPass) this.tPrev = t;
     const sm = (k, v, up, down) => { const c0 = this.sm[k] ?? 0; this.sm[k] = c0 + ((v || 0) - c0) * (1 - Math.exp(-dt / (v > c0 ? up : down))); return this.sm[k]; };
     const bassS = sm("b", s.bass, 0.08, 0.7), midS = sm("m", s.mid, 0.3, 1.4), highS = sm("h", s.high, 0.03, 0.25);
     // A breath of 5 to 20 a minute, quicker when the music is louder; the colour flow turns with the mids.
@@ -3370,7 +3807,12 @@ class HeartGL {
     gl.uniform1i(L.uAnySolo, this.anySolo);
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.partMap);
     gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, this.partD);
+    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, this.td.tex[this.td.i]);
+    const T = this.tdU;
+    if (T) { gl.uniform1fv(L.uTd, T.td); gl.uniform1fv(L.uTdO, T.look); gl.uniform4fv(L.uPulse, T.pulse); gl.uniform1fv(L.uMech, T.mech); }
+    gl.uniform1f(L.uTdN, TN); gl.uniform1f(L.uTdDt, this.tdDt || 1 / 60);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (tdPass) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); this.td.i ^= 1; }
   }
 }
 
@@ -4233,13 +4675,18 @@ const M_nodes = (() => {
 // Operators, as in TouchDesigner's audio chain:
 //   Audio Device In -> Audio Filter (band) -> Analyze (level, 0..1) -> Math / Lag / Trigger / Count / Logic -> Export.
 // Built from Derivative's published operator reference, written from scratch for the heart.
+// A third kind of wire carries a picture (TOP, violet): Heart Source -> Feedback -> Displace -> Level -> Lookup -> Chromatic ->
+// Heart Out runs the liquid of heart-td.js, and any value wired into a TOP's side input moves that parameter over its whole range
+// (the way a CHOP is exported to a TOP parameter). Every operator shows a viewer, as in TouchDesigner: a trace of its value for
+// CHOPs, the liquid itself for TOPs, the projector picture for Heart Out.
+const { TD_DEFAULT, TD_SOURCES, TD_RAMPS, TD_LOOKS, TD_FX, MECHS } = M_td;
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const ease = (t, k) => k === "in" ? t * t : k === "out" ? 1 - (1 - t) * (1 - t) : k === "inout" ? t * t * (3 - 2 * t) : t;
 
 const FAMS = {
-  audio: { name: "סאונד", col: "#f59f00" }, signal: { name: "עיבוד", col: "#22b8cf" }, time: { name: "זמן", col: "#94d82d" },
-  out: { name: "פלט ללב", col: "#f06595" },
+  audio: { name: "סאונד", col: "#f59f00", op: "CHOP" }, signal: { name: "עיבוד", col: "#22b8cf", op: "CHOP" }, time: { name: "זמן", col: "#94d82d", op: "CHOP" },
+  top: { name: "תמונה", col: "#9775fa", op: "TOP" }, out: { name: "פלט ללב", col: "#f06595", op: "OUT" },
 };
 // Show parameters an Export can drive: the value 0..1 becomes the slider's own units.
 const EXPORT_PARAMS = {
@@ -4252,7 +4699,16 @@ const EXPORT_FEATS = { kick: "קיק", hit: "מכה", bass: "בס", mid: "אמצ
 const f = (k, l, d, min, max, step = 0.01) => ({ k, l, t: "f", d, min, max, step });
 const m = (k, l, d, o) => ({ k, l, t: "m", d, o });
 const b = (k, l, d) => ({ k, l, t: "b", d });
-const A = "audio";   // port type
+const A = "audio", I = "top";   // port types
+// A TOP parameter: the value wired into side input i (0..1) moves it over its whole range, else the slider.
+const pv = (n, In, i, q) => { const v = In[i]; return typeof v === "number" && isFinite(v) ? q.min + Math.min(1, Math.max(0, v)) * (q.max - q.min) : n.p[q.k]; };
+// A TOP: its picture comes in on input 0 (none: nothing goes out), side inputs 1.. drive the parameters listed in `side`.
+const top = (name, he, side, rest, extra = {}) => {
+  const ps = [...side, ...rest];
+  return { fam: "top", name, he, view: "td", ins: [["image", I], ...side.map(q => [q.l])], outs: [["image", I]], params: () => ps,
+    cook(n, In) { const a = In[0]; if (!a || typeof a !== "object") return [null]; const o = { ...a };
+      side.forEach((q, i) => { o[q.k] = pv(n, In, i + 1, q); }); rest.forEach(q => { o[q.k] = q.t === "b" ? +!!n.p[q.k] : q.t === "m" ? +n.p[q.k] : n.p[q.k]; }); return [o]; }, ...extra };
+};
 
 function makeOps(env) {
   // env: { rx, music, effects, blends, masks, inputs() }
@@ -4377,6 +4833,30 @@ function makeOps(env) {
       cook(n, [x = 0]) { const r = n.rt; if (x >= n.p.th && !r.on) r.v = n.p.lo + Math.random() * (n.p.hi - n.p.lo); r.on = x >= n.p.th; return [r.v ?? n.p.lo]; } },
     nul: { fam: "signal", name: "Null", he: "מעביר הלאה כמו שהוא. נקודת חיבור מסודרת, כמו Null ב-TouchDesigner.",
       ins: [["in"]], outs: [["out"]], params: () => [], cook: (n, [x = 0]) => [x] },
+    // ---- TOPs: the liquid ----
+    tdsrc: { fam: "top", name: "Heart Source", he: "מקור החום של הנוזל, ממופה לחלקי החיתוך: פעימות לב שמתפשטות כגלים, בועות על כל מכה, התעלות לפי הספקטרום, קירות אש על הקונטור, לבה חיה, ניצוצות, משאבה מהלב הפנימי או וידאו. הכניסה מזיזה את העוצמה.",
+      view: "td", ins: [["עוצמה"]], outs: [["image", I]],
+      params: () => [m("src", "מקור", "0", TD_SOURCES.map((t, i) => [String(i), t])), f("gain", "עוצמה", 1, 0, 3), f("react", "תגובה למוזיקה", 0.8, 0, 2), f("wave", "מהירות הגל", 0.9, 0.2, 3), f("spark", "ניצוצות", 0, 0, 1)],
+      cook(n, In) { const p = n.p; return [{ ...TD_DEFAULT, src: +p.src, gain: pv(n, In, 0, f("gain", "", 1, 0, 3)), react: p.react, wave: p.wave, spark: p.spark }]; } },
+    feedback: top("Feedback", "הלב של הרשת: התמונה של הפריים הקודם חוזרת פנימה, מתקררת לאט, מתקרבת או מתרחקת ומסתובבת סביב מרכז כל חלק. צמיגות מטשטשת אותה כמו נוזל סמיך.",
+      [f("decay", "החזקה", 0.9, 0.5, 0.995, 0.005), f("zoom", "זום", 0.6, -4, 4), f("rot", "סיבוב", 0, -4, 4)], [f("visc", "צמיגות", 0.3, 0, 1), b("mirror", "מראה על התפר", false)]),
+    displace: top("Displace", "מזיז את הנוזל בשדה זרימה (Curl Noise) שמתחזק עם הבס והקיק, ודוחף אותו לרוחב הטבעות: חיובי החוצה, שלילי פנימה.",
+      [f("flow", "זרימה", 1, 0, 3), f("push", "דחיפה בין הטבעות", 0.3, -2, 2)], [f("nscale", "גודל המערבולות", 1, 0.2, 3), f("nspeed", "מהירות המערבולות", 0.3, 0, 1.5)]),
+    level: top("Level", "בהירות וגאמה של החום לפני הצביעה. גאמה גבוהה משאירה רק את החלקים החמים.",
+      [f("bright", "בהירות", 1, 0, 2.5)], [f("gamma", "גאמה", 1, 0.4, 3)]),
+    lookup: top("Lookup", "צובע את החום ברמפה (אש כמו בסרטון, צבעי ההופעה או ירוק) ובוחר מראה: לבה, ורידים (קצוות זוהרים לכל בועה) או מפת גובה תלת-ממדית מוארת.",
+      [f("vein", "ורידים", 1, 0, 3)], [m("ramp", "רמפה", "0", TD_RAMPS.map((t, i) => [String(i), t])), m("look", "מראה", "0", TD_LOOKS.map((t, i) => [String(i), t]))]),
+    chroma: top("Chromatic", "פיצול צבעים (Chromatic Aberration) שמתרחב על המכות, טשטוש זום לכיוון המרכז, ושכבת ניצוצות.",
+      [f("chroma", "פיצול צבעים (ס״מ)", 0, 0, 8), f("zblur", "טשטוש זום", 0, 0, 1.5)], []),
+    heartout: { fam: "out", name: "Heart Out", he: "התמונה עולה ללב, חתוכה בדיוק לתעלות, ללבבות שביניהן ולקונטור, כשכבה מעל ההופעה. כניסת השקיפות פותחת אותה.",
+      view: "out", ins: [["image", I], ["שקיפות"]], outs: [],
+      params: () => [f("gG", "תעלות", 1.4, 0, 3), f("sG", "לבבות בין התעלות", 0.55, 0, 2), f("edge", "קונטור", 0.3, 0, 2),
+        m("blend", "מיזוג", "screen", Object.entries(env.blends)), m("mask", "מסכה", "all", Object.entries(env.masks)), f("op", "שקיפות בסיס", 1, 0, 1), b("on", "פעילה", true)],
+      cook: () => [] },
+    heartbeat: { fam: "audio", name: "Heartbeat", he: "פעימות הלב של המוזיקה: lub על כל מכה, dub שליש פעימה אחריו, ומעטפת שדועכת. אותן פעימות שמזיזות את הנוזל.",
+      ins: [], outs: [["lub"], ["dub"], ["env"]], params: () => [], cook: () => [env.td?.lub ?? 0, env.td?.dubFire ?? 0, env.td?.env ?? 0] },
+    mech: { fam: "out", name: "Mechanisms", he: "מפעיל את המנגנונים מהרשת: כל כניסה שעוברת את 0.5 מפעילה את שלה (גל הלם על הדרופ, ניצוצות על הסנר...), וערך רציף מחזיק אותו.",
+      ins: MECHS.map(([, ico, name]) => [ico + " " + name]), outs: [], params: () => [], cook: () => [] },
     exporter: { fam: "out", name: "Export → Heart", he: "שולח ערכים ללב: כל כניסה מחוברת מחליפה את הפרמטר (בהירות, גוון, מהירות…) או את מה שהאפקטים קוראים (קיק, בס…).",
       ins: [...Object.entries(EXPORT_PARAMS).map(([k, [l]]) => [l, null, k]), ...Object.entries(EXPORT_FEATS).map(([k, l]) => [l, null, "f_" + k])], outs: [], params: () => [],
       cook: () => [] },
@@ -4394,11 +4874,13 @@ class Network {
   constructor(ops) { this.ops = ops; this.nodes = []; this.wires = []; this.vals = new Map(); this.t = 0; }
   add(type, x, y, p = {}) {
     const op = this.ops[type]; if (!op) return null;
-    const n = { id: "n" + uid++, type, x, y, p: {}, rt: {} };
+    const n = { id: "n" + uid++, type, x, y, p: {}, rt: {}, name: this.nameFor(type) };
     for (const q of op.params()) n.p[q.k] = q.d;
     Object.assign(n.p, p);
     this.nodes.push(n); return n;
   }
+  // TouchDesigner-style names: the operator's type and a number, math1, math2...
+  nameFor(type) { const base = (this.ops[type]?.name || type).toLowerCase().replace(/[^a-z]+/g, ""); let k = 1; while (this.nodes.some(n => n.name === base + k)) k++; return base + k; }
   remove(id) { this.nodes = this.nodes.filter(n => n.id !== id); this.wires = this.wires.filter(w => w.from[0] !== id && w.to[0] !== id); }
   node(id) { return this.nodes.find(n => n.id === id); }
   ins(n) { return this.ops[n.type].ins; }
@@ -4427,12 +4909,21 @@ class Network {
     };
     for (const n of this.nodes) visit(n);
     // What goes to the heart.
-    const out = { params: {}, feats: {}, layers: [] };
+    const out = { params: {}, feats: {}, layers: [], td: null, mech: [0, 0, 0, 0, 0, 0, 0, 0] };
     for (const n of this.nodes) {
       if (n.type === "exporter") this.ins(n).forEach(([, , k], i) => {
         const v = this.input(n, i); if (v === undefined || !isFinite(v)) return;
         if (k.startsWith("f_")) out.feats[k.slice(2)] = v; else out.params[k] = EXPORT_PARAMS[k][1](v);
       });
+      if (n.type === "heartout" && n.p.on) {
+        const d = this.input(n, 0);
+        if (d && typeof d === "object") {
+          out.td = { ...d, gG: n.p.gG, sG: n.p.sG, edge: n.p.edge };
+          const op = this.wired(n, 1) ? clamp(this.input(n, 1) ?? 0) * n.p.op : n.p.op;
+          out.layers.push({ fx: 164, blend: n.p.blend, mask: n.p.mask, op });
+        }
+      }
+      if (n.type === "mech") this.ins(n).forEach((_, i) => { const v = this.input(n, i); if (typeof v === "number" && isFinite(v)) out.mech[i] = Math.max(out.mech[i], v); });
       if (n.type === "layer" && n.p.on) {
         const op = this.wired(n, 0) ? clamp(this.input(n, 0) ?? 0) * n.p.op : n.p.op, k = this.input(n, 1), lv = this.input(n, 2);
         out.layers.push({ fx: +n.p.fx, blend: n.p.blend, mask: n.p.mask, op, kick: k, level: lv });
@@ -4440,10 +4931,10 @@ class Network {
     }
     return out;
   }
-  save() { return { nodes: this.nodes.map(({ id, type, x, y, p }) => ({ id, type, x, y, p })), wires: this.wires }; }
+  save() { return { nodes: this.nodes.map(({ id, type, x, y, p, name }) => ({ id, type, x, y, p, name })), wires: this.wires }; }
   load(o) {
     this.nodes = []; this.wires = []; this.vals.clear();
-    for (const s of o?.nodes || []) if (this.ops[s.type]) { const n = this.add(s.type, s.x, s.y, s.p); n.id = s.id; }
+    for (const s of o?.nodes || []) if (this.ops[s.type]) { const n = this.add(s.type, s.x, s.y, s.p); n.id = s.id; if (s.name) n.name = s.name; }
     for (const n of this.nodes) { const k = +n.id.slice(1); if (k >= uid) uid = k + 1; }
     for (const w of o?.wires || []) this.connect(w.from, w.to);
   }
@@ -4451,6 +4942,7 @@ class Network {
 
 // Ready-made networks.
 const TEMPLATES = {
+  liquid: { name: "🌋 לבה צמיגה (כמו בסרטון)", build: N => buildLiquid(N) },
   trance: { name: "🚀 טראנס", build(N) {
     const a = N.add("audioin", 20, 40);
     const fk = N.add("filter", 200, 20, { type: "band", lo: 40, hi: 120 }), ak = N.add("analyze", 380, 20, { range: 18 });
@@ -4478,11 +4970,45 @@ const TEMPLATES = {
   } },
 };
 
+// The liquid as a network, as in the reel: the sound chain (a "snare" band, the bass, the heartbeat) on top, exported into the
+// TOP chain below it. `preset` is one of the 20 ready effects, so any of them can be opened and taken apart in the workspace.
+function buildLiquid(N, preset = TD_FX[0][4]) {
+  const P = { ...TD_DEFAULT, ...preset }, W = (a1, o, b1, i) => N.connect([a1.id, o], [b1.id, i]);
+  const a = N.add("audioin", 20, 60);
+  const fs = N.add("filter", 220, 20, { type: "band", lo: 180, hi: 400 }), as = N.add("analyze", 420, 20, { range: 18 });
+  const ms = N.add("math", 620, 20, { to0: 0.25, to1: 0.6 }), ls = N.add("lag", 820, 20, { up: 0.05, down: 0.5 });
+  const fb = N.add("filter", 220, 200, { type: "low", hi: 120 }), ab = N.add("analyze", 420, 200, { range: 20 }), lb = N.add("lag", 620, 200, { up: 0.04, down: 0.6 });
+  const mb = N.add("math", 820, 200, { to0: 0.5 + P.zoom / 8 - 0.03, to1: 0.5 + P.zoom / 8 + 0.12 });
+  const hb = N.add("heartbeat", 20, 380), mh = N.add("math", 220, 380, { to0: 0, to1: Math.min(1, 0.15 + P.chroma / 8) });
+  const tr = N.add("trance", 420, 380), mc = N.add("mech", 1240, 340);
+  const y = 640;
+  const src = N.add("tdsrc", 20, y, { src: String(P.src), gain: P.gain, react: P.react, wave: P.wave, spark: P.spark });
+  const fd = N.add("feedback", 220, y, { decay: P.decay, zoom: P.zoom, rot: P.rot, visc: P.visc, mirror: !!P.mirror });
+  const ds = N.add("displace", 420, y, { flow: P.flow, push: P.push, nscale: P.nscale, nspeed: P.nspeed });
+  const lv = N.add("level", 620, y, { bright: P.bright, gamma: P.gamma });
+  const lk = N.add("lookup", 820, y, { ramp: String(P.ramp), look: String(P.look), vein: P.vein });
+  const ch = N.add("chroma", 1020, y, { chroma: P.chroma, zblur: P.zblur });
+  const ho = N.add("heartout", 1240, y, { gG: P.gG, sG: P.sG, edge: P.edge });
+  W(a, 0, fs, 0); W(fs, 0, as, 0); W(as, 0, ms, 0); W(ms, 0, ls, 0);
+  W(a, 0, fb, 0); W(fb, 0, ab, 0); W(ab, 0, lb, 0); W(lb, 0, mb, 0);
+  W(src, 0, fd, 0); W(fd, 0, ds, 0); W(ds, 0, lv, 0); W(lv, 0, lk, 0); W(lk, 0, ch, 0); W(ch, 0, ho, 0);
+  W(ls, 0, src, 0); W(mb, 0, fd, 2); W(hb, 2, mh, 0); if (P.chroma > 0) W(mh, 0, ch, 1);
+  W(tr, 3, mc, 1); W(tr, 2, mc, 3);
+}
+
+// Ready-made networks for the OP Create menu, by family (the order of the toolbar).
+const WS_MENU = [
+  ["CHOP · סאונד", ["audioin", "filter", "analyze", "channel", "trance", "heartbeat"]],
+  ["CHOP · זמן ועיבוד", ["beat", "lfo", "constant", "math", "lag", "trigger", "count", "logic", "combine", "jumper", "nul"]],
+  ["TOP · נוזל", ["tdsrc", "feedback", "displace", "level", "lookup", "chroma"]],
+  ["פלט ללב", ["heartout", "layer", "exporter", "mech"]],
+];
+
 // ---------------- editor ----------------
 // The network on screen: operators as boxes, inputs on the left, outputs on the right, wires as curves. Drag a box by its
 // title, drag from an output to an input to wire it, click a wire to cut it, drag the background to pan, wheel to zoom.
 // The selected operator's parameters show under the network, like TouchDesigner's parameter window.
-const NW = 156, HEAD = 24, ROW = 19;
+const NW = 156, HEAD = 24, ROW = 19, VIEW = 58;
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const portY = i => HEAD + ROW * i + ROW / 2;
 class Editor {
@@ -4512,19 +5038,23 @@ class Editor {
     const k = Math.min(1.2, Math.max(0.3, Math.min((r.width - 30) / (x1 - x0), (r.height - 30) / (y1 - y0))));
     this.view = { k, x: (r.width - (x1 - x0) * k) / 2 - x0 * k, y: (r.height - (y1 - y0) * k) / 2 - y0 * k }; this.place();
   }
-  h(n) { return HEAD + ROW * Math.max(1, this.net.ins(n).length, this.net.outs(n).length) + 8; }
+  h(n) { return HEAD + ROW * Math.max(1, this.net.ins(n).length, this.net.outs(n).length) + 8 + (this.viewOf(n) ? VIEW : 0); }
+  // Which viewer an operator shows: the liquid (TOPs), the projector (Heart Out), or a trace of its first value (CHOPs).
+  viewOf(n) { const op = this.net.ops[n.type], o = op.outs[0]; return op.view || (o && !o[1] ? "chop" : null); }
   render() {
     const N = this.net;
     this.box.innerHTML = N.nodes.map(n => {
-      const op = N.ops[n.type], fam = FAMS[op.fam], ins = N.ins(n), outs = N.outs(n), rows = Math.max(1, ins.length, outs.length);
+      const op = N.ops[n.type], fam = FAMS[op.fam], ins = N.ins(n), outs = N.outs(n), rows = Math.max(1, ins.length, outs.length), pc = t => t === A ? "aud" : t === I ? "img" : "";
       let body = "";
       for (let i = 0; i < rows; i++) {
         const a = ins[i], o = outs[i];
-        body += `<div class="wsRow">${a ? `<i class="wsPort in ${a[1] === A ? "aud" : ""}" data-in="${i}"></i><span>${esc(a[0])}</span>` : "<span></span>"}`
-          + `${o ? `<span class="wsOut"><b data-v="${i}"></b>${esc(o[0])}</span><i class="wsPort out ${o[1] === A ? "aud" : ""}" data-out="${i}"></i>` : ""}</div>`;
+        body += `<div class="wsRow">${a ? `<i class="wsPort in ${pc(a[1])}" data-in="${i}"></i><span>${esc(a[0])}</span>` : "<span></span>"}`
+          + `${o ? `<span class="wsOut">${o[1] === I ? "" : `<b data-v="${i}"></b>`}${esc(o[0])}</span><i class="wsPort out ${pc(o[1])}" data-out="${i}"></i>` : ""}</div>`;
       }
+      const v = this.viewOf(n);
       return `<div class="wsNode ${n.id === this.sel ? "sel" : ""}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px;width:${NW}px;--fam:${fam.col}">`
-        + `<header title="${esc(op.he)}">${esc(op.name)}<button data-del aria-label="מחק">×</button></header>${body}</div>`;
+        + `<header title="${esc(op.he)}"><span><i class="wsKind">${fam.op}</i>${esc(op.name)}</span><small>${esc(n.name || "")}</small><button data-del aria-label="מחק">×</button></header>${body}`
+        + (v ? `<canvas class="wsView" data-view="${v}" width="148" height="${VIEW - 8}"></canvas>` : "") + `</div>`;
     }).join("");
     this.els = new Map([...this.box.children].map(el => [el.dataset.id, el]));
     this.wires(); this.place(); this.params();
@@ -4535,17 +5065,39 @@ class Editor {
     let s = "";
     N.wires.forEach((w, i) => {
       const a = N.node(w.from[0]), b = N.node(w.to[0]); if (!a || !b) return;
-      const aud = N.outs(a)[w.from[1]]?.[1] === A, d = path(P(a, 1, w.from[1]), P(b, 0, w.to[1])), col = FAMS[N.ops[a.type].fam].col;
-      s += `<path d="${d}" class="hit" data-w="${i}"/><path d="${d}" class="w ${aud ? "aud" : ""}" style="stroke:${col}"/>`;
+      const t = N.outs(a)[w.from[1]]?.[1], d = path(P(a, 1, w.from[1]), P(b, 0, w.to[1])), col = t === I ? FAMS.top.col : FAMS[N.ops[a.type].fam].col;
+      const exp = !t && N.ops[b.type].fam === "top";   // a value exported into a TOP's parameter: dashed, as TouchDesigner draws it
+      s += `<path d="${d}" class="hit" data-w="${i}"/><path d="${d}" class="w ${t === A ? "aud" : t === I ? "img" : ""}${exp ? " exp" : ""}" style="stroke:${col}"/>`;
     });
     if (tmp) s += `<path d="${path(tmp[0], tmp[1])}" class="w tmp"/>`;
     this.svg.innerHTML = s;
   }
   // Live values on every output, refreshed by the studio's frame loop while the tab is open.
   show() {
+    const now = performance.now(), slow = now - (this.vt || 0) > 120;
+    if (slow) { this.vt = now; this.tdImg = null; }
+    this.hist ??= new Map();
     for (const n of this.net.nodes) {
       const el = this.els?.get(n.id); if (!el) continue;
       const v = this.net.vals.get(n.id) || [];
+      const cv = el.querySelector(".wsView");
+      if (cv) {
+        const kind = cv.dataset.view, x = cv.getContext("2d"), W = cv.width, H = cv.height;
+        if (kind === "chop") {   // a trace of the first value over the last two seconds, as a CHOP viewer
+          const h = this.hist.get(n.id) || []; h.push(typeof v[0] === "number" && isFinite(v[0]) ? v[0] : 0); if (h.length > 120) h.shift(); this.hist.set(n.id, h);
+          x.fillStyle = "#05070a"; x.fillRect(0, 0, W, H);
+          const lo = Math.min(0, ...h), hi = Math.max(1, ...h), Y = q => H - 3 - (q - lo) / (hi - lo || 1) * (H - 6);
+          x.strokeStyle = "#1d2430"; x.beginPath(); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke();
+          x.strokeStyle = getComputedStyle(el).getPropertyValue("--fam"); x.lineWidth = 1.5; x.beginPath();
+          h.forEach((q, i) => i ? x.lineTo(i / 119 * W, Y(q)) : x.moveTo(0, Y(q))); x.stroke();
+        } else if (slow && kind === "td") {   // the liquid's heat, shared by the whole TOP chain (it is one simulation)
+          if (this.tdImg === null) this.tdImg = this.viewTd?.() || false;
+          const im = this.tdImg; x.fillStyle = "#05070a"; x.fillRect(0, 0, W, H);
+          if (im && v[0] !== null) { this.tdCv ??= document.createElement("canvas"); this.tdCv.width = im.w; this.tdCv.height = im.h;
+            this.tdCv.getContext("2d").putImageData(new ImageData(im.data, im.w, im.h), 0, 0); x.drawImage(this.tdCv, (W - H) / 2, 0, H, H); }
+          else { x.fillStyle = "#5c6678"; x.font = "10px sans-serif"; x.textAlign = "center"; x.fillText(v[0] === null ? "אין כניסה" : "—", W / 2, H / 2 + 3); }
+        } else if (slow && kind === "out" && this.viewOut) { x.fillStyle = "#000"; x.fillRect(0, 0, W, H); try { x.drawImage(this.viewOut, 0, 0, W, H); } catch {} }
+      }
       el.querySelectorAll("[data-v]").forEach(b => { const x = v[+b.dataset.v];
         b.textContent = x == null ? "—" : typeof x === "object" ? `${Math.round(x.lo)}-${Math.round(x.hi)}Hz` : x.toFixed(2);
         b.style.setProperty("--v", typeof x === "number" ? Math.min(1, Math.max(0, x)) : 0); });
@@ -4603,7 +5155,7 @@ class Editor {
   }
 }
 
-return { FAMS, EXPORT_PARAMS, EXPORT_FEATS, makeOps, Network, TEMPLATES, Editor };
+return { FAMS, EXPORT_PARAMS, EXPORT_FEATS, makeOps, Network, TEMPLATES, buildLiquid, WS_MENU, Editor };
 })();
 // ===== page =====
 
@@ -4613,11 +5165,12 @@ const { HeartGL, EFFECTS, FX_GROUPS, PALETTES, defaultPoints, flatPoints, toHear
 const { Music, regrid } = M_audio;
 const { Engine, MODES: E_MODES, HALVES, COLORS, noteName } = M_engine;
 const { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } = M_react;
-const { makeOps, Network, Editor, FAMS: WS_FAMS, TEMPLATES } = M_nodes;
+const { makeOps, Network, Editor, FAMS: WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } = M_nodes;
+const { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } = M_td;
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -4678,25 +5231,42 @@ function setFx(id, from = "user") {
 }
 const curFx = () => (mix > 0 ? fxB : fxA);
 
-// ---------- pads ----------
+// ---------- effects: one button, a browser with groups and search, the recent ones, and the mechanisms ----------
 const KEYS = "1234567890";
-// Groups fold by a click on their title (remembered), so the long list of effects stays easy to scan.
-const fxFold = new Set(store.get(K.fxFold, []));
+const grpOf = e => e.g || "base", grpName = g => (FX_GROUPS.find(x => x[0] === g)?.[1] || "").split(" · ")[0];
+let fxGrp = store.get(K.fxGrp, "td"), recent = store.get(K.fxRecent, []).filter(id => EFFECTS[id]);
+if (!FX_GROUPS.some(x => x[0] === fxGrp)) fxGrp = "base";
 function renderPads() {
-  const c = curFx();
-  $("pads").innerHTML = FX_GROUPS.map(([g, title]) => {
-    const list = EFFECTS.filter(e => (e.g || "base") === g), open = !fxFold.has(g), here = list.some(e => e.id === c);
-    return `<button class="padh" data-grp="${g}" aria-expanded="${open}">${open ? "▾" : "▸"} ${title}${here && !open ? " ●" : ""}<i>${list.length}</i></button>` + (!open ? "" : list.map(e =>
-      `<button data-fx="${e.id}" aria-pressed="${e.id === c}"><span>${e.ico}</span>${e.name}${e.id < 10 ? `<kbd>${KEYS[e.id]}</kbd>` : ""}</button>`).join(""));
-  }).join("");
-  $("fxChip").textContent = EFFECTS[c].ico + " " + EFFECTS[c].name;
+  const c = curFx(), e = EFFECTS[c], q = $("fxSearch").value.trim();
+  $("fxCurIco").textContent = e.ico; $("fxCurName").textContent = e.name; $("fxCurGrp").textContent = FX_GROUPS.find(x => x[0] === grpOf(e))?.[1] || "";
+  $("fxChip").textContent = e.ico + " " + e.name;
+  if (c > 0 && recent[0] !== c) { recent = [c, ...recent.filter(x => x !== c)].slice(0, 10); store.set(K.fxRecent, recent); }
+  $("recent").innerHTML = recent.filter(id => id !== c).map(id => `<button data-fx="${id}" title="${EFFECTS[id].name}">${EFFECTS[id].ico} ${EFFECTS[id].name}</button>`).join("");
+  if (!$("fxDlg").open) return;
+  $("fxGroups").innerHTML = FX_GROUPS.map(([g]) => `<button type="button" data-grp="${g}" aria-pressed="${!q && g === fxGrp}">${grpName(g)}${EFFECTS.some(x => x.id === c && grpOf(x) === g) ? " ●" : ""}<i>${EFFECTS.filter(x => grpOf(x) === g).length}</i></button>`).join("");
+  const list = q ? EFFECTS.filter(x => x.name.includes(q) || grpName(grpOf(x)).includes(q)) : EFFECTS.filter(x => grpOf(x) === fxGrp);
+  $("pads").innerHTML = list.map(x => `<button type="button" data-fx="${x.id}" aria-pressed="${x.id === c}"><span>${x.ico}</span>${x.name}${x.id < 10 ? `<kbd>${KEYS[x.id]}</kbd>` : ""}</button>`).join("")
+    || `<p class="help keep">לא נמצא אפקט בשם הזה</p>`;
 }
-$("pads").onclick = e => {
-  const h = e.target.closest("[data-grp]");
-  if (h) { const g = h.dataset.grp; fxFold.has(g) ? fxFold.delete(g) : fxFold.add(g); store.set(K.fxFold, [...fxFold]); renderPads(); return; }
-  const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx);
-};
+function openFx() { fxGrp = grpOf(EFFECTS[curFx()]); $("fxSearch").value = ""; $("fxDlg").showModal(); renderPads(); $("pads").querySelector("[aria-pressed=true]")?.scrollIntoView({ block: "center" }); $("fxSearch").focus(); }
+function stepFx(d) { const list = EFFECTS.filter(x => grpOf(x) === grpOf(EFFECTS[curFx()])), i = list.findIndex(x => x.id === curFx()); setFx(list[(i + d + list.length) % list.length].id); }
+$("fxOpen").onclick = openFx;
+$("fxPrev").onclick = () => stepFx(-1); $("fxNext").onclick = () => stepFx(1);
+$("fxSearch").oninput = () => renderPads();
+$("fxSearch").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); $("pads").querySelector("[data-fx]")?.click(); } };
+$("fxGroups").onclick = e => { const b = e.target.closest("[data-grp]"); if (!b) return; fxGrp = b.dataset.grp; store.set(K.fxGrp, fxGrp); $("fxSearch").value = ""; renderPads(); };
+// A click picks the effect and closes the browser; Shift+click keeps it open to try several.
+$("pads").onclick = e => { const b = e.target.closest("[data-fx]"); if (!b) return; setFx(+b.dataset.fx); if (!e.shiftKey) $("fxDlg").close(); };
+$("fxDlg").onclick = e => { if (e.target === $("fxDlg")) $("fxDlg").close(); };   // a click on the backdrop
+$("recent").onclick = e => { const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx); };
 renderPads();
+
+// Mechanisms: fired by hand on top of any effect (the liquid ones feel them most). Press = fire, hold = stays on.
+const tdd = new TdDriver();
+$("mechs").innerHTML = MECHS.map(([k, ico, name, key], i) => `<button data-m="${i}" title="${name} (${key.toUpperCase()})"><span>${ico}</span>${name}<kbd>${key}</kbd></button>`).join("");
+$("mechs").onpointerdown = e => { const b = e.target.closest("[data-m]"); if (!b) return; $("mechs").setPointerCapture(e.pointerId); $("mechs").held = +b.dataset.m; tdd.press(+b.dataset.m, true); };
+$("mechs").onpointerup = $("mechs").onpointercancel = () => { const i = $("mechs").held; if (i != null) tdd.press(i, false); $("mechs").held = null; };
+const mechKey = Object.fromEntries(MECHS.map(([, , , k], i) => [k, i]));
 
 // ---------- sliders ----------
 const sliders = { engmix: v => v + "%", speed: v => (v / 100).toFixed(2) + "×", intensity: v => v + "%", hue: v => v + "°", master: v => v + "%", outline: v => v + "%", vidmix: v => v + "%", xfade: v => (v / 10).toFixed(1) + "ש׳", latency: v => v + "ms" };
@@ -4825,6 +5395,7 @@ engine.onChord = c => { $("chordChip").textContent = c.name; };
 const rx = new React(music);
 rx.load(store.get(K.rx, null));
 window.heartStudio.rx = rx;
+window.heartStudio.gl = gl; window.heartStudio.td = tdd;
 const saveRx = () => store.set(K.rx, rx.o);
 const rxSel = () => rx.chan(rx.o.sel);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -4982,7 +5553,7 @@ $("rxSpec").onpointerup = () => { if (specDrag == null) return; specDrag = null;
 
 // ---------- workspace ----------
 const wsOps = makeOps({
-  rx, music, blends: BLENDS, masks: MASKS,
+  rx, music, blends: BLENDS, masks: MASKS, td: tdd,
   inputs: () => Array.from({ length: Math.max(2, music.inChannels || 2) }, (_, i) => `כניסה ${i + 1}`),
   channels: () => [...rx.o.ch.map(c => [c.id, c.name]), ...Object.entries(TRANCE)],
   effects: () => EFFECTS.filter(e => e.id > 0).map(e => [String(e.id), e.ico + " " + e.name]),
@@ -4995,18 +5566,25 @@ const ws = new Editor($("wsArea"), $("wsParams"), wsNet, () => { clearTimeout(ws
 ws.onWarn = toast;
 $("wsOn").checked = wsStored?.on ?? false;
 $("wsOn").onchange = () => ws.changed();
-const WS_ADD = [["audioin", "audio"], ["filter", "audio"], ["analyze", "audio"], ["channel", "audio"], ["trance", "audio"], ["beat", "time"], ["lfo", "time"],
-  ["constant", "signal"], ["math", "signal"], ["lag", "signal"], ["trigger", "signal"], ["count", "signal"], ["logic", "signal"], ["combine", "signal"], ["jumper", "signal"], ["nul", "signal"],
-  ["exporter", "out"], ["layer", "out"]];
-$("wsBar").innerHTML = WS_ADD.map(([t, f]) => `<button data-add="${t}" style="--fam:${WS_FAMS[f].col}" title="${esc(wsOps[t].he)}">${esc(wsOps[t].name)}</button>`).join("")
-  + Object.entries(TEMPLATES).map(([k, t]) => `<button data-tpl="${k}">${esc(t.name)}</button>`).join("") + `<button id="wsFit">⤢ התאם</button><button id="wsClear">🗑 נקה</button>`;
+ws.viewTd = () => gl.tdPreview(); ws.viewOut = out;
+// The toolbar, as in TouchDesigner: OP Create (Tab) by family, ready networks, and any of the 20 liquid effects opened as a network.
+$("wsBar").innerHTML = `<button id="wsAddBtn" class="primary" aria-expanded="false" title="הוספת אופרטור (Tab)">➕ אופרטור</button>`
+  + `<select id="wsTpl" aria-label="רשת מוכנה"><option value="">📦 רשת מוכנה…</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}</option>`).join("")}</select>`
+  + `<select id="wsFx" aria-label="פתיחת אפקט נוזל כרשת"><option value="">🌋 אפקט נוזל כרשת…</option>${TD_FX.map(([id, n, ico]) => `<option value="${id}">${ico} ${esc(n)}</option>`).join("")}</select>`
+  + `<button id="wsFit" title="התאמה למסך">⤢</button><button id="wsClear" title="ניקוי הרשת">🗑</button>`;
+$("wsMenu").innerHTML = WS_MENU.map(([t, list]) => `<div><h4>${esc(t)}</h4>${list.map(k => `<button data-add="${k}" style="--fam:${WS_FAMS[wsOps[k].fam].col}" title="${esc(wsOps[k].he)}"><i class="wsKind">${WS_FAMS[wsOps[k].fam].op}</i>${esc(wsOps[k].name)}</button>`).join("")}</div>`).join("");
+const wsMenu = on => { $("wsMenu").hidden = !on; $("wsAddBtn").setAttribute("aria-expanded", on); };
+const wsLoad = (build, name) => { wsNet.load(null); build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); if (!$("wsOn").checked) { $("wsOn").checked = true; ws.changed(); } toast("רשת: " + name); };
 $("wsBar").onclick = e => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.add) ws.add(b.dataset.add);
-  else if (b.dataset.tpl) { wsNet.load(null); TEMPLATES[b.dataset.tpl].build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); toast("תבנית: " + TEMPLATES[b.dataset.tpl].name); }
+  if (b.id === "wsAddBtn") wsMenu($("wsMenu").hidden);
   else if (b.id === "wsFit") ws.fit();
   else if (b.id === "wsClear") { wsNet.load(null); ws.sel = null; ws.render(); ws.changed(); }
 };
+$("wsTpl").onchange = () => { const k = $("wsTpl").value; $("wsTpl").value = ""; if (k) wsLoad(TEMPLATES[k].build, TEMPLATES[k].name); };
+$("wsFx").onchange = () => { const id = +$("wsFx").value; $("wsFx").value = ""; if (id) { const e = TD_FX.find(x => x[0] === id); wsLoad(N => buildLiquid(N, e[4]), e[2] + " " + e[1]); } };
+$("wsMenu").onclick = e => { const b = e.target.closest("[data-add]"); if (b) { ws.add(b.dataset.add); wsMenu(false); } };
+$("wsArea").addEventListener("keydown", e => { if (e.key === "Tab") { e.preventDefault(); wsMenu($("wsMenu").hidden); } else if (e.key === "Escape") wsMenu(false); });
 document.querySelector('[data-tab="ws"]').addEventListener("click", () => setTimeout(() => ws.fit(), 0));
 
 // Cable / sound card input.
@@ -5175,19 +5753,47 @@ ptsInfo();
 
 // ---------- output window ----------
 let outWin = null, outStream = null;
-function openOutput() {
+function openOutput(sc) {
   outStream ||= out.captureStream(60);
-  outWin = window.open("", "heart-projector", "popup=yes,width=960,height=560");
+  if (outWin && !outWin.closed && sc) outWin.close();
+  // On a chosen screen (Window Management API): the window takes the whole screen, and asks for full screen where Chrome allows it.
+  const where = sc ? `left=${sc.availLeft},top=${sc.availTop},width=${sc.availWidth},height=${sc.availHeight},fullscreen` : "width=960,height=560";
+  outWin = window.open("", "heart-projector", "popup=yes," + where);
   if (!outWin) { toast("הדפדפן חסם את החלון - אשרו חלונות קופצים"); return; }
   const d = outWin.document;
-  d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Heart · projector</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}video{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><video autoplay muted playsinline></video></body></html>`); d.close();
+  d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Heart · projector</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:${$("outCursor").checked ? "none" : "default"}}video{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><video autoplay muted playsinline></video></body></html>`); d.close();
   const v = d.querySelector("video"); v.srcObject = outStream; v.play().catch(() => {});
   v.ondblclick = () => (d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen()).catch(() => {});
   outWin.onbeforeunload = () => { outWin = null; outState(); };
   outState();
 }
+// Screens: the projector is picked from the list, as in TouchDesigner's Window COMP (monitor index).
+let screens = [];
+function renderScreens() {
+  $("screens").innerHTML = screens.map((sc, i) => `<button data-scr="${i}"><b>${sc.isPrimary ? "🖥️ המסך הראשי" : "📽️ " + esc(sc.label || "מסך " + (i + 1))}</b><span>${Math.round(sc.width * sc.devicePixelRatio)}×${Math.round(sc.height * sc.devicePixelRatio)}</span></button>`).join("");
+}
+$("scrBtn").onclick = async () => {
+  if (!("getScreenDetails" in window)) { toast("הדפדפן לא מזהה מסכים: פתחו חלון מקרן וגררו אותו למקרן"); return; }
+  try { const d = await getScreenDetails(); screens = d.screens; renderScreens(); d.onscreenschange = () => { screens = d.screens; renderScreens(); }; }
+  catch { toast("לא התקבל אישור לניהול חלונות"); }
+};
+$("screens").onclick = e => {
+  const b = e.target.closest("[data-scr]"); if (!b) return;
+  const sc = screens[+b.dataset.scr], r = `${Math.round(sc.width * sc.devicePixelRatio)}x${Math.round(sc.height * sc.devicePixelRatio)}`;
+  if (![...$("res").options].some(o => o.value === r)) $("res").add(new Option(r.replace("x", "×") + " (המסך)", r));
+  if ($("res").value !== r) { $("res").value = r; setRes(r); }
+  openOutput(sc);
+};
+let gpuName = "";
+try { const x = gl.gl.getExtension("WEBGL_debug_renderer_info"); gpuName = x ? gl.gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : ""; } catch {}
+function outStats(fps) {
+  if ($("outStat").closest("[data-panel]").hidden) return;
+  const cell = (k, v) => `<div><small>${k}</small><b>${esc(v)}</b></div>`;
+  $("outStat").innerHTML = cell("רזולוציה", `${out.width}×${out.height}`) + cell("קצב", `${Math.round(fps || 0)} FPS`) + cell("חלון מקרן", outWin && !outWin.closed ? "פתוח" : "סגור")
+    + cell("נוזל", gl.tdBad ? "לא נבנה" : gl.td.half ? "float 16" : "8 bit") + cell("כרטיס מסך", (gpuName.match(/(NVIDIA|AMD|Intel|Apple)[^,(]*/)?.[0] || gpuName || "—").trim().slice(0, 28));
+}
 function outState() { $("outState").textContent = outWin && !outWin.closed ? "פתוח · לחיצה כפולה למסך מלא" : "סגור"; }
-$("outBtn").onclick = $("outBtn2").onclick = openOutput;
+$("outBtn").onclick = $("outBtn2").onclick = () => openOutput();
 $("fsBtn").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen().catch(() => {});
 $("blackBtn").onclick = () => { black = !black; $("blackBtn").setAttribute("aria-pressed", black); };
 
@@ -5351,6 +5957,13 @@ addEventListener("keydown", e => {
   const i = KEYS.indexOf(e.key);
   if (i >= 0 && !e.ctrlKey && !e.metaKey) { setFx(EFFECTS[i].id); return; }
   const k = e.key.toLowerCase();
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (mechKey[k] != null) { if (!e.repeat) tdd.press(mechKey[k], true); return; }
+  if (k === "/") { e.preventDefault(); openFx(); return; }
+  if (k === ",") return stepFx(-1);
+  if (k === ".") return stepFx(1);
+  if (k === "p") return setPerform(!document.body.classList.contains("perform"));
+  if (k === "escape" && document.body.classList.contains("perform")) return setPerform(false);
   if (k === " ") { e.preventDefault(); $("playBtn").click(); }
   else if (k === "b") $("blackBtn").click();
   else if (k === "f") $("fsBtn").click();
@@ -5358,6 +5971,26 @@ addEventListener("keydown", e => {
   else if (k === "a") toggleAuto();
   else if (k === "c") setCal(!cal);
 });
+
+addEventListener("keyup", e => { const i = mechKey[e.key.toLowerCase()]; if (i != null) tdd.press(i, false); });
+
+// ---------- clean interface: explanations on demand, folding sections, perform mode ----------
+const ui = Object.assign({ help: false, folded: null }, store.get(K.ui, {}));
+const saveUi = () => store.set(K.ui, ui);
+$("helpBtn").setAttribute("aria-pressed", ui.help); document.body.classList.toggle("helpOn", ui.help);
+$("helpBtn").onclick = () => { ui.help = !ui.help; document.body.classList.toggle("helpOn", ui.help); $("helpBtn").setAttribute("aria-pressed", ui.help); saveUi(); };
+// Every section of the side panels folds by its title. At first only the first section of each panel is open.
+document.querySelectorAll("[data-panel]").forEach(p => [...p.querySelectorAll(":scope > section")].forEach((sec, i) => {
+  const h = sec.querySelector(":scope > h3"); if (!h || sec.id === "wsParams") return;
+  const key = p.dataset.panel + i; h.classList.add("fold"); h.tabIndex = 0; h.setAttribute("role", "button");
+  const fold = ui.folded ? ui.folded.includes(key) : i > 0 && !["proj", "ws"].includes(p.dataset.panel);
+  sec.classList.toggle("folded", fold); h.setAttribute("aria-expanded", !fold);
+  const tog = () => { const f = sec.classList.toggle("folded"); h.setAttribute("aria-expanded", !f);
+    ui.folded = [...document.querySelectorAll("[data-panel] > section.folded")].map(x => x.closest("[data-panel]").dataset.panel + [...x.parentElement.querySelectorAll(":scope > section")].indexOf(x)); saveUi(); };
+  h.onclick = tog; h.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } };
+}));
+function setPerform(on) { document.body.classList.toggle("perform", on); $("perfBtn").setAttribute("aria-pressed", on); toast(on ? "מצב הופעה · P או Esc ליציאה" : "מצב עריכה"); }
+$("perfBtn").onclick = () => setPerform(!document.body.classList.contains("perform"));
 
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
@@ -5386,6 +6019,12 @@ function frame(now) {
     kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
     master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
   });
+  // The liquid (heart-td.js): one simulation step when any effect on the heart uses it. The workspace's Heart Out wins,
+  // then the show's effect, then the layers.
+  tdd.frame(f, now / 1000, wsLive ? wsOut.mech : null);
+  const tdId = wsLive && wsOut.td ? -1 : [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])].find(isTd);
+  if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
+  if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
   if (curFx() !== 0 && fxA !== 0) for (const l of rx.o.layers) {
     if (!l.on) continue;
@@ -5399,6 +6038,8 @@ function frame(now) {
   }
   if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
   drawOv();
+  frame.n = (frame.n || 0) + 1;
+  if (now - (frame.ft || 0) > 500) { frame.fps = frame.n * 1000 / (now - (frame.ft || now - 500)); frame.n = 0; frame.ft = now; $("fpsChip").textContent = Math.round(frame.fps) + " FPS"; outStats(frame.fps); }
   if (now - hudT > 90) {
     hudT = now;
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
