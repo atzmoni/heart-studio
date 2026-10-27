@@ -1,0 +1,30 @@
+name: Desktop app
+
+# Builds "Heart Studio.exe" on Windows and attaches it to the run as a download.
+on:
+  push:
+    branches: ["**"]
+    paths: ["index.html", "heart-*.js", "theme.*", "fonts/**", "desktop/**", ".github/workflows/desktop.yml"]
+  workflow_dispatch:
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+        working-directory: desktop
+      - run: npm run dist
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Heart-Studio-exe
+          path: desktop/dist/Heart Studio.exe
+          retention-days: 30
