@@ -1,0 +1,32 @@
+name: Android app
+
+# Builds "Heart Studio.apk" (the one-file studio in a full-screen WebView) and attaches it to the run as a download.
+on:
+  push:
+    branches: ["**"]
+    paths: ["index.html", "heart-*.js", "heart-studio.html", "theme.*", "fonts/**", "tools/**", "android/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Build the one-file studio
+        run: python3 tools/build-heart-studio.py
+      - name: Build the APK
+        working-directory: android
+        run: gradle --no-daemon assembleRelease
+      - run: mv "android/app/build/outputs/apk/release/app-release.apk" "Heart Studio.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Heart-Studio-apk
+          path: Heart Studio.apk
+          retention-days: 30

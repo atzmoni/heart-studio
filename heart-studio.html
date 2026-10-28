@@ -5719,7 +5719,8 @@ function renderPlan() {
   if (!model || $("plan").closest("[data-panel]").hidden) return;
   $("plan").innerHTML = G.toSVG(model, { px: "100%" }).replace(/height="100%"/, "");
 }
-const download = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+// In the Android app (android/) files go to Downloads through the app, since a WebView cannot save a blob link.
+const download = (name, text, type) => { if (window.HeartAndroid) return HeartAndroid.save(name, text, type || ""); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
 $("svgBtn").onclick = () => download("heart-240cm-map.svg", G.toSVG(model), "image/svg+xml");
 $("jsonBtn").onclick = () => download("heart-240cm-map.json", JSON.stringify(G.toJSON(model), null, 1), "application/json");
 
@@ -5779,6 +5780,8 @@ ptsInfo();
 // ---------- output window ----------
 let outWin = null, outStream = null;
 function openOutput(sc) {
+  // The Android app has no second window: the projector mirrors the tablet (HDMI or casting), so the stage goes full screen.
+  if (window.HeartAndroid) { stage.requestFullscreen().catch(() => {}); toast("באנדרואיד המקרן מציג את מסך הטאבלט (HDMI או שיקוף)"); return; }
   outStream ||= out.captureStream(60);
   if (outWin && !outWin.closed && sc) outWin.close();
   // On a chosen screen (Window Management API): the window takes the whole screen, and asks for full screen where Chrome allows it.
