@@ -35,6 +35,12 @@ h3 { margin: 0; font-size: .76rem; font-weight: 600; text-transform: uppercase; 
 .stage { position: relative; border-radius: 12px; overflow: hidden; background: #000; width: 100%; touch-action: none; color: #eef2f7; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .stage:fullscreen { border-radius: 0; background: #000; }
+/* Pinned output (📌): the projector picture stays on top and every control scrolls under it */
+body.pin .stage { position: sticky; top: 0; z-index: 30; width: min(100%, calc(42vh * var(--ar, 1.333))); margin-inline: auto;
+  box-shadow: -50vw 0 0 0 var(--bg), 50vw 0 0 0 var(--bg), 0 10px 14px -6px rgba(0,0,0,.55); }
+body.pin .stage:fullscreen { width: 100%; box-shadow: none; }
+@media (max-width: 980px) { body.pin .studio > .col { display: contents; } }
+@media (min-width: 981px) { body.pin .stage { width: 100%; box-shadow: none; } }
 .stage:fullscreen .hud, .stage:fullscreen .hud2 { display: none; }
 .hud { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
 .hud2 { position: absolute; bottom: 8px; inset-inline-end: 8px; display: flex; gap: 6px; }
@@ -222,6 +228,7 @@ body.perform .studio { grid-template-columns: 1fr; }
           <button class="round" id="blackBtn" title="החשכה (B)" aria-label="החשכה" aria-pressed="false">⏻</button>
           <button class="round" id="outBtn" title="חלון מקרן" aria-label="פתיחת חלון מקרן">📽️</button>
           <button class="round" id="fsBtn" title="מסך מלא (F)" aria-label="מסך מלא">⛶</button>
+          <button class="round" id="pinBtn" title="נעילת מסך היציאה למעלה: הפקדים נגללים מתחתיו (L)" aria-label="נעילת מסך היציאה" aria-pressed="false">📌</button>
         </div>
       </div>
 
@@ -622,7 +629,7 @@ let P = store.get(K.pts, null);
 function setRes(v, keep = true) {
   const [w, h] = v.split("x").map(Number), ow = out.width, oh = out.height;
   if (P && keep && (ow !== w || oh !== h)) P = P.map(([x, y]) => [x * w / ow, y * h / oh]);
-  out.width = w; out.height = h; stage.style.aspectRatio = w + " / " + h;
+  out.width = w; out.height = h; stage.style.aspectRatio = w + " / " + h; stage.style.setProperty("--ar", w / h);
   if (!P) P = defaultPoints(w, h);
   store.set(K.show, { ...store.get(K.show, {}), res: v }); store.set(K.pts, P);
 }
@@ -1213,6 +1220,10 @@ function outStats(fps) {
 function outState() { $("outState").textContent = outWin && !outWin.closed ? "פתוח · לחיצה כפולה למסך מלא" : "סגור"; }
 $("outBtn").onclick = $("outBtn2").onclick = () => openOutput();
 $("fsBtn").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen().catch(() => {});
+// Split view: the output pinned on top (on by default in the Android app), remembered per device.
+function setPin(on) { document.body.classList.toggle("pin", on); $("pinBtn").setAttribute("aria-pressed", on); store.set("heartstudio.pin", on); }
+setPin(store.get("heartstudio.pin", !!window.HeartAndroid));
+$("pinBtn").onclick = () => { setPin(!document.body.classList.contains("pin")); toast(document.body.classList.contains("pin") ? "מסך היציאה נעול למעלה" : "מסך היציאה נגלל עם הדף"); };
 $("blackBtn").onclick = () => { black = !black; $("blackBtn").setAttribute("aria-pressed", black); };
 
 // ---------- music & video ----------
@@ -1385,6 +1396,7 @@ addEventListener("keydown", e => {
   if (k === " ") { e.preventDefault(); $("playBtn").click(); }
   else if (k === "b") $("blackBtn").click();
   else if (k === "f") $("fsBtn").click();
+  else if (k === "l") $("pinBtn").click();
   else if (k === "t") music.tap();
   else if (k === "a") toggleAuto();
   else if (k === "c") setCal(!cal);
