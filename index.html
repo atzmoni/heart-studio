@@ -35,6 +35,12 @@ h3 { margin: 0; font-size: .76rem; font-weight: 600; text-transform: uppercase; 
 .stage { position: relative; border-radius: 12px; overflow: hidden; background: #000; width: 100%; touch-action: none; color: #eef2f7; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .stage:fullscreen { border-radius: 0; background: #000; }
+/* Pinned output (📌): the projector picture stays on top and every control scrolls under it */
+body.pin .stage { position: sticky; top: 0; z-index: 30; width: min(100%, calc(42vh * var(--ar, 1.333))); margin-inline: auto;
+  box-shadow: -50vw 0 0 0 var(--bg), 50vw 0 0 0 var(--bg), 0 10px 14px -6px rgba(0,0,0,.55); }
+body.pin .stage:fullscreen { width: 100%; box-shadow: none; }
+@media (max-width: 980px) { body.pin .studio > .col { display: contents; } }
+@media (min-width: 981px) { body.pin .stage { width: 100%; box-shadow: none; } }
 .stage:fullscreen .hud, .stage:fullscreen .hud2 { display: none; }
 .hud { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
 .hud2 { position: absolute; bottom: 8px; inset-inline-end: 8px; display: flex; gap: 6px; }
@@ -142,6 +148,59 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 .wsPort.aud { border-radius: 2px; }
 .wsPort:hover { background: var(--fam); }
 #wsParams { display: grid; gap: 8px; }
+.wsMenu { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #0a0d12; }
+.wsMenu h4 { margin: 0 0 4px; font: 600 .7rem var(--mono); color: var(--muted); letter-spacing: .06em; }
+.wsMenu div { display: grid; gap: 3px; align-content: start; }
+.wsMenu button { text-align: start; padding: 4px 8px; font: 500 .78rem var(--mono); border-inline-start: 3px solid var(--fam); direction: ltr; }
+.wsKind { font: 700 8px var(--mono); font-style: normal; background: var(--fam); color: #0d1117; padding: 0 3px; border-radius: 2px; margin-inline-end: 5px; vertical-align: 1px; }
+.wsNode header > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wsNode header small { font-weight: 400; color: #6b778a; font-size: 9.5px; margin-inline-start: auto; padding-inline-start: 4px; }
+.wsView { display: block; margin: 0 4px 6px; width: calc(100% - 8px); height: 50px; background: #05070a; border-radius: 3px; }
+.wsPort.img { border-radius: 2px; width: 13px; height: 13px; margin-top: -6.5px; border-color: #9775fa; }
+.wsPort.in.img { left: -7px; } .wsPort.out.img { right: -7px; }
+.wsWires .w.img { stroke-width: 5; opacity: .9; }
+.wsWires .w.exp { stroke-dasharray: 5 4; }
+/* Effects: one button that opens the browser; recent effects and the mechanisms under it. */
+.fxbar { gap: 8px; }
+.fxCur { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: start; padding: 8px 12px; }
+.fxCur > span:first-child { font-size: 1.9rem; line-height: 1; }
+.fxCur .t { display: grid; flex: 1; min-width: 0; } .fxCur .t b { font-size: 1.05rem; } .fxCur .t small { color: var(--muted); font-weight: 400; font-size: .76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fxCur > i { font-style: normal; color: var(--muted); }
+.recent { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.recent button { padding: 3px 8px; font-size: .8rem; font-weight: 400; white-space: nowrap; }
+.mechs { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.mechs button { padding: 6px 2px 4px; display: grid; justify-items: center; font-size: .7rem; font-weight: 600; position: relative; user-select: none; -webkit-user-select: none; touch-action: none;
+  box-shadow: inset 0 0 0 99px color-mix(in srgb, var(--accent) calc(var(--m, 0) * 45%), transparent); }
+.mechs button span { font-size: 1.25rem; line-height: 1.1; }
+.mechs button kbd { position: absolute; top: 2px; inset-inline-end: 4px; font: .6rem var(--mono); color: var(--muted); text-transform: uppercase; }
+@media (max-width: 560px) { .mechs { grid-template-columns: repeat(4, 1fr); } }
+dialog.fxDlg { width: min(920px, calc(100vw - 32px)); max-height: min(80vh, 760px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--fg); }
+dialog.fxDlg::backdrop { background: #000a; }
+.fxDlg form { display: grid; grid-template-rows: auto auto 1fr; max-height: min(80vh, 760px); }
+.fxDlg header { padding: 12px 12px 6px; display: flex; gap: 8px; }
+.fxDlg header input { flex: 1; }
+.fxGroups { display: flex; gap: 4px; padding: 0 12px 8px; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.fxGroups button { padding: 4px 10px; font-size: .78rem; white-space: nowrap; }
+.fxGroups button i { font-style: normal; font-weight: 400; color: var(--muted); margin-inline-start: 4px; }
+.fxDlg .pads { padding: 12px; overflow: auto; align-content: start; }
+input[type=search] { font: 600 .92rem var(--display); color: var(--fg); background: var(--btn, #1f2734); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+/* Clean mode: explanations hidden until asked for, and every panel section folds by its title. */
+body:not(.helpOn) p.help:not(.keep) { display: none; }
+section > h3.fold { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+section > h3.fold::before { content: "▾"; font-size: .9em; }
+section.folded > h3.fold::before { content: "▸"; }
+section.folded > :not(h3) { display: none !important; }
+section.folded { padding-block: 8px; }
+/* Perform mode (as TouchDesigner's): only the output and the live controls. */
+body.perform .studio > .col:last-child, body.perform .transport, body.perform main > header h1 small { display: none; }
+body.perform .studio { grid-template-columns: 1fr; }
+.screens { display: grid; gap: 6px; }
+.screens button { display: flex; justify-content: space-between; gap: 8px; text-align: start; font-weight: 400; }
+.screens button b { font-weight: 600; }
+.screens button span { font: .8rem var(--mono); color: var(--muted); }
+.stat { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.stat div { background: var(--well, #0a0e14); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; display: grid; }
+.stat div small { color: var(--muted); font-size: .72rem; } .stat div b { font: 600 .9rem var(--mono); }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
@@ -151,8 +210,11 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
   <header>
     <h1>מיפוי לב <small>· מקרן · 240×240 ס״מ · מוזיקה ווידאו</small></h1>
     <div class="row">
+      <span class="chip" id="fpsChip" title="פריימים לשנייה">— FPS</span>
       <span class="chip" id="bpmChip">— BPM</span>
       <span class="chip beat" id="beatDots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <button id="helpBtn" aria-pressed="false" title="הצגת ההסברים בכל הפאנלים">❔ הסברים</button>
+      <button id="perfBtn" aria-pressed="false" title="מצב הופעה: רק הפלט והשליטה החיה (P, Esc ליציאה)">🎭 הופעה</button>
     </div>
   </header>
 
@@ -166,6 +228,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
           <button class="round" id="blackBtn" title="החשכה (B)" aria-label="החשכה" aria-pressed="false">⏻</button>
           <button class="round" id="outBtn" title="חלון מקרן" aria-label="פתיחת חלון מקרן">📽️</button>
           <button class="round" id="fsBtn" title="מסך מלא (F)" aria-label="מסך מלא">⛶</button>
+          <button class="round" id="pinBtn" title="נעילת מסך היציאה למעלה: הפקדים נגללים מתחתיו (L)" aria-label="נעילת מסך היציאה" aria-pressed="false">📌</button>
         </div>
       </div>
 
@@ -190,11 +253,23 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
         </div>
       </section>
 
-      <section>
-        <div class="row" style="justify-content:space-between"><h3>אפקטים</h3><span class="help">מקשים 1-9, 0 · רווח = נגן · B החשכה · T טאפ · A במאי · C כיול</span></div>
-        <div class="pads" id="pads"></div>
+      <section class="fxbar">
+        <div class="row">
+          <button id="fxOpen" class="fxCur" aria-haspopup="dialog" title="כל האפקטים (/)"><span id="fxCurIco"></span><span class="t"><b id="fxCurName"></b><small id="fxCurGrp"></small></span><i>▾ כל האפקטים</i></button>
+          <button id="fxPrev" aria-label="האפקט הקודם בקבוצה" title="הקודם (,)">‹</button><button id="fxNext" aria-label="האפקט הבא בקבוצה" title="הבא (.)">›</button>
+        </div>
+        <div class="recent" id="recent" aria-label="אפקטים אחרונים"></div>
+        <div class="mechs" id="mechs" aria-label="מנגנונים: לחיצה מפעילה, החזקה משאירה דולק"></div>
         <div class="sl"><label for="xfade">מעבר</label><input type="range" id="xfade" min="0" max="40" value="6"><output id="xfadeV"></output></div>
+        <p class="help">מקשים: 1-9, 0 אפקטים · / חיפוש · , . הקודם והבא · Q W E R Y U I O מנגנונים · רווח נגן · B החשכה · T טאפ · A במאי · C כיול · P מצב הופעה</p>
       </section>
+      <dialog class="fxDlg" id="fxDlg" aria-label="בחירת אפקט">
+        <form method="dialog">
+          <header><input type="search" id="fxSearch" placeholder="חיפוש אפקט…" aria-label="חיפוש אפקט" autocomplete="off"><button value="close" aria-label="סגירה">✕</button></header>
+          <nav class="fxGroups" id="fxGroups"></nav>
+          <div class="pads" id="pads"></div>
+        </form>
+      </dialog>
     </div>
 
     <div class="col">
@@ -326,6 +401,7 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
         <section>
           <h3>שולחן עבודה · אופרטורים וחיבורים</h3>
           <div class="wsBar" id="wsBar"></div>
+          <div class="wsMenu" id="wsMenu" hidden></div>
           <div class="wsArea" id="wsArea" tabindex="0" aria-label="רשת האופרטורים. גרירת רקע מזיזה, גלגלת מגדילה, Delete מוחק את האופרטור הנבחר"></div>
           <div class="row"><label class="row help"><input type="checkbox" id="wsOn" checked> הרשת שולטת בלב</label><span class="help" id="wsInfo"></span></div>
         </section>
@@ -456,11 +532,21 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
       <!-- projector -->
       <div class="col" data-panel="proj" hidden>
         <section>
-          <h3>יציאה למקרן</h3>
+          <h3>פלט למקרן · כמו Window COMP</h3>
+          <div class="stat" id="outStat"></div>
+          <div class="row">
+            <button id="scrBtn">🖥️ זיהוי מסכים</button>
+            <label class="row help"><input type="checkbox" id="outCursor" checked> הסתרת סמן בחלון המקרן</label>
+          </div>
+          <div class="screens" id="screens"></div>
+          <p class="help">כמו ב-TouchDesigner: בוחרים את המסך של המקרן, והחלון נפתח עליו בגודל המלא שלו (Chrome ו-Edge שואלים פעם אחת על ניהול חלונות). בלי זיהוי, גוררים את החלון ולוחצים פעמיים למסך מלא. למקרן Epson EB-X14 בחרו 1024×768 (הרזולוציה הטבעית שלו).</p>
+        </section>
+        <section>
+          <h3>רזולוציה ופתיחה</h3>
           <div class="row">
             <select id="res" aria-label="רזולוציית מקרן">
               <option value="1920x1080">1920×1080 (Full HD)</option><option value="1280x720">1280×720</option><option value="1280x800">1280×800 (WXGA)</option>
-              <option value="1920x1200">1920×1200 (WUXGA)</option><option value="1024x768">1024×768 (XGA)</option><option value="3840x2160">3840×2160 (4K)</option>
+              <option value="1920x1200">1920×1200 (WUXGA)</option><option value="1024x768" selected>1024×768 (XGA · Epson EB-X14)</option><option value="3840x2160">3840×2160 (4K)</option>
             </select>
             <button id="outBtn2" class="primary">📽️ פתח חלון מקרן</button>
             <span class="chip" id="outState" style="color:var(--muted)">סגור</span>
@@ -501,11 +587,12 @@ import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, defaultPoints, flatPoints, toHea
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
 import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
-import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES } from "./heart-nodes.js?v=1";
+import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
+import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", rx: "heartstudio.react", ws: "heartstudio.workspace" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -542,7 +629,7 @@ let P = store.get(K.pts, null);
 function setRes(v, keep = true) {
   const [w, h] = v.split("x").map(Number), ow = out.width, oh = out.height;
   if (P && keep && (ow !== w || oh !== h)) P = P.map(([x, y]) => [x * w / ow, y * h / oh]);
-  out.width = w; out.height = h; stage.style.aspectRatio = w + " / " + h;
+  out.width = w; out.height = h; stage.style.aspectRatio = w + " / " + h; stage.style.setProperty("--ar", w / h);
   if (!P) P = defaultPoints(w, h);
   store.set(K.show, { ...store.get(K.show, {}), res: v }); store.set(K.pts, P);
 }
@@ -566,25 +653,42 @@ function setFx(id, from = "user") {
 }
 const curFx = () => (mix > 0 ? fxB : fxA);
 
-// ---------- pads ----------
+// ---------- effects: one button, a browser with groups and search, the recent ones, and the mechanisms ----------
 const KEYS = "1234567890";
-// Groups fold by a click on their title (remembered), so the long list of effects stays easy to scan.
-const fxFold = new Set(store.get(K.fxFold, []));
+const grpOf = e => e.g || "base", grpName = g => (FX_GROUPS.find(x => x[0] === g)?.[1] || "").split(" · ")[0];
+let fxGrp = store.get(K.fxGrp, "td"), recent = store.get(K.fxRecent, []).filter(id => EFFECTS[id]);
+if (!FX_GROUPS.some(x => x[0] === fxGrp)) fxGrp = "base";
 function renderPads() {
-  const c = curFx();
-  $("pads").innerHTML = FX_GROUPS.map(([g, title]) => {
-    const list = EFFECTS.filter(e => (e.g || "base") === g), open = !fxFold.has(g), here = list.some(e => e.id === c);
-    return `<button class="padh" data-grp="${g}" aria-expanded="${open}">${open ? "▾" : "▸"} ${title}${here && !open ? " ●" : ""}<i>${list.length}</i></button>` + (!open ? "" : list.map(e =>
-      `<button data-fx="${e.id}" aria-pressed="${e.id === c}"><span>${e.ico}</span>${e.name}${e.id < 10 ? `<kbd>${KEYS[e.id]}</kbd>` : ""}</button>`).join(""));
-  }).join("");
-  $("fxChip").textContent = EFFECTS[c].ico + " " + EFFECTS[c].name;
+  const c = curFx(), e = EFFECTS[c], q = $("fxSearch").value.trim();
+  $("fxCurIco").textContent = e.ico; $("fxCurName").textContent = e.name; $("fxCurGrp").textContent = FX_GROUPS.find(x => x[0] === grpOf(e))?.[1] || "";
+  $("fxChip").textContent = e.ico + " " + e.name;
+  if (c > 0 && recent[0] !== c) { recent = [c, ...recent.filter(x => x !== c)].slice(0, 10); store.set(K.fxRecent, recent); }
+  $("recent").innerHTML = recent.filter(id => id !== c).map(id => `<button data-fx="${id}" title="${EFFECTS[id].name}">${EFFECTS[id].ico} ${EFFECTS[id].name}</button>`).join("");
+  if (!$("fxDlg").open) return;
+  $("fxGroups").innerHTML = FX_GROUPS.map(([g]) => `<button type="button" data-grp="${g}" aria-pressed="${!q && g === fxGrp}">${grpName(g)}${EFFECTS.some(x => x.id === c && grpOf(x) === g) ? " ●" : ""}<i>${EFFECTS.filter(x => grpOf(x) === g).length}</i></button>`).join("");
+  const list = q ? EFFECTS.filter(x => x.name.includes(q) || grpName(grpOf(x)).includes(q)) : EFFECTS.filter(x => grpOf(x) === fxGrp);
+  $("pads").innerHTML = list.map(x => `<button type="button" data-fx="${x.id}" aria-pressed="${x.id === c}"><span>${x.ico}</span>${x.name}${x.id < 10 ? `<kbd>${KEYS[x.id]}</kbd>` : ""}</button>`).join("")
+    || `<p class="help keep">לא נמצא אפקט בשם הזה</p>`;
 }
-$("pads").onclick = e => {
-  const h = e.target.closest("[data-grp]");
-  if (h) { const g = h.dataset.grp; fxFold.has(g) ? fxFold.delete(g) : fxFold.add(g); store.set(K.fxFold, [...fxFold]); renderPads(); return; }
-  const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx);
-};
+function openFx() { fxGrp = grpOf(EFFECTS[curFx()]); $("fxSearch").value = ""; $("fxDlg").showModal(); renderPads(); $("pads").querySelector("[aria-pressed=true]")?.scrollIntoView({ block: "center" }); $("fxSearch").focus(); }
+function stepFx(d) { const list = EFFECTS.filter(x => grpOf(x) === grpOf(EFFECTS[curFx()])), i = list.findIndex(x => x.id === curFx()); setFx(list[(i + d + list.length) % list.length].id); }
+$("fxOpen").onclick = openFx;
+$("fxPrev").onclick = () => stepFx(-1); $("fxNext").onclick = () => stepFx(1);
+$("fxSearch").oninput = () => renderPads();
+$("fxSearch").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); $("pads").querySelector("[data-fx]")?.click(); } };
+$("fxGroups").onclick = e => { const b = e.target.closest("[data-grp]"); if (!b) return; fxGrp = b.dataset.grp; store.set(K.fxGrp, fxGrp); $("fxSearch").value = ""; renderPads(); };
+// A click picks the effect and closes the browser; Shift+click keeps it open to try several.
+$("pads").onclick = e => { const b = e.target.closest("[data-fx]"); if (!b) return; setFx(+b.dataset.fx); if (!e.shiftKey) $("fxDlg").close(); };
+$("fxDlg").onclick = e => { if (e.target === $("fxDlg")) $("fxDlg").close(); };   // a click on the backdrop
+$("recent").onclick = e => { const b = e.target.closest("[data-fx]"); if (b) setFx(+b.dataset.fx); };
 renderPads();
+
+// Mechanisms: fired by hand on top of any effect (the liquid ones feel them most). Press = fire, hold = stays on.
+const tdd = new TdDriver();
+$("mechs").innerHTML = MECHS.map(([k, ico, name, key], i) => `<button data-m="${i}" title="${name} (${key.toUpperCase()})"><span>${ico}</span>${name}<kbd>${key}</kbd></button>`).join("");
+$("mechs").onpointerdown = e => { const b = e.target.closest("[data-m]"); if (!b) return; $("mechs").setPointerCapture(e.pointerId); $("mechs").held = +b.dataset.m; tdd.press(+b.dataset.m, true); };
+$("mechs").onpointerup = $("mechs").onpointercancel = () => { const i = $("mechs").held; if (i != null) tdd.press(i, false); $("mechs").held = null; };
+const mechKey = Object.fromEntries(MECHS.map(([, , , k], i) => [k, i]));
 
 // ---------- sliders ----------
 const sliders = { engmix: v => v + "%", speed: v => (v / 100).toFixed(2) + "×", intensity: v => v + "%", hue: v => v + "°", master: v => v + "%", outline: v => v + "%", vidmix: v => v + "%", xfade: v => (v / 10).toFixed(1) + "ש׳", latency: v => v + "ms" };
@@ -713,6 +817,7 @@ engine.onChord = c => { $("chordChip").textContent = c.name; };
 const rx = new React(music);
 rx.load(store.get(K.rx, null));
 window.heartStudio.rx = rx;
+window.heartStudio.gl = gl; window.heartStudio.td = tdd;
 const saveRx = () => store.set(K.rx, rx.o);
 const rxSel = () => rx.chan(rx.o.sel);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -870,7 +975,7 @@ $("rxSpec").onpointerup = () => { if (specDrag == null) return; specDrag = null;
 
 // ---------- workspace ----------
 const wsOps = makeOps({
-  rx, music, blends: BLENDS, masks: MASKS,
+  rx, music, blends: BLENDS, masks: MASKS, td: tdd,
   inputs: () => Array.from({ length: Math.max(2, music.inChannels || 2) }, (_, i) => `כניסה ${i + 1}`),
   channels: () => [...rx.o.ch.map(c => [c.id, c.name]), ...Object.entries(TRANCE)],
   effects: () => EFFECTS.filter(e => e.id > 0).map(e => [String(e.id), e.ico + " " + e.name]),
@@ -883,18 +988,25 @@ const ws = new Editor($("wsArea"), $("wsParams"), wsNet, () => { clearTimeout(ws
 ws.onWarn = toast;
 $("wsOn").checked = wsStored?.on ?? false;
 $("wsOn").onchange = () => ws.changed();
-const WS_ADD = [["audioin", "audio"], ["filter", "audio"], ["analyze", "audio"], ["channel", "audio"], ["trance", "audio"], ["beat", "time"], ["lfo", "time"],
-  ["constant", "signal"], ["math", "signal"], ["lag", "signal"], ["trigger", "signal"], ["count", "signal"], ["logic", "signal"], ["combine", "signal"], ["jumper", "signal"], ["nul", "signal"],
-  ["exporter", "out"], ["layer", "out"]];
-$("wsBar").innerHTML = WS_ADD.map(([t, f]) => `<button data-add="${t}" style="--fam:${WS_FAMS[f].col}" title="${esc(wsOps[t].he)}">${esc(wsOps[t].name)}</button>`).join("")
-  + Object.entries(TEMPLATES).map(([k, t]) => `<button data-tpl="${k}">${esc(t.name)}</button>`).join("") + `<button id="wsFit">⤢ התאם</button><button id="wsClear">🗑 נקה</button>`;
+ws.viewTd = () => gl.tdPreview(); ws.viewOut = out;
+// The toolbar, as in TouchDesigner: OP Create (Tab) by family, ready networks, and any of the 20 liquid effects opened as a network.
+$("wsBar").innerHTML = `<button id="wsAddBtn" class="primary" aria-expanded="false" title="הוספת אופרטור (Tab)">➕ אופרטור</button>`
+  + `<select id="wsTpl" aria-label="רשת מוכנה"><option value="">📦 רשת מוכנה…</option>${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.name)}</option>`).join("")}</select>`
+  + `<select id="wsFx" aria-label="פתיחת אפקט נוזל כרשת"><option value="">🌋 אפקט נוזל כרשת…</option>${TD_FX.map(([id, n, ico]) => `<option value="${id}">${ico} ${esc(n)}</option>`).join("")}</select>`
+  + `<button id="wsFit" title="התאמה למסך">⤢</button><button id="wsClear" title="ניקוי הרשת">🗑</button>`;
+$("wsMenu").innerHTML = WS_MENU.map(([t, list]) => `<div><h4>${esc(t)}</h4>${list.map(k => `<button data-add="${k}" style="--fam:${WS_FAMS[wsOps[k].fam].col}" title="${esc(wsOps[k].he)}"><i class="wsKind">${WS_FAMS[wsOps[k].fam].op}</i>${esc(wsOps[k].name)}</button>`).join("")}</div>`).join("");
+const wsMenu = on => { $("wsMenu").hidden = !on; $("wsAddBtn").setAttribute("aria-expanded", on); };
+const wsLoad = (build, name) => { wsNet.load(null); build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); if (!$("wsOn").checked) { $("wsOn").checked = true; ws.changed(); } toast("רשת: " + name); };
 $("wsBar").onclick = e => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.dataset.add) ws.add(b.dataset.add);
-  else if (b.dataset.tpl) { wsNet.load(null); TEMPLATES[b.dataset.tpl].build(wsNet); ws.sel = null; ws.render(); ws.fit(); ws.changed(); toast("תבנית: " + TEMPLATES[b.dataset.tpl].name); }
+  if (b.id === "wsAddBtn") wsMenu($("wsMenu").hidden);
   else if (b.id === "wsFit") ws.fit();
   else if (b.id === "wsClear") { wsNet.load(null); ws.sel = null; ws.render(); ws.changed(); }
 };
+$("wsTpl").onchange = () => { const k = $("wsTpl").value; $("wsTpl").value = ""; if (k) wsLoad(TEMPLATES[k].build, TEMPLATES[k].name); };
+$("wsFx").onchange = () => { const id = +$("wsFx").value; $("wsFx").value = ""; if (id) { const e = TD_FX.find(x => x[0] === id); wsLoad(N => buildLiquid(N, e[4]), e[2] + " " + e[1]); } };
+$("wsMenu").onclick = e => { const b = e.target.closest("[data-add]"); if (b) { ws.add(b.dataset.add); wsMenu(false); } };
+$("wsArea").addEventListener("keydown", e => { if (e.key === "Tab") { e.preventDefault(); wsMenu($("wsMenu").hidden); } else if (e.key === "Escape") wsMenu(false); });
 document.querySelector('[data-tab="ws"]').addEventListener("click", () => setTimeout(() => ws.fit(), 0));
 
 // Cable / sound card input.
@@ -1004,7 +1116,8 @@ function renderPlan() {
   if (!model || $("plan").closest("[data-panel]").hidden) return;
   $("plan").innerHTML = G.toSVG(model, { px: "100%" }).replace(/height="100%"/, "");
 }
-const download = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+// In the Android app (android/) files go to Downloads through the app, since a WebView cannot save a blob link.
+const download = (name, text, type) => { if (window.HeartAndroid) return HeartAndroid.save(name, text, type || ""); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
 $("svgBtn").onclick = () => download("heart-240cm-map.svg", G.toSVG(model), "image/svg+xml");
 $("jsonBtn").onclick = () => download("heart-240cm-map.json", JSON.stringify(G.toJSON(model), null, 1), "application/json");
 
@@ -1063,20 +1176,54 @@ ptsInfo();
 
 // ---------- output window ----------
 let outWin = null, outStream = null;
-function openOutput() {
+function openOutput(sc) {
+  // The Android app has no second window: the projector mirrors the tablet (HDMI or casting), so the stage goes full screen.
+  if (window.HeartAndroid) { stage.requestFullscreen().catch(() => {}); toast("באנדרואיד המקרן מציג את מסך הטאבלט (HDMI או שיקוף)"); return; }
   outStream ||= out.captureStream(60);
-  outWin = window.open("", "heart-projector", "popup=yes,width=960,height=560");
+  if (outWin && !outWin.closed && sc) outWin.close();
+  // On a chosen screen (Window Management API): the window takes the whole screen, and asks for full screen where Chrome allows it.
+  const where = sc ? `left=${sc.availLeft},top=${sc.availTop},width=${sc.availWidth},height=${sc.availHeight},fullscreen` : "width=960,height=560";
+  outWin = window.open("", "heart-projector", "popup=yes," + where);
   if (!outWin) { toast("הדפדפן חסם את החלון - אשרו חלונות קופצים"); return; }
   const d = outWin.document;
-  d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Heart · projector</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}video{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><video autoplay muted playsinline></video></body></html>`); d.close();
+  d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Heart · projector</title><style>html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:${$("outCursor").checked ? "none" : "default"}}video{width:100%;height:100%;object-fit:contain;display:block}</style></head><body><video autoplay muted playsinline></video></body></html>`); d.close();
   const v = d.querySelector("video"); v.srcObject = outStream; v.play().catch(() => {});
   v.ondblclick = () => (d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen()).catch(() => {});
   outWin.onbeforeunload = () => { outWin = null; outState(); };
   outState();
 }
+// Screens: the projector is picked from the list, as in TouchDesigner's Window COMP (monitor index).
+let screens = [];
+function renderScreens() {
+  $("screens").innerHTML = screens.map((sc, i) => `<button data-scr="${i}"><b>${sc.isPrimary ? "🖥️ המסך הראשי" : "📽️ " + esc(sc.label || "מסך " + (i + 1))}</b><span>${Math.round(sc.width * sc.devicePixelRatio)}×${Math.round(sc.height * sc.devicePixelRatio)}</span></button>`).join("");
+}
+$("scrBtn").onclick = async () => {
+  if (!("getScreenDetails" in window)) { toast("הדפדפן לא מזהה מסכים: פתחו חלון מקרן וגררו אותו למקרן"); return; }
+  try { const d = await getScreenDetails(); screens = d.screens; renderScreens(); d.onscreenschange = () => { screens = d.screens; renderScreens(); }; }
+  catch { toast("לא התקבל אישור לניהול חלונות"); }
+};
+$("screens").onclick = e => {
+  const b = e.target.closest("[data-scr]"); if (!b) return;
+  const sc = screens[+b.dataset.scr], r = `${Math.round(sc.width * sc.devicePixelRatio)}x${Math.round(sc.height * sc.devicePixelRatio)}`;
+  if (![...$("res").options].some(o => o.value === r)) $("res").add(new Option(r.replace("x", "×") + " (המסך)", r));
+  if ($("res").value !== r) { $("res").value = r; setRes(r); }
+  openOutput(sc);
+};
+let gpuName = "";
+try { const x = gl.gl.getExtension("WEBGL_debug_renderer_info"); gpuName = x ? gl.gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : ""; } catch {}
+function outStats(fps) {
+  if ($("outStat").closest("[data-panel]").hidden) return;
+  const cell = (k, v) => `<div><small>${k}</small><b>${esc(v)}</b></div>`;
+  $("outStat").innerHTML = cell("רזולוציה", `${out.width}×${out.height}`) + cell("קצב", `${Math.round(fps || 0)} FPS`) + cell("חלון מקרן", outWin && !outWin.closed ? "פתוח" : "סגור")
+    + cell("נוזל", gl.tdBad ? "לא נבנה" : gl.td.half ? "float 16" : "8 bit") + cell("כרטיס מסך", (gpuName.match(/(NVIDIA|AMD|Intel|Apple)[^,(]*/)?.[0] || gpuName || "—").trim().slice(0, 28));
+}
 function outState() { $("outState").textContent = outWin && !outWin.closed ? "פתוח · לחיצה כפולה למסך מלא" : "סגור"; }
-$("outBtn").onclick = $("outBtn2").onclick = openOutput;
+$("outBtn").onclick = $("outBtn2").onclick = () => openOutput();
 $("fsBtn").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen().catch(() => {});
+// Split view: the output pinned on top (on by default in the Android app), remembered per device.
+function setPin(on) { document.body.classList.toggle("pin", on); $("pinBtn").setAttribute("aria-pressed", on); store.set("heartstudio.pin", on); }
+setPin(store.get("heartstudio.pin", !!window.HeartAndroid));
+$("pinBtn").onclick = () => { setPin(!document.body.classList.contains("pin")); toast(document.body.classList.contains("pin") ? "מסך היציאה נעול למעלה" : "מסך היציאה נגלל עם הדף"); };
 $("blackBtn").onclick = () => { black = !black; $("blackBtn").setAttribute("aria-pressed", black); };
 
 // ---------- music & video ----------
@@ -1239,13 +1386,41 @@ addEventListener("keydown", e => {
   const i = KEYS.indexOf(e.key);
   if (i >= 0 && !e.ctrlKey && !e.metaKey) { setFx(EFFECTS[i].id); return; }
   const k = e.key.toLowerCase();
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (mechKey[k] != null) { if (!e.repeat) tdd.press(mechKey[k], true); return; }
+  if (k === "/") { e.preventDefault(); openFx(); return; }
+  if (k === ",") return stepFx(-1);
+  if (k === ".") return stepFx(1);
+  if (k === "p") return setPerform(!document.body.classList.contains("perform"));
+  if (k === "escape" && document.body.classList.contains("perform")) return setPerform(false);
   if (k === " ") { e.preventDefault(); $("playBtn").click(); }
   else if (k === "b") $("blackBtn").click();
   else if (k === "f") $("fsBtn").click();
+  else if (k === "l") $("pinBtn").click();
   else if (k === "t") music.tap();
   else if (k === "a") toggleAuto();
   else if (k === "c") setCal(!cal);
 });
+
+addEventListener("keyup", e => { const i = mechKey[e.key.toLowerCase()]; if (i != null) tdd.press(i, false); });
+
+// ---------- clean interface: explanations on demand, folding sections, perform mode ----------
+const ui = Object.assign({ help: false, folded: null }, store.get(K.ui, {}));
+const saveUi = () => store.set(K.ui, ui);
+$("helpBtn").setAttribute("aria-pressed", ui.help); document.body.classList.toggle("helpOn", ui.help);
+$("helpBtn").onclick = () => { ui.help = !ui.help; document.body.classList.toggle("helpOn", ui.help); $("helpBtn").setAttribute("aria-pressed", ui.help); saveUi(); };
+// Every section of the side panels folds by its title. At first only the first section of each panel is open.
+document.querySelectorAll("[data-panel]").forEach(p => [...p.querySelectorAll(":scope > section")].forEach((sec, i) => {
+  const h = sec.querySelector(":scope > h3"); if (!h || sec.id === "wsParams") return;
+  const key = p.dataset.panel + i; h.classList.add("fold"); h.tabIndex = 0; h.setAttribute("role", "button");
+  const fold = ui.folded ? ui.folded.includes(key) : i > 0 && !["proj", "ws"].includes(p.dataset.panel);
+  sec.classList.toggle("folded", fold); h.setAttribute("aria-expanded", !fold);
+  const tog = () => { const f = sec.classList.toggle("folded"); h.setAttribute("aria-expanded", !f);
+    ui.folded = [...document.querySelectorAll("[data-panel] > section.folded")].map(x => x.closest("[data-panel]").dataset.panel + [...x.parentElement.querySelectorAll(":scope > section")].indexOf(x)); saveUi(); };
+  h.onclick = tog; h.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tog(); } };
+}));
+function setPerform(on) { document.body.classList.toggle("perform", on); $("perfBtn").setAttribute("aria-pressed", on); toast(on ? "מצב הופעה · P או Esc ליציאה" : "מצב עריכה"); }
+$("perfBtn").onclick = () => setPerform(!document.body.classList.contains("perform"));
 
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
@@ -1274,6 +1449,12 @@ function frame(now) {
     kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
     master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
   });
+  // The liquid (heart-td.js): one simulation step when any effect on the heart uses it. The workspace's Heart Out wins,
+  // then the show's effect, then the layers.
+  tdd.frame(f, now / 1000, wsLive ? wsOut.mech : null);
+  const tdId = wsLive && wsOut.td ? -1 : [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])].find(isTd);
+  if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
+  if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
   if (curFx() !== 0 && fxA !== 0) for (const l of rx.o.layers) {
     if (!l.on) continue;
@@ -1287,6 +1468,8 @@ function frame(now) {
   }
   if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
   drawOv();
+  frame.n = (frame.n || 0) + 1;
+  if (now - (frame.ft || 0) > 500) { frame.fps = frame.n * 1000 / (now - (frame.ft || now - 500)); frame.n = 0; frame.ft = now; $("fpsChip").textContent = Math.round(frame.fps) + " FPS"; outStats(frame.fps); }
   if (now - hudT > 90) {
     hudT = now;
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
