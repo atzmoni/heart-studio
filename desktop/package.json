@@ -1,0 +1,25 @@
+{
+  "name": "heart-studio-desktop",
+  "productName": "Heart Studio",
+  "version": "1.0.0",
+  "description": "Heart Studio as a Windows desktop app: the studio in its own window, always on the strong graphics card, no server.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "copy": "node copy-app.js",
+    "start": "node copy-app.js && electron .",
+    "dist": "node copy-app.js && electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "37.10.3",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.atzmoni.heartstudio",
+    "productName": "Heart Studio",
+    "files": ["main.js", "app/**"],
+    "directories": { "output": "dist" },
+    "win": { "target": "portable", "signAndEditExecutable": false },
+    "portable": { "artifactName": "Heart Studio.exe" }
+  }
+}
