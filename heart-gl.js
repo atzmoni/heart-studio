@@ -1025,16 +1025,15 @@ export class HeartGL {
     if (!gl) throw new Error("WebGL2 לא זמין בדפדפן הזה");
     this.linearFloat = !!gl.getExtension("OES_texture_float_linear");
     // Programs by set of banks ("0", "3", "0,3"...). The built-in bank is built now, so a broken GPU still fails here as before;
-    // the others compile in the background where the browser can (KHR_parallel_shader_compile), one at a time after start-up
-    // (see prewarm), and until a program is ready the previous picture keeps playing instead of the show freezing.
+    // the others compile in the background where the browser can (KHR_parallel_shader_compile, see warmAll), and until a
+    // program is ready the previous picture keeps playing instead of the show freezing.
     this.pcx = gl.getExtension("KHR_parallel_shader_compile"); this.parallel = !!this.pcx;
     this.vs = gl.createShader(gl.VERTEX_SHADER); gl.shaderSource(this.vs, VS); gl.compileShader(this.vs);
     this.progs = new Map(); this.bad = new Set(); this.chBanks = [];
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-    this.use("0");
-    if (this.parallel) this.prewarm([...CORE_CHUNKS.map(String), "td", ...FX_BANKS.map((_, i) => String(i + 1))]);
+    this.use("0");   // the other programs: warmAll() (the studio calls it at start-up, behind a progress bar)
     this.field = gl.createTexture(); this.vid = gl.createTexture(); this.ch = gl.createTexture();
     this.partMap = gl.createTexture(); this.partD = gl.createTexture(); this.sm = {}; this.tPrev = null;
     this.chData = new Uint8Array(CH_W * 3 * 4); this.chDirty = true; this.anySolo = 0;
@@ -1110,23 +1109,48 @@ export class HeartGL {
     gl.attachShader(p, this.vs); gl.attachShader(p, fs); gl.bindAttribLocation(p, 0, "a"); gl.linkProgram(p);
     const pr = { p, fs, loc: null }; this.progs.set(key, pr); return pr;
   }
-  // Start compiling the given programs in the background, one every few hundred ms, so start-up stays smooth.
-  prewarm(keys) {
-    const next = () => { const k = keys.shift(); if (k == null) return; if (!this.progs.has(k)) this.build(k); setTimeout(next, 350); };
-    setTimeout(next, 1500);
+  // Full preload: compile every program and draw each one once into a 1 x 1 target, so the driver finishes its own late
+  // work too (ANGLE on Direct3D builds the final shader at the first draw). After this, changing effects never waits for
+  // the GPU. Without the parallel-compile extension the programs build one per tick, so the progress bar still moves.
+  // onProgress(done, total) after each program; resolves when all are done (a bank the GPU cannot build is skipped).
+  async warmAll(onProgress = () => {}) {
+    const gl = this.gl, keys = ["0", ...CORE_CHUNKS.map(String), "td", ...FX_BANKS.map((_, i) => String(i + 1))];
+    const tick = () => new Promise(r => setTimeout(r, 16));
+    if (!this.warmFb) {
+      const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE7); gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      this.warmFb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, this.warmFb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
+    if (this.parallel) for (const k of keys) if (!this.progs.has(k)) this.build(k);
+    let done = 0;
+    for (const k of keys) {
+      if (!this.progs.has(k)) { await tick(); this.build(k); }
+      while (!this.ready(k)) await tick();
+      try {
+        this.use(k); gl.bindFramebuffer(gl.FRAMEBUFFER, this.warmFb); gl.viewport(0, 0, 1, 1); gl.disable(gl.BLEND);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      } catch (e) { console.error("heart-gl: effect bank " + k + " failed to build", e.message); }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      onProgress(++done, keys.length); await tick();
+    }
   }
   // True when a program can be used without waiting (always true without the parallel-compile extension: then it just builds).
   ready(key) {
+    if (this.bad.has(key)) return true;   // draw() falls back to the heartbeat at once
     const pr = this.progs.get(key) || this.build(key);
     return !this.parallel || !!pr.loc || this.gl.getProgramParameter(pr.p, this.pcx.COMPLETION_STATUS_KHR);
   }
   // Make the program for a set of banks current (building it if needed) and return its uniform locations.
+  // A program that failed stays failed: it is not rebuilt (and recompiled) on every frame.
   use(key) {
+    if (this.bad.has(key)) throw new Error("bank " + key + " cannot be built on this GPU");
     const gl = this.gl, pr = this.progs.get(key) || this.build(key);
     if (!pr.loc) {
       if (!gl.getProgramParameter(pr.p, gl.LINK_STATUS)) {
         const msg = gl.getShaderInfoLog(pr.fs) || gl.getShaderInfoLog(this.vs) || gl.getProgramInfoLog(pr.p);
-        this.progs.delete(key); throw new Error(msg);
+        this.bad.add(key); console.error("heart-gl: effect bank " + key + " failed to build", msg); throw new Error(msg);
       }
       gl.useProgram(pr.p); pr.loc = {};
       const n = gl.getProgramParameter(pr.p, gl.ACTIVE_UNIFORMS);
@@ -1204,7 +1228,7 @@ export class HeartGL {
     let L;
     try { L = this.use(key); }
     catch (e) {   // a bank this GPU cannot build: say so once and show the heartbeat instead, so the show goes on
-      if (!this.bad.has(key)) { this.bad.add(key); console.error("heart-gl: effect bank " + key + " failed to build", e.message); }
+      this.bad.add(key);
       L = this.use("0"); s = { ...s, fxA: this.bankOf(s.fxA) ? 1 : s.fxA, fxB: this.bankOf(s.fxB) ? 1 : s.fxB };
     }
     const gl = this.gl, c = this.canvas, m = this.model;
@@ -1257,7 +1281,14 @@ export class HeartGL {
     gl.uniform3fv(L.uPal, (s.palette || PALETTES.love.c).flatMap(hex));
     const v = this.videoEl, vidOn = v && v.readyState >= 2 && v.videoWidth > 0;
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
-    if (vidOn && !pass) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch {} }
+    // Upload only a new video frame (not the same one every draw), into the existing texture while the size stays the same.
+    if (vidOn && !pass && (v.currentSrc !== this.vidSrc || v.currentTime !== this.vidT)) {
+      try {
+        if (v.currentSrc === this.vidSrc && v.videoWidth === this.vidW && v.videoHeight === this.vidH) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, v);
+        else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); this.vidSrc = v.currentSrc; this.vidW = v.videoWidth; this.vidH = v.videoHeight; }
+        this.vidT = v.currentTime;
+      } catch {}
+    }
     gl.uniform1f(L.uVidOn, vidOn ? 1 : 0); gl.uniform1f(L.uVidAspect, vidOn ? v.videoWidth / v.videoHeight : 1);
     if (this.chDirty) {
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);

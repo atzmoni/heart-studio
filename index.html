@@ -41,7 +41,13 @@ body.pin .stage { position: sticky; top: 0; z-index: 30; width: min(100%, calc(4
 body.pin .stage:fullscreen { width: 100%; box-shadow: none; }
 @media (max-width: 980px) { body.pin .studio > .col { display: contents; } }
 @media (min-width: 981px) { body.pin .stage { width: 100%; box-shadow: none; } }
-.stage:fullscreen .hud, .stage:fullscreen .hud2 { display: none; }
+.stage:fullscreen .hud, .stage:fullscreen .hud2, .stage:fullscreen .warm { display: none; }
+/* Full preload of the effects (HeartGL.warmAll): a thin bar on the stage; the heartbeat plays meanwhile */
+.warm { position: absolute; inset: auto 12px 56px; display: grid; gap: 4px; justify-items: center; pointer-events: none; font: 600 .8rem var(--display); }
+.warm span { background: rgba(13,17,23,.8); padding: 2px 10px; border-radius: 99px; }
+.warm b { width: min(320px, 80%); height: 4px; border-radius: 2px; background: rgba(38,48,65,.9); overflow: hidden; }
+.warm i { display: block; height: 100%; width: 0; background: #ff4f7b; transition: width .2s; }
+.warm[hidden] { display: none; }
 .hud { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
 .hud2 { position: absolute; bottom: 8px; inset-inline-end: 8px; display: flex; gap: 6px; }
 .chip { font: 600 .78rem var(--mono); background: rgba(13,17,23,.8); color: #eef2f7; padding: 3px 10px; border-radius: 99px; border: 1px solid #263041; white-space: nowrap; }
@@ -223,6 +229,7 @@ body.perform .studio { grid-template-columns: 1fr; }
       <div class="stage" id="stage">
         <canvas id="out" width="1920" height="1080"></canvas>
         <canvas id="ov"></canvas>
+<div class="warm" id="warm" role="status"><span id="warmTxt">טוען אפקטים…</span><b><i id="warmBar"></i></b></div>
         <div class="hud"><span class="chip" id="fxChip"></span><span class="chip" id="hoverChip" hidden></span><span class="chip" id="calChip" hidden>מצב כיול: גררו את 6 הנקודות</span></div>
         <div class="hud2">
           <button class="round" id="blackBtn" title="החשכה (B)" aria-label="החשכה" aria-pressed="false">⏻</button>
@@ -601,6 +608,9 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const out = $("out"), ov = $("ov"), stage = $("stage");
 let gl;
 try { gl = new HeartGL(out); } catch (e) { stage.insertAdjacentHTML("beforeend", `<p class="warn" style="position:absolute;inset:auto 12px 12px">${e.message}</p>`); throw e; }
+// Full preload: every effect is compiled and drawn once before the show, so going from effect to effect never waits.
+gl.warmAll((d, n) => { $("warmBar").style.width = d / n * 100 + "%"; $("warmTxt").textContent = `טוען אפקטים ${d}/${n}`; })
+  .then(() => { $("warm").hidden = true; toast("כל האפקטים טעונים"); });
 const vid = $("vid"), aud = $("aud");
 gl.setVideo(vid);
 const music = new Music();
