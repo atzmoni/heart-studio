@@ -129,3 +129,6 @@ host. Offline at events, double-click `Start Heart Studio.bat` (Windows) or `Sta
 the folder on http://127.0.0.1:8765 with what the OS already has and opens Chrome or Edge, so the microphone permission and
 calibration persist. `heart-studio.html` also runs straight from disk. Static files, no build step; `tools/build-heart-studio.py`
 regenerates the single-file offline build.
+
+## טעינה מלאה (בלי תקיעות במעבר בין אפקטים)
+בפתיחה הסטודיו בונה מראש את כל האפקטים, מאחורי מונה התקדמות, והלב ממשיך לפעום ברקע. בסוף הטעינה כל מעבר בין אפקטים מיידי. בטלפונים, שבהם כל אפקט נבנה רק ברגע שבוחרים בו, זה מה שמונע את התקיעה. אפשר ללחוץ "דלג" ולהתחיל מיד: במחשב שאר האפקטים ממשיכים להיטען ברקע, ובטלפון כל אפקט ייטען בפעם הראשונה שבוחרים בו. גם תקלה בפריים אחד כבר לא עוצרת את ההופעה, ופריים של וידאו נשלח לכרטיס המסך רק כשרואים אותו.
