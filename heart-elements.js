@@ -253,6 +253,12 @@ export const ELEMENTS = {
   lotus: { name: "מנדלת לוטוס", make: lotus, preset: { pattern: "scaled", count: 4, inner: 0.25, outer: 0.82 } },
   wings: { name: "לב מכונף", make: wingedHeart, preset: { pattern: "scaled", count: 5, inner: 0.2, outer: 0.85 } },
 };
+// The user's own element, designed in the element studio (heart-forge.js): any parts, placed, drawn, drafted or traced
+// from a photo. setCustom() hands its parts and groove settings over; until then it is one plain heart.
+let custom = null;
+ELEMENTS.custom = { name: "✏️ האלמנט שלי (סטודיו אלמנטים)", preset: { pattern: "concentric", count: 6 },
+  make: () => custom ? custom.map(p => ({ ...p, loops: p.loops.map(l => l.map(q => q.slice())) })) : [{ name: "לב", loops: [outline("classic")] }] };
+export function setCustom(parts, preset) { custom = parts?.length ? parts : null; if (preset) ELEMENTS.custom.preset = preset; }
 // Settings every element shares: a 2.5 cm joint between the parts, no centre seam (each part is its own piece).
 export const ELEMENT_BASE = { seam: 0, rim: 0, joint: 2.5, width: 1.2, edge: 1.2 };
 

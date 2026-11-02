@@ -265,6 +265,7 @@ main > * { min-width: 0; }
       <button role="tab" aria-selected="false" data-tab="geo">❤️ מבנה הלב</button>
       <button role="tab" aria-selected="false" data-tab="proj">📽️ מקרן</button>
       <button role="tab" aria-selected="false" data-tab="tools">🧰 כלים ובדיקה</button>
+      <button id="forgeBtn" title="עיצוב אלמנט או מיצב משלך: צורות, ציור, שרטוט, צילום, תעלות, תלת ממד וייצור ב-DXF-TLV">🛠️ סטודיו אלמנטים</button>
     </nav>
     <div class="row">
       <span class="chip" id="fpsChip" title="פריימים לשנייה">— FPS</span>
@@ -680,7 +681,8 @@ main > * { min-width: 0; }
 
 <script type="module">
 import * as G from "./heart-geo.js?v=1";
-import { ELEMENTS, ELEMENT_BASE, partsOf } from "./heart-elements.js?v=1";
+import { ELEMENTS, ELEMENT_BASE, partsOf, setCustom } from "./heart-elements.js?v=1";
+import { Forge, loadDesign, buildModel as forgeModel } from "./heart-forge.js?v=1";
 import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
@@ -709,6 +711,8 @@ let cfg = { ...G.DEFAULTS, ...store.get(K.cfg, {}) };
 cfg.seam = 0;   // the heart has no joint strip in the middle: the grooves flow from half to half (left and right stay separate channels)
 const shapes = {};
 let model;
+// The element designed in the element studio (heart-forge.js) is the "custom" element, kept between runs.
+{ const d = loadDesign(); if (d?.parts.length) try { forgeModel(d); } catch (e) { console.warn("element studio design", e); } }
 function rebuild(keepLevels = true) {
   if (!keepLevels) cfg.levels = null;
   // A heart shape is one outline; an element (heart-elements.js) is several parts, its field cut by the joints between them.
@@ -1196,7 +1200,7 @@ function syncGeoForm() {
   $("g_count").disabled = !!cfg.levels?.length;
   const sp = !model.multi && cfg.pattern === "scaled" && model.levels.length > 1 ? ((cfg.outer - cfg.inner) / (model.levels.length - 1) * 118).toFixed(1) : null;
   $("geoInfo").textContent = (model.multi ? `${model.parts.length} חלקים נפרדים · ` : "") + `${model.grooves.length} תעלות · ${model.stripes} לבבות/פסים · ${model.grooves.reduce((s, g) => s + g.pieces.length, 0)} קווים נפרדים · היקף ${Math.round(model.perimeter)} ס״מ`
-    + (sp ? ` · מרווח בצדדים ≈ ${sp} ס״מ` : "") + (cfg.levels?.length ? " · התעלות מתוך סריקה" : "");
+    + (sp ? ` · מרווח בצדדים ≈ ${sp} ס״מ` : "") + (cfg.levels?.length ? (cfg.shape === "custom" ? " · מרווח קבוע מסטודיו האלמנטים" : " · התעלות מתוך סריקה") : "");
 }
 GF.forEach(k => $("g_" + k).onchange = () => {
   const el = $("g_" + k), v = el.type === "number" ? +el.value : el.value;
@@ -1205,11 +1209,24 @@ GF.forEach(k => $("g_" + k).onchange = () => {
   // Picking an element brings the groove settings that suit its parts; going back to a heart brings the heart's.
   if (k === "shape" && (ELEMENTS[v] || model?.multi)) {
     const H = { pattern: G.DEFAULTS.pattern, count: G.DEFAULTS.count, inner: G.DEFAULTS.inner, outer: G.DEFAULTS.outer, width: G.DEFAULTS.width, edge: G.DEFAULTS.edge, seam: G.DEFAULTS.seam, rim: G.DEFAULTS.rim };
-    Object.assign(cfg, ELEMENTS[v] ? { ...ELEMENT_BASE, joint: cfg.joint || ELEMENT_BASE.joint, ...ELEMENTS[v].preset } : H); cfg.levels = null;
+    Object.assign(cfg, ELEMENTS[v] ? { ...ELEMENT_BASE, joint: cfg.joint || ELEMENT_BASE.joint, ...ELEMENTS[v].preset } : H);
+    cfg.levels = ELEMENTS[v]?.preset.levels?.slice() || null;   // the studio's own element keeps its exact groove spacing
   }
   if (k === "pattern") { cfg.levels = null; if (v === "chevron" && Math.abs(cfg.angle) > 70) cfg.angle = 30; if (v === "parallel" && cfg.angle === 30) cfg.angle = 90; }
   if ((k === "shape" || k === "joint") && !shapes[ELEMENTS[cfg.shape] ? cfg.shape + "|" + cfg.joint : cfg.shape]) toast("מחשב את שדה המרחקים…");
   setTimeout(() => rebuild(k !== "pattern"), 20);
+});
+// ---------- element studio: design any element or installation, map it, and send it to production ----------
+$("forgeBtn").onclick = () => new Forge().open({
+  toast, download: (name, data, type) => data instanceof Blob && !window.HeartAndroid ? (() => { const a = document.createElement("a"); a.href = URL.createObjectURL(data); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); })()
+    : data instanceof Blob ? toast("חבילת zip נשמרת רק במחשב. באנדרואיד שמרו קבצים בודדים") : download(name, data, type),
+  level: () => music.levelS,
+  onApply: (d, parts, fcfg) => {
+    setCustom(parts, fcfg);
+    for (const k in shapes) if (k.startsWith("custom|")) delete shapes[k];
+    cfg = { ...cfg, ...fcfg, shape: "custom" };
+    rebuild(true);
+  },
 });
 $("geoReset").onclick = () => { cfg = { ...G.DEFAULTS }; rebuild(false); toast("חזרה למידות האלמנט"); };
 function renderPlan() {
