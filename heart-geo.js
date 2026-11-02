@@ -33,7 +33,8 @@ export const DEFAULTS = {
   width: 1.4,       // groove width, cm
   edge: 1.5,        // outer contour line width, cm
   joint: 2.5,       // gap between the parts of an element of separate parts, cm (heart-elements.js)
-  seam: 1.2,        // width of the joint between the halves, cm (0 = one piece)
+  seam: 0,          // width of a joint strip between the halves, cm. 0 = none: the grooves flow across the middle in one piece
+                    // (the halves are still separate channels, left and right)
   rim: 0,           // rim band width, cm (0 = no rim)
   gap: 2,           // width of the separation groove between rim and field, cm
   cx: 120, cy: 117, // centre the rings shrink towards (scaled) / rays start from (radial), cm

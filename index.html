@@ -355,6 +355,14 @@ main > * { min-width: 0; }
             <button id="autoBtn" aria-pressed="false">🤖 הופעה אוטומטית (A)</button>
             <select id="phrase" aria-label="אורך משפט"><option value="4">כל 4 תיבות</option><option value="8" selected>כל 8 תיבות</option><option value="16">כל 16 תיבות</option></select>
             <button id="strobeOk" aria-pressed="false">⚡ לאפשר סטרובו</button>
+            <select id="dirStyle" aria-label="מצב הבמאי">
+              <option value="all">🎬 מצב: הכל</option>
+              <option value="calm">🫁 מצב: רגוע ונושם</option>
+              <option value="flow">🏞️ מצב: זרימה בין החצאים</option>
+              <option value="liquid">🌋 מצב: נוזל טאץ' דיזיינר</option>
+              <option value="club">🔥 מצב: מועדון</option>
+              <option value="group">🎯 מצב: רק הקבוצה הנוכחית</option>
+            </select>
           </div>
           <p class="help">עם שיר שנותח: הבמאי בונה תוכנית לכל השיר מראש (מתחלפת בתחילת משפט, מתפוצצת בדרופ, נרגעת בברייק) והיא מוצגת על ציר הזמן. עם מיקרופון הוא מגיב בזמן אמת לעוצמה.</p>
           <div class="row">
@@ -492,7 +500,7 @@ main > * { min-width: 0; }
           </div>
           <div class="row">
             <label class="row help"><input type="checkbox" id="e_contour"> קונטור = עוצמה כללית</label>
-            <label class="row help"><input type="checkbox" id="e_seam"> תפר = ביט</label>
+            <input type="checkbox" id="e_seam" hidden>
           </div>
         </section>
         <section>
@@ -577,7 +585,6 @@ main > * { min-width: 0; }
             <label data-for="scaled radial">מרכז Y (ס״מ)<input type="number" id="g_cy" min="0" max="240" step="0.5"></label>
             <label data-for="parallel chevron">זווית (°)<input type="number" id="g_angle" min="-90" max="180" step="1"></label>
             <label>קו קונטור (ס״מ)<input type="number" id="g_edge" min="0" max="10" step="0.1"></label>
-            <label>תפר מרכזי (ס״מ)<input type="number" id="g_seam" min="0" max="10" step="0.1"></label>
             <label>שוליים (ס״מ)<input type="number" id="g_rim" min="0" max="40" step="0.5"></label>
             <label>תעלת הפרדה (ס״מ)<input type="number" id="g_gap" min="0" max="10" step="0.1"></label>
             <label data-multi>מרווח בין חלקים (ס״מ)<input type="number" id="g_joint" min="0.5" max="12" step="0.5"></label>
@@ -699,6 +706,7 @@ const engine = new Engine(music);
 
 // ---------- heart model ----------
 let cfg = { ...G.DEFAULTS, ...store.get(K.cfg, {}) };
+cfg.seam = 0;   // the heart has no joint strip in the middle: the grooves flow from half to half (left and right stay separate channels)
 const shapes = {};
 let model;
 function rebuild(keepLevels = true) {
@@ -731,7 +739,7 @@ $("res").onchange = () => setRes($("res").value);
 function flatten() { if (!fold) P = flatPoints([P[0], P[2], P[3], P[5]]); }
 
 // ---------- show state ----------
-const show = Object.assign({ engmix: 0, palette: "love", speed: 100, intensity: 75, hue: 0, master: 100, outline: 0, vidmix: 0, xfade: 6, latency: 40, phrase: "8", strobe: false }, store.get(K.show, {}));
+const show = Object.assign({ engmix: 0, palette: "love", speed: 100, intensity: 75, hue: 0, master: 100, outline: 0, vidmix: 0, xfade: 6, latency: 40, phrase: "8", strobe: false, style: "all" }, store.get(K.show, {}));
 let fxA = 1, fxB = 1, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
 function setFx(id, from = "user") {
   if (id === fxB && mix === 0 && id === fxA) return;
@@ -789,6 +797,7 @@ for (const [k, f] of Object.entries(sliders)) {
 }
 music.offset = show.latency / 1000;
 $("phrase").value = show.phrase; $("phrase").onchange = () => { show.phrase = $("phrase").value; saveShow(); planShow(); };
+$("dirStyle").value = show.style; $("dirStyle").onchange = () => { show.style = $("dirStyle").value; saveShow(); planShow(); toast($("dirStyle").selectedOptions[0].textContent.replace(/^\S+ /, "")); };
 $("strobeOk").setAttribute("aria-pressed", show.strobe); $("strobeOk").onclick = () => { show.strobe = !show.strobe; $("strobeOk").setAttribute("aria-pressed", show.strobe); saveShow(); planShow(); };
 function saveShow() { store.set(K.show, { ...store.get(K.show, {}), ...show }); }
 function renderPals() {
@@ -1179,7 +1188,7 @@ function drawEngine(f) {
 $("g_shape").innerHTML = `<optgroup label="לב">` + Object.entries(G.SHAPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("") + `</optgroup>`
   + `<optgroup label="אלמנטים מחלקים נפרדים">` + Object.entries(ELEMENTS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join("") + `</optgroup>`;
 $("g_pattern").innerHTML = Object.entries(G.PATTERNS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-const GF = ["shape", "pattern", "count", "width", "inner", "outer", "cx", "cy", "angle", "edge", "seam", "rim", "gap", "joint"];
+const GF = ["shape", "pattern", "count", "width", "inner", "outer", "cx", "cy", "angle", "edge", "rim", "gap", "joint"];
 function syncGeoForm() {
   GF.forEach(k => { const el = $("g_" + k); if (document.activeElement !== el) el.value = cfg[k]; });
   document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(cfg.pattern) || (model.multi && l.querySelector("#g_cx,#g_cy") && cfg.pattern === "scaled"));
@@ -1363,7 +1372,20 @@ $("halfBtn").onclick = () => { const a = music.analysis; a.beats = a.beats.map((
 
 // ---------- cues & automatic show ----------
 let cues = [], recording = false, cuePlay = false, auto = false, lastCue = -1, plan = [];
-const POOLS = [EFFECTS.filter(e => e.e === 0).map(e => e.id), EFFECTS.filter(e => e.e === 1).map(e => e.id), EFFECTS.filter(e => e.e === 2).map(e => e.id)];
+// Director modes (like an autopilot that only plays one kind of clip): each one narrows the effects it picks from.
+// Calm keeps to the quiet and middle looks, club to the strong ones, the others to one family of effects.
+const STYLE = {
+  all: () => true, calm: e => e.e <= 1, club: e => e.e >= 1, flow: e => e.g === "flowx", liquid: e => e.g === "td",
+  group: e => e.g === EFFECTS[curFx()]?.g,
+};
+function pools() {
+  const ok = STYLE[show.style] || STYLE.all, all = EFFECTS.filter(e => e && e.e >= 0 && ok(e));
+  const set = all.length > 2 ? all : EFFECTS.filter(e => e && e.e >= 0);
+  const lv = [0, 1, 2].map(k => set.filter(e => e.e === k).map(e => e.id)), any = set.map(e => e.id);
+  if (show.style === "calm") lv[2] = lv[1].length ? lv[1] : any;      // calm never jumps to a strong look, even on a drop
+  if (show.style === "club") lv[0] = lv[1].length ? lv[1] : any;      // the club never goes quiet
+  return lv.map(p => p.length ? p : any);
+}
 function rng(seed) { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
 function pick(pool, avoid, r) { const p = pool.filter(x => x !== avoid); return p[Math.floor(r() * p.length)] ?? pool[0]; }
 // With a beat grid the whole show is planned ahead from the energy curve: a new look every phrase, the big ones on drops.
@@ -1377,12 +1399,12 @@ function planShow() {
     const e = mean(a.energy.slice(i, i + 8)), cls = e < 0.42 ? 0 : e < 0.75 ? 1 : 2, kind = ev.get(i);
     if (kind === "drop") {
       if (show.strobe) plan.push({ t: a.beats[i], fx: 15, pal });
-      pal = pals[Math.floor(r() * pals.length)]; fx = pick(POOLS[2], fx, r);
+      pal = pals[Math.floor(r() * pals.length)]; fx = pick(pools()[2], fx, r);
       plan.push({ t: a.beats[i + (show.strobe ? 4 : 0)] ?? a.beats[i], fx, pal }); nextChange = i + phrase + (show.strobe ? 4 : 0);
-    } else if (kind === "break") { fx = pick(POOLS[0], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase; }
+    } else if (kind === "break") { fx = pick(pools()[0], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase; }
     else if (i >= nextChange) {
       if (r() < 0.35) pal = pals[Math.floor(r() * pals.length)];
-      fx = pick(POOLS[cls], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase;
+      fx = pick(pools()[cls], fx, r); plan.push({ t: a.beats[i], fx, pal }); nextChange = i + phrase;
     }
   }
   drawTL(); cueInfo();
@@ -1401,7 +1423,7 @@ $("loadShowBtn").onclick = () => $("loadShow").click();
 $("loadShow").onchange = async () => {
   try {
     const s = JSON.parse(await $("loadShow").files[0].text());
-    if (s.cfg) cfg = { ...G.DEFAULTS, ...s.cfg };
+    if (s.cfg) cfg = { ...G.DEFAULTS, ...s.cfg, seam: 0 };
     if (Array.isArray(s.points) && s.points.length === 6) P = s.points;
     if (typeof s.fold === "boolean") fold = s.fold;
     if (s.channels) chState = s.channels;
@@ -1432,7 +1454,7 @@ function director(f) {
       if (barCount % +show.phrase === 0) {
         const e = f.energy ?? 0, cls = e < 0.35 ? 0 : e < 0.7 ? 1 : 2, r = Math.random;
         if (r() < 0.3) { const k = Object.keys(PALETTES); show.palette = k[Math.floor(r() * k.length)]; renderPals(); }
-        setFx(pick(POOLS[cls], curFx(), r), "auto");
+        setFx(pick(pools()[cls], curFx(), r), "auto");
       }
     }
   }

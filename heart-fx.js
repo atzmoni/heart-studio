@@ -764,4 +764,67 @@ vec3 fxFRiver(H h) {             // rivers of colour flow down from the cleft to
   return pal(v + rk(h) * 0.2 + uFlow) * bright * (h.groove * 1.4 + h.stripe * 0.7) * (0.6 + 0.4 * uLevelS + 0.4 * kk()) + vec3(1.0) * h.edge * 0.15;
 }
 ` },
+  // ---------- one flowing heart (no joint in the middle): light crosses from half to half without a break ----------
+  { g: "flowx", title: "זרימה בין החצאים · לב אחד", fx: [
+    [186, "נהר אור", "🏞️", 1, "fxFRiver"],
+    [187, "מצד לצד", "↔️", 2, "fxFCross"],
+    [188, "דיו נמזג", "🖋️", 0, "fxFInk"],
+    [189, "הד טבעות", "📡", 2, "fxFEcho"],
+    [190, "מערבולת אחת", "🌪️", 1, "fxFSwirl"],
+    [191, "גאות ושפל", "🌊", 0, "fxFTide"],
+    [192, "נחש אור", "🐍", 2, "fxFSnake"],
+    [193, "זוהר צפוני", "🌌", 0, "fxFAurora"],
+    [194, "מפגש במרכז", "🤝", 2, "fxFMeet"],
+    [195, "נשימה אחידה", "🫁", 0, "fxFGlow"],
+  ], glsl: `
+vec3 fxFRiver(H h) {             // light runs along every groove all the way round, over the tip and the cleft, faster when louder
+  float t = uTime * 0.25 * uSpeed + uFlow * 0.5, w = fract(h.s * 3.0 - t - rk(h) * 0.5);
+  float g = smoothstep(0.0, 0.12, w) * (1.0 - smoothstep(0.12, 0.6, w));
+  return pal(h.s + rk(h) * 0.3 + uFlow) * g * (h.groove * 1.6 + h.stripe * 0.35) * (0.5 + 0.7 * uLevelS) + vec3(1.0) * h.edge * 0.2;
+}
+vec3 fxFCross(H h) {             // a wide band sweeps from the left edge to the right one and back every bar, straight through the middle
+  float T = fract(clockB() / 4.0), pos = abs(T * 2.0 - 1.0), d = (h.p.x / S - pos) * 7.0, b = exp(-d * d);
+  return pal(pos + rk(h) * 0.2 + uFlow) * b * (h.groove * 1.5 + h.stripe * 0.5) * (0.5 + 0.6 * uLevel) + vec3(1.0) * h.edge * 0.25 * kb();
+}
+vec3 fxFInk(H h) {               // ink poured from the top spreads down through the whole heart; the bass stirs it
+  vec2 q = h.p * 0.018 + vec2(0.0, -uTime * 0.12 * uSpeed);
+  float n = fbm(q + fbm(q * 1.7 + uTime * 0.05) * 1.5 + uBassS * 0.5), m = smoothstep(0.45, 0.7, n);
+  return pal(n * 1.2 + uFlow) * m * (h.stripe * (0.5 + 0.6 * uLevelS) + h.groove * (0.7 + 1.1 * kk())) + pal(uFlow) * h.edge * 0.25;
+}
+vec3 fxFEcho(H h) {              // every beat sends a ring out from the small heart to the contour, whole and unbroken
+  float r = rk(h), a = fract(r - clockB() * 0.25), w = exp(-a * 18.0);
+  return pal(r + floor(clockB()) * 0.13 + uFlow) * w * (h.groove * 1.8 + h.stripe * 0.5) * (0.6 + 0.6 * uLevel) + vec3(1.0) * h.edge * 0.15;
+}
+vec3 fxFSwirl(H h) {             // one whirlpool turning around the ring centre: three arms over both halves, the bass winds it up
+  vec2 q = h.p - uCenter; float a = atan(q.y, q.x), r = length(q);
+  float v = sin(a * 3.0 + r * 0.06 - uTime * 1.2 * uSpeed - uBassS * 2.0), m = smoothstep(0.2, 0.9, v);
+  return pal(a / TAU + r * 0.004 + uFlow) * m * (h.stripe * 0.7 + h.groove * 1.4) * (0.4 + 0.7 * uLevelS) + vec3(1.0) * h.edge * 0.2;
+}
+vec3 fxFTide(H h) {              // a water line rises with the breath and the bass and falls back, foam on its waves
+  float lv = S * (0.95 - 0.75 * breathV(0.0)) - uBassS * 20.0;
+  float surf = lv + sin(h.p.x * 0.05 + uTime * 1.5 * uSpeed) * 5.0 + sin(h.p.x * 0.11 - uTime * 2.3 * uSpeed) * 2.5;
+  float below = smoothstep(surf - 1.5, surf + 1.5, h.p.y), foam = exp(-pow((h.p.y - surf) / 2.0, 2.0));
+  return (pal(0.55 + uFlow) * below * (0.35 + 0.4 * uLevelS) + vec3(1.0) * foam * (0.6 + kk())) * (h.groove * 1.5 + h.stripe * 0.6) + vec3(1.0) * h.edge * 0.2;
+}
+vec3 fxFSnake(H h) {             // one snake of light runs round a ring, and jumps to another ring every two bars
+  float T = clockB() * 0.5, ring = mod(floor(T / 4.0) * 5.0 + 1.0, ringN()), on = step(abs(ringIdx(h) - ring), 0.5);
+  float d = fract(T * 0.5 - h.s), tail = exp(-d * 8.0) * on;
+  return pal(h.s + uFlow) * tail * 2.0 * (h.groove * 1.6 + h.stripe * 0.8) + vec3(1.0) * h.edge * 0.12;
+}
+vec3 fxFAurora(H h) {            // aurora curtains hang across the whole heart and sway slowly
+  float x = h.p.x * 0.03 + sin(h.p.y * 0.02 + uTime * 0.4 * uSpeed) * 0.8;
+  float c = pow(0.5 + 0.5 * sin(x * 3.0 + fbm(vec2(x, uTime * 0.2)) * 4.0), 3.0);
+  float v = smoothstep(S, S * 0.2, h.p.y) * (0.5 + 0.5 * fbm(vec2(h.p.x * 0.02, uTime * 0.3)));
+  return mix(pal(0.3 + uFlow), pal(0.7 + uFlow), h.p.y / S) * c * v * (h.stripe * 0.8 + h.groove * 1.3) * (0.5 + 0.7 * uLevelS) + vec3(1.0) * h.edge * 0.15;
+}
+vec3 fxFMeet(H h) {              // light runs in from both sides on every beat and meets in the middle in one flash
+  float x = abs(h.p.x - S * 0.5) / (S * 0.5), a = fract(clockB()), d = (x - (1.0 - a)) * 10.0, w = exp(-d * d);
+  return pal(x * 0.5 + floor(clockB()) * 0.2 + uFlow) * w * (h.groove * 1.6 + h.stripe * 0.5) * (0.5 + 0.7 * uLevel)
+    + pal(uFlow + 0.5) * exp(-x * 8.0) * kb() * (h.groove + h.stripe) * 0.8 + vec3(1.0) * h.edge * 0.15;
+}
+vec3 fxFGlow(H h) {              // the whole heart breathes as one calm light, the grooves a little brighter
+  float br = breathV(0.0), n = 0.85 + 0.15 * noise(h.p * 0.05 + uTime * 0.2);
+  return pal(uFlow + rk(h) * 0.15) * n * (0.15 + 0.85 * br) * (h.stripe * 0.45 + h.groove * 1.2) * (0.6 + 0.5 * uLevelS) + pal(uFlow) * h.edge * (0.2 + 0.5 * br);
+}
+` },
 ];

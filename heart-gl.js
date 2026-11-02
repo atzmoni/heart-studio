@@ -473,7 +473,7 @@ vec3 fxHalves(H h) {
   vec3 col = mix(a, b, side);
   vec3 c = col * (on * env + 0.06) * (h.stripe + h.rim);
   c += mix(b, a, side) * (h.groove + h.sep) * (0.3 + 0.9 * on * env);
-  float seam = exp(-pow((h.p.x - S * 0.5) / 0.8, 2.0)) * exp(-uBar * 6.0);
+  float seam = exp(-pow((h.p.x - S * 0.5) / 0.8, 2.0)) * exp(-uBar * 6.0) * step(0.001, uSeam);   // only on an element with a joint strip
   c += vec3(1.0) * (h.edge * 0.8 + seam * h.inside);
   return c;
 }
