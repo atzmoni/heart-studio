@@ -96,6 +96,14 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .chord { font: 800 1.6rem var(--mono); min-width: 4.5em; text-align: center; padding: 2px 12px; border-radius: 10px; background: #05070a; color: #fff; direction: ltr; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); color: var(--fg); padding: 8px 16px; border-radius: 99px; font-size: .9rem; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
 .toast.on { opacity: 1; }
+/* Full load (טעינה מלאה): every effect is built before the show so switching never stalls; the heart keeps beating behind */
+.boot { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, .6); }
+.boot > div { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 10px; text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); }
+.boot b { font-size: 1.05rem; }
+.boot .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.boot .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+.boot span { font: .85rem var(--mono); color: var(--muted); direction: ltr; }
+.boot p { margin: 0; color: var(--muted); font-size: .85rem; }
 details summary { cursor: pointer; font-weight: 600; }
 details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); font-size: .88rem; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
@@ -577,13 +585,22 @@ body.perform .studio { grid-template-columns: 1fr; }
   </div>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="boot" id="boot" hidden role="dialog" aria-modal="true" aria-labelledby="bootTitle">
+  <div>
+    <b id="bootTitle">טוען את כל האפקטים</b>
+    <div class="bar"><i id="bootBar"></i></div>
+    <span id="bootTxt"></span>
+    <p>בסוף הטעינה כל מעבר בין אפקטים מיידי, בלי תקיעות. בפעם הבאה זה מהיר יותר.</p>
+    <button id="bootSkip" type="button">דלג · להתחיל עכשיו</button>
+  </div>
+</div>
 <video id="vid" playsinline muted loop hidden></video>
 <audio id="aud" preload="auto" hidden></audio>
 
 <script type="module">
 import * as G from "./heart-geo.js?v=1";
 import { ELEMENTS, ELEMENT_BASE, partsOf } from "./heart-elements.js?v=1";
-import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
+import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
 import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
@@ -1424,7 +1441,18 @@ $("perfBtn").onclick = () => setPerform(!document.body.classList.contains("perfo
 
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
+// The next frame is asked for first, so an error in one frame can never stop the show (that would look like a freeze).
+// Each kind of error is reported once.
+const frameErrs = new Set();
 function frame(now) {
+  requestAnimationFrame(frame);
+  try { step(now); }
+  catch (e) {
+    const k = String(e?.message || e); if (frameErrs.has(k)) return; frameErrs.add(k);
+    console.error("heart: frame", e); toast("שגיאה בציור · ההופעה ממשיכה");
+  }
+}
+function step(now) {
   const f = music.frame(now);
   rx.update(now); rx.apply(f);
   const wsOut = wsNet.cook({ f, nowMs: now, dt: Math.min(0.1, Math.max(0.001, (now - (frame.last ?? now)) / 1000)) || 1 / 60 }); frame.last = now;
@@ -1452,7 +1480,10 @@ function frame(now) {
   // The liquid (heart-td.js): one simulation step when any effect on the heart uses it. The workspace's Heart Out wins,
   // then the show's effect, then the layers.
   tdd.frame(f, now / 1000, wsLive ? wsOut.mech : null);
-  const tdId = wsLive && wsOut.td ? -1 : [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])].find(isTd);
+  const used = [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])];
+  const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
+  // The video goes to the GPU only while something shows it.
+  gl.vidWant = sv.vidmix > 0 || used.some(id => VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
@@ -1479,11 +1510,33 @@ function frame(now) {
     if (outWin && outWin.closed) { outWin = null; outState(); }
   }
   if (f.barBeat !== lastBeatShown) { lastBeatShown = f.barBeat; [...$("beatDots").children].forEach((i, k) => i.classList.toggle("on", k === f.barBeat)); }
-  requestAnimationFrame(frame);
 }
 rebuild();
 cueInfo();
 requestAnimationFrame(frame);
+
+// ---------- full load (טעינה מלאה) ----------
+// Every effect program is built and drawn once before the show, behind a counter, so switching effects never compiles
+// anything mid-show. The heart keeps beating behind it. Where the browser compiles in the background the screen only
+// appears if this takes a moment, and "skip" lets the rest finish in the background; where it cannot (many phones), skip
+// stops it and each remaining effect builds the first time it is picked (with a short notice).
+(function fullLoad() {
+  const boot = $("boot"), t0 = performance.now(); let skipped = false;
+  const showT = setTimeout(() => { boot.hidden = false; }, gl.parallel ? 400 : 0);
+  $("bootSkip").onclick = () => {
+    skipped = true; boot.hidden = true;
+    if (!gl.parallel) { gl.stopPreload(); toast("כל אפקט ייטען בפעם הראשונה שבוחרים בו"); } else toast("ממשיך לטעון ברקע");
+  };
+  gl.preload((n, total) => { $("bootBar").style.width = (total ? n / total * 100 : 100) + "%"; $("bootTxt").textContent = `${n} / ${total}`; })
+    .then(failed => {
+      clearTimeout(showT); boot.hidden = true;
+      if (skipped && !gl.parallel) return;
+      if (failed) toast(`${failed} חבילות אפקטים לא נבנו בכרטיס המסך הזה · במקומן תופיע פעימת לב`);
+      else if (!boot.dataset.quiet) toast(`כל האפקטים מוכנים · ${((performance.now() - t0) / 1000).toFixed(1)} שניות`);
+    });
+  // Without background compiling, an effect that is still missing says so before the moment it takes to build.
+  gl.onBuild = () => { if (boot.hidden) toast("טוען את האפקט…"); };
+})();
 if (reduced) toast("מצב תנועה מופחתת של המערכת פעיל - הסטרובו כבוי כברירת מחדל");
 </script>
 </body>
