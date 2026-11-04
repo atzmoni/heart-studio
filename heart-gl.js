@@ -8,8 +8,9 @@
 import { SIZE, MARGIN, RES } from "./heart-geo.js?v=1";
 import { FX_COMMON, FX_BANKS as FX_BANKS_100 } from "./heart-fx.js?v=1";
 import { TD_BANK, TD_SIM_GLSL } from "./heart-td.js?v=1";
+import { TIME_BANK, HIST_N } from "./heart-tempo.js?v=1";
 // The banks after the built-in one: the 100 of heart-fx.js, then the TouchDesigner liquid of heart-td.js.
-const FX_BANKS = [...FX_BANKS_100, TD_BANK];
+const FX_BANKS = [...FX_BANKS_100, TD_BANK, TIME_BANK];
 
 // id, Hebrew name, icon, energy class (0 calm, 1 medium, 2 intense) for the automatic show.
 export const EFFECTS = [
@@ -137,6 +138,9 @@ uniform float uSpeed, uInt, uMix, uVidMix, uVidOn, uVidAspect, uMaster, uOutline
 uniform vec3 uPal[4];
 uniform int uPass, uMask, uLayMode;   // layer passes: 0 is the show itself, 1.. are layers blended over it (see renderLayer)
 uniform float uLayOp;
+uniform sampler2D uHist;                                  // picture rate (heart-tempo.js): 16 past video frames, 4x4 tiles
+uniform int uHistHead, uHistN;
+uniform float uWarp, uWarpQ, uRate, uFps, uFPhase, uFIdx, uFDiv, uMorph;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
 
@@ -1068,6 +1072,22 @@ export class HeartGL {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.tdU = null; this.tdBad = false;
+    // Picture rate: the last 16 video frames, small (256 x 256 each) in one 1024 x 1024 texture on unit 8.
+    this.hist = { tex: gl.createTexture(), head: 0, n: 0, cv: null };
+    gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, this.hist.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+  }
+  // Keep the current video frame as the newest picture of the history (called by the page on each new picture frame).
+  pushHist() {
+    const gl = this.gl, v = this.videoEl, H = this.hist;
+    if (!v || v.readyState < 2 || !v.videoWidth) { H.n = 0; return; }
+    if (!H.cv) { H.cv = document.createElement("canvas"); H.cv.width = H.cv.height = 256; H.cx = H.cv.getContext("2d", { alpha: false }); }
+    try { H.cx.drawImage(v, 0, 0, 256, 256); } catch { return; }
+    H.head = (H.head + 1) % HIST_N; H.n = Math.min(HIST_N, H.n + 1);
+    gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, H.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, (H.head % 4) * 256, (H.head >> 2) * 256, gl.RGBA, gl.UNSIGNED_BYTE, H.cv);
   }
 
   // One step of the liquid, before the show is drawn. T = TdDriver.uniforms(settings). Nothing happens if the GPU cannot
@@ -1202,7 +1222,7 @@ export class HeartGL {
       const n = gl.getProgramParameter(pr.p, gl.ACTIVE_UNIFORMS);
       for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(pr.p, i), name = u.name.replace(/\[0\]$/, ""); pr.loc[name] = gl.getUniformLocation(pr.p, u.name); }
       gl.uniform1i(pr.loc.uField, 0); gl.uniform1i(pr.loc.uVid, 1); gl.uniform1i(pr.loc.uCh, 2);
-      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5);
+      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5); gl.uniform1i(pr.loc.uHist, 8);
     }
     gl.useProgram(pr.p); this.loc = pr.loc; return pr.loc;
   }
@@ -1322,7 +1342,7 @@ export class HeartGL {
     gl.uniform1f(L.uBreath, this.breath); gl.uniform1f(L.uFlow, this.flow);
     gl.uniform1f(L.uAngle, cfg.angle); gl.uniform2f(L.uCenter, cfg.cx, cfg.cy);
     gl.uniform1i(L.uFxA, s.fxA); gl.uniform1i(L.uFxB, s.fxB); gl.uniform1f(L.uMix, s.mix);
-    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
+    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix", "Warp", "WarpQ", "Rate", "Fps", "FPhase", "FIdx", "FDiv", "Morph"])
       gl.uniform1f(L["u" + k], s[k[0].toLowerCase() + k.slice(1)] ?? 0);
     gl.uniform1fv(L.uSpec, s.spec);
     gl.uniform3fv(L.uPal, (s.palette || PALETTES.love.c).flatMap(hex));
@@ -1330,13 +1350,14 @@ export class HeartGL {
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
     // A video frame goes to the GPU only when something on screen shows video (vidWant, set by the page each frame) and the
     // frame is new: a paused or unused video costs nothing.
-    if (vidOn && !pass && this.vidWant !== false && (v.currentTime !== this.vidT || v.videoWidth !== this.vidW || v.videoHeight !== this.vidH)) {
+    if (vidOn && !pass && this.vidWant !== false && !this.vidHold && (v.currentTime !== this.vidT || v.videoWidth !== this.vidW || v.videoHeight !== this.vidH)) {
       try {
         if (v.videoWidth === this.vidW && v.videoHeight === this.vidH) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, v);
         else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); this.vidW = v.videoWidth; this.vidH = v.videoHeight; }
         this.vidT = v.currentTime;
       } catch {}
     } else if (!vidOn) this.vidW = this.vidH = 0;
+    gl.uniform1i(L.uHistHead, this.hist.head); gl.uniform1i(L.uHistN, this.hist.n);
     gl.uniform1f(L.uVidOn, vidOn ? 1 : 0); gl.uniform1f(L.uVidAspect, vidOn ? v.videoWidth / v.videoHeight : 1);
     if (this.chDirty) {
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);
