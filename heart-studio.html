@@ -453,6 +453,20 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="vidSync" checked> וידאו מסונכרן לזמן המוזיקה</label>
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
+          <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button></div>
+        </section>
+        <section>
+          <h3>⏱ קצב תמונה</h3>
+          <p class="help">קצב הפריימים והזמן של הוידאו, התמונה והאפקטים הולכים לפי המוזיקה: פריימים שנעולים לפעימות, הקפאות על הקיק, האצה ו-סלואו-מושן. האפקטים 196-205 מציגים בכל תעלה רגע אחר בזמן.</p>
+          <div class="sl"><label for="twMode">מצב</label><select id="twMode"></select></div>
+          <div class="sl"><label for="twDiv">פריימים לפעימה</label><select id="twDiv"></select></div>
+          <div class="sl"><label for="twAmount">השפעת המוזיקה</label><input type="range" id="twAmount" min="0" max="100" value="70"><output id="twAmountV"></output></div>
+          <div class="sl"><label for="twMorph">מעבר בין תמונות</label><input type="range" id="twMorph" min="0" max="100" value="35"><output id="twMorphV"></output></div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="twAll" checked> על כל האפקטים</label>
+            <label class="row help"><input type="checkbox" id="twVideo" checked> על הוידאו</label>
+          </div>
+          <p class="help" id="twInfo" style="direction:ltr;text-align:right"></p>
         </section>
       </div>
 
@@ -3582,6 +3596,185 @@ vec3 fxRealHeart(H h) {
 return { TD_SIM, TD_LOOK, TD_DEFAULT, TD_SOURCES, TD_RAMPS, TD_LOOKS, TD_FX, TD_PRESET, isTd, MECHS, TdDriver, TD_SIM_GLSL, TD_BANK };
 })();
 
+// ===== heart-tempo.js =====
+const M_tempo = (() => {
+// Picture rate: the frame rate and the flow of time follow the music, the way a live AI VJ draws a new picture on the beat
+// and holds it in between (idea from vrch.io's AI VJ and their ComfyUI microphone and BPM nodes; written from scratch here).
+//
+// TimeWarp turns the music reading of every frame into a warped clock:
+//   t      time that runs faster or slower with the music (rate), and can stop
+//   tq     the same time, held between picture frames: frames step on the beat grid (div frames per beat), so the whole
+//          heart moves at a musical frame rate instead of the screen's 60 fps
+//   fIdx   picture frame counter, fPhase 0..1 inside the current frame, fps the frame rate now
+// The page feeds tq to every effect (when "all effects" is on), holds the video between frames, slows or speeds it, and
+// keeps a short history of the video (16 frames, one per picture frame) for the time effects 196-205. Each of those draws
+// the past on the cut itself: every groove and every heart between grooves is its own moment in time.
+// Works with the live microphone and offline: nothing here needs a network.
+
+const TW_MODES = [
+  ["off", "כבוי · זמן רגיל"],
+  ["beat", "פעימות · פריימים נעולים ל-BPM"],
+  ["energy", "אנרגיה · שקט = פליפבוק, שיא = רציף"],
+  ["stutter", "סטאטר · הקפאה על הקיק וקפיצה קדימה"],
+  ["drop", "דרופ · האצה בבילדאפ, סלואו-מושן בדרופ"],
+  ["vj", "AI VJ · תמונה חדשה בכל צעד"],
+];
+const TW_DIVS = [1, 2, 4, 8, 16];
+const TW_DEFAULT = { mode: "beat", div: 4, amount: 70, morph: 35, all: true, video: true };
+const HIST_N = 16;
+
+class TimeWarp {
+  constructor(o = {}) {
+    this.o = { ...TW_DEFAULT, ...o };
+    this.t = 0; this.tq = 0; this.rate = 1; this.fIdx = 0; this.fPhase = 0; this.fps = 60; this.div = this.o.div;
+    this.newFrame = true; this.freeze = 0; this.kickPrev = 0; this.lastCell = null; this.out = this.state();
+  }
+  state() {
+    return { warp: this.t, warpQ: this.tq, rate: this.rate, fps: this.fps, fPhase: this.fPhase, fIdx: this.fIdx % 65536, fDiv: this.div, morph: this.o.morph / 100 };
+  }
+  // f: Music.frame() (+ the reading of heart-react), dt in seconds. Returns the state above, and newFrame.
+  frame(f, dt) {
+    const o = this.o, amt = o.amount / 100, bps = Math.max(0.5, (f.bpm || 120) / 60), lv = f.levelS ?? f.level ?? 0;
+    const beats = (f.beatN || 0) + (f.beat || 0);
+    let rate = 1, div = o.div;
+    switch (o.mode) {
+      case "beat": rate = 1 + (bps / 2 - 1) * amt; break;                                  // 120 BPM = 1x
+      case "energy": {
+        rate = 1 + (0.25 + 1.6 * lv - 1) * amt;
+        // quiet: one picture a beat; peaks: up to 16 a beat (the screen rate at most)
+        const want = Math.round(Math.log2(1 + 15 * Math.min(1, lv * 1.3) * amt + (1 - amt) * 15));
+        div = TW_DIVS[Math.max(0, Math.min(4, want))]; break;
+      }
+      case "stutter": {
+        const k = f.kick || 0;
+        if (k > 0.85 && this.kickPrev <= 0.85) this.freeze = (0.5 / bps) * (0.3 + amt);   // hold for up to half a beat
+        this.kickPrev = k;
+        if (this.freeze > 0) { this.freeze -= dt; rate = 0; if (this.freeze <= 0) this.t += (0.5 / bps) * amt; }  // then jump ahead
+        break;
+      }
+      case "drop": {
+        const d = f.drop || 0, b = f.build || 0, br = f.break || f.brk || 0;
+        rate = 1 + b * 2.0 * amt; if (d > 0.3) rate = 1 - 0.85 * amt * Math.min(1, d); else if (br > 0.5) rate = 1 - 0.5 * amt;
+        break;
+      }
+      case "vj": rate = 1 + (lv - 0.4) * amt; break;
+    }
+    this.rate += (rate - this.rate) * (o.mode === "stutter" ? 1 : 0.15);
+    this.t += dt * this.rate;
+    this.div = div;
+    // Picture frames on the beat grid (the time reading follows the music clock, so a frame lands exactly on each beat).
+    if (o.mode === "off") { this.newFrame = true; this.fIdx++; this.fPhase = 0; this.fps = 1 / Math.max(dt, 1 / 240); this.tq = this.t; }
+    else {
+      const cell = Math.floor(beats * div), ph = beats * div - cell;
+      this.newFrame = cell !== this.lastCell && !(o.mode === "stutter" && this.freeze > 0);
+      if (this.newFrame) { this.lastCell = cell; this.fIdx++; this.tq = this.t; }
+      this.fPhase = ph; this.fps = bps * div;
+    }
+    this.out = this.state(); this.out.newFrame = this.newFrame; return this.out;
+  }
+}
+
+// The time effects. Each is drawn on the cut: grooves (h.groove), the hearts between them (h.stripe) and the contour (h.edge).
+const TIME_FX = [
+  [196, "מכונת זמן · כל תעלה רגע אחר", "⏳", 1, "fxTmRings"],
+  [197, "פליפבוק לב", "📖", 2, "fxTmFlip"],
+  [198, "סליט-סקאן מהמרכז", "🎞️", 1, "fxTmSlit"],
+  [199, "פיצול זמן RGB", "🌈", 2, "fxTmChroma"],
+  [200, "הקפאה בתעלות", "🧊", 2, "fxTmFreeze"],
+  [201, "לופ סטאטר", "🔁", 3, "fxTmLoop"],
+  [202, "סולם קצבים · כל טבעת קצב משלה", "🪜", 1, "fxTmLadder"],
+  [203, "קדימה ואחורה", "↔️", 1, "fxTmPing"],
+  [204, "גל זמן מהקיק", "🌊", 2, "fxTmRipple"],
+  [205, "AI VJ · ציור מחדש על הפעימה", "🤖", 1, "fxTmVj"],
+];
+const isTime = id => id >= 196 && id <= 205;
+
+const TIME_BANK = { g: "time", title: "קצב תמונה · זמן לפי המוזיקה", fx: TIME_FX, glsl: `
+// ---------- picture rate (heart-tempo.js) ----------
+vec2 tmUV(vec2 p) { vec2 uv = p / S - 0.5; if (uVidAspect > 1.0) uv.x /= uVidAspect; else uv.y *= uVidAspect; return clamp(uv + 0.5, 0.004, 0.996); }
+vec3 tmTile(vec2 uv, float k) { int j = (uHistHead - int(k) + 64) % 16; return texture(uHist, (vec2(float(j % 4), float(j / 4)) + uv) * 0.25).rgb; }
+// A generated picture, a new one for each seed (what the AI VJ would draw): a folded flow in the show's colours.
+float tmFb(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { s += a * noise(p); p = p * 2.03 + 7.1; a *= 0.5; } return s / 0.875; }
+vec3 tmGen(vec2 p, float seed) {
+  vec2 o = vec2(hash11(seed * 1.37), hash11(seed * 2.11 + 4.0)) * 40.0, q = p * (0.010 + 0.012 * hash11(seed + 9.0)) + o;
+  float n = tmFb(q + tmFb(q * 1.7 + 3.1) * (1.5 + 1.5 * hash11(seed + 3.0)));
+  return pal(n * 1.6 + hash11(seed + 5.0)) * (0.25 + 1.1 * smoothstep(0.3, 0.8, n));
+}
+// The picture k frames ago: the video history when there is one, else the generated picture of that frame.
+vec3 tmSrc(vec2 p, float k) {
+  if (uHistN > 1 && uVidOn > 0.5) {
+    float kc = clamp(k, 0.0, float(uHistN - 1)), k0 = floor(kc);
+    vec2 uv = tmUV(p); return mix(tmTile(uv, k0), tmTile(uv, min(k0 + 1.0, float(uHistN - 1))), kc - k0);
+  }
+  float s = floor(uFIdx - k), m = smoothstep(0.0, max(uMorph, 0.001), uFPhase);
+  vec3 c = tmGen(p, s);
+  if (m < 1.0) c = mix(tmGen(p, s - 1.0), c, m);   // morph in from the previous picture only at the start of a frame
+  return c;
+}
+float tmNew() { return exp(-uFPhase * 7.0); }                          // a flash at each new picture frame
+vec3 tmCut(H h, vec3 c, float gl) {                                    // put a picture on the cut
+  return c * (h.stripe * (0.55 + 0.5 * uLevelS) + h.groove * (0.9 + gl)) + pal(uWarp * 0.05) * h.edge * (0.3 + 0.7 * tmNew());
+}
+vec3 fxTmRings(H h) {            // every groove and heart band is a different moment: the outer the ring, the further back
+  float r = ringIdx(h), k = r * (0.5 + 1.5 * uBassS);
+  return tmCut(h, tmSrc(h.p, k), kk() * 0.8);
+}
+vec3 fxTmFlip(H h) {             // a flipbook: the picture steps on the beat grid, the cut flashes every new page
+  vec3 c = floor(tmSrc(h.p, 0.0) * 5.0 + 0.5) / 5.0;                  // printed look
+  float page = mod(uFIdx + ringIdx(h), 2.0);                           // alternate rings change on alternate pages
+  vec3 o = c * (h.stripe * (0.5 + 0.5 * page) + h.groove * 1.2);
+  return o + vec3(1.0) * h.groove * tmNew() * (0.4 + uLevelS) + vec3(1.0) * h.edge * tmNew();
+}
+vec3 fxTmSlit(H h) {             // slit-scan: the past flows outward from the centre of the rings
+  float k = h.rad * (6.0 + 9.0 * uLevelS);
+  return tmCut(h, tmSrc(h.p, k), uHighS);
+}
+vec3 fxTmChroma(H h) {           // red now, green and blue from earlier frames; the bass pulls them apart
+  float d = 1.0 + 5.0 * uBassS + 3.0 * kk();
+  vec3 c = vec3(tmSrc(h.p, 0.0).r, tmSrc(h.p, d).g, tmSrc(h.p, d * 2.0).b);
+  return tmCut(h, c * 1.15, 0.5);
+}
+vec3 fxTmFreeze(H h) {           // on each beat some grooves freeze the picture of that beat, the others keep playing
+  float r = ringIdx(h), frozen = step(0.55, hash21(vec2(r, uBeatN)));
+  float k = frozen * min(15.0, floor(uBeat * uFDiv));
+  vec3 c = tmSrc(h.p, k);
+  return tmCut(h, mix(c, vec3(dot(c, vec3(0.3, 0.6, 0.1))) * vec3(0.7, 0.9, 1.2), frozen * 0.6), frozen * 0.7);
+}
+vec3 fxTmLoop(H h) {             // the last few frames repeat like a scratched record; the loop length follows the energy
+  float L = uLevelS > 0.55 ? 2.0 : (uLevelS > 0.3 ? 4.0 : 8.0), k = L - 1.0 - mod(uFIdx, L);
+  k += mod(ringIdx(h), 2.0) * L * 0.5;
+  return tmCut(h, tmSrc(h.p, k), kk());
+}
+vec3 fxTmLadder(H h) {           // every ring has its own frame rate: the inner heart every frame, then every 2, 4, 8
+  float r = ringIdx(h), every = exp2(mod(r, 4.0)), k = mod(uFIdx, every);
+  float on = 0.6 + 0.8 * specAt(r / ringN());
+  return tmCut(h, tmSrc(h.p, k) * on, step(k, 0.5) * 0.8);
+}
+vec3 fxTmPing(H h) {             // the left half plays the past forwards, the right half backwards (two separate channels)
+  float tri = abs(mod(uFIdx, 30.0) - 15.0), k = h.side < 0.5 ? tri : 15.0 - tri;
+  return tmCut(h, tmSrc(h.p, k), 0.4 * kk());
+}
+vec3 fxTmRipple(H h) {           // each kick sends a wave of the past out through the rings
+  float w = uBeat * 1.4, d = abs(h.rad - w), k = 10.0 * exp(-d * 9.0) * (0.3 + kk());
+  vec2 q = h.p + h.gD * exp(-d * 12.0) * 3.0 * uBassS;
+  return tmCut(h, tmSrc(q, k), exp(-d * 10.0));
+}
+vec3 fxTmVj(H h) {               // AI VJ: a new picture on every step of the grid, morphing in; with video it redraws the video
+  vec3 g = tmSrc(h.p, 0.0);
+  if (uVidOn > 0.5) {
+    vec3 v = uHistN > 1 ? tmTile(tmUV(h.p), 0.0) : video(h.p);
+    float l = dot(v, vec3(0.3, 0.6, 0.1));
+    vec3 gen = tmGen(h.p, uFIdx), m = vec3(smoothstep(0.0, max(uMorph, 0.001), uFPhase));
+    if (m.x < 1.0) gen = mix(tmGen(h.p, uFIdx - 1.0), gen, m.x);
+    g = mix(gen * (0.4 + 1.2 * l), pal(floor(l * 4.0) / 4.0 + uFIdx * 0.13) * l * 1.4, 0.5);
+  }
+  return tmCut(h, g, kk() * 0.6);
+}
+` };
+
+return { TW_MODES, TW_DIVS, TW_DEFAULT, HIST_N, TimeWarp, TIME_FX, isTime, TIME_BANK };
+})();
+
 // ===== heart-gl.js =====
 const M_gl = (() => {
 // Projector renderer for the heart. One full-screen fragment shader: every output pixel is mapped back to centimetres on the
@@ -3594,8 +3787,9 @@ const M_gl = (() => {
 const { SIZE, MARGIN, RES } = M_geo;
 const { FX_COMMON, FX_BANKS: FX_BANKS_100 } = M_fx;
 const { TD_BANK, TD_SIM_GLSL } = M_td;
+const { TIME_BANK, HIST_N } = M_tempo;
 // The banks after the built-in one: the 100 of heart-fx.js, then the TouchDesigner liquid of heart-td.js.
-const FX_BANKS = [...FX_BANKS_100, TD_BANK];
+const FX_BANKS = [...FX_BANKS_100, TD_BANK, TIME_BANK];
 
 // id, Hebrew name, icon, energy class (0 calm, 1 medium, 2 intense) for the automatic show.
 const EFFECTS = [
@@ -3723,6 +3917,9 @@ uniform float uSpeed, uInt, uMix, uVidMix, uVidOn, uVidAspect, uMaster, uOutline
 uniform vec3 uPal[4];
 uniform int uPass, uMask, uLayMode;   // layer passes: 0 is the show itself, 1.. are layers blended over it (see renderLayer)
 uniform float uLayOp;
+uniform sampler2D uHist;                                  // picture rate (heart-tempo.js): 16 past video frames, 4x4 tiles
+uniform int uHistHead, uHistN;
+uniform float uWarp, uWarpQ, uRate, uFps, uFPhase, uFIdx, uFDiv, uMorph;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
 
@@ -4654,6 +4851,22 @@ class HeartGL {
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.tdU = null; this.tdBad = false;
+    // Picture rate: the last 16 video frames, small (256 x 256 each) in one 1024 x 1024 texture on unit 8.
+    this.hist = { tex: gl.createTexture(), head: 0, n: 0, cv: null };
+    gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, this.hist.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1024, 1024, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.LINEAR);
+    for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
+  }
+  // Keep the current video frame as the newest picture of the history (called by the page on each new picture frame).
+  pushHist() {
+    const gl = this.gl, v = this.videoEl, H = this.hist;
+    if (!v || v.readyState < 2 || !v.videoWidth) { H.n = 0; return; }
+    if (!H.cv) { H.cv = document.createElement("canvas"); H.cv.width = H.cv.height = 256; H.cx = H.cv.getContext("2d", { alpha: false }); }
+    try { H.cx.drawImage(v, 0, 0, 256, 256); } catch { return; }
+    H.head = (H.head + 1) % HIST_N; H.n = Math.min(HIST_N, H.n + 1);
+    gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, H.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, (H.head % 4) * 256, (H.head >> 2) * 256, gl.RGBA, gl.UNSIGNED_BYTE, H.cv);
   }
 
   // One step of the liquid, before the show is drawn. T = TdDriver.uniforms(settings). Nothing happens if the GPU cannot
@@ -4788,7 +5001,7 @@ class HeartGL {
       const n = gl.getProgramParameter(pr.p, gl.ACTIVE_UNIFORMS);
       for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(pr.p, i), name = u.name.replace(/\[0\]$/, ""); pr.loc[name] = gl.getUniformLocation(pr.p, u.name); }
       gl.uniform1i(pr.loc.uField, 0); gl.uniform1i(pr.loc.uVid, 1); gl.uniform1i(pr.loc.uCh, 2);
-      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5);
+      gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5); gl.uniform1i(pr.loc.uHist, 8);
     }
     gl.useProgram(pr.p); this.loc = pr.loc; return pr.loc;
   }
@@ -4908,7 +5121,7 @@ class HeartGL {
     gl.uniform1f(L.uBreath, this.breath); gl.uniform1f(L.uFlow, this.flow);
     gl.uniform1f(L.uAngle, cfg.angle); gl.uniform2f(L.uCenter, cfg.cx, cfg.cy);
     gl.uniform1i(L.uFxA, s.fxA); gl.uniform1i(L.uFxB, s.fxB); gl.uniform1f(L.uMix, s.mix);
-    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix"])
+    for (const k of ["Time", "Beat", "BeatN", "Bar", "Bass", "Mid", "High", "Level", "LevelS", "Kick", "Hit", "Pump", "Build", "Drop", "Break", "Speed", "Int", "Master", "Outline", "Hue", "VidMix", "EngMix", "Warp", "WarpQ", "Rate", "Fps", "FPhase", "FIdx", "FDiv", "Morph"])
       gl.uniform1f(L["u" + k], s[k[0].toLowerCase() + k.slice(1)] ?? 0);
     gl.uniform1fv(L.uSpec, s.spec);
     gl.uniform3fv(L.uPal, (s.palette || PALETTES.love.c).flatMap(hex));
@@ -4916,13 +5129,14 @@ class HeartGL {
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.vid);
     // A video frame goes to the GPU only when something on screen shows video (vidWant, set by the page each frame) and the
     // frame is new: a paused or unused video costs nothing.
-    if (vidOn && !pass && this.vidWant !== false && (v.currentTime !== this.vidT || v.videoWidth !== this.vidW || v.videoHeight !== this.vidH)) {
+    if (vidOn && !pass && this.vidWant !== false && !this.vidHold && (v.currentTime !== this.vidT || v.videoWidth !== this.vidW || v.videoHeight !== this.vidH)) {
       try {
         if (v.videoWidth === this.vidW && v.videoHeight === this.vidH) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, v);
         else { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); this.vidW = v.videoWidth; this.vidH = v.videoHeight; }
         this.vidT = v.currentTime;
       } catch {}
     } else if (!vidOn) this.vidW = this.vidH = 0;
+    gl.uniform1i(L.uHistHead, this.hist.head); gl.uniform1i(L.uHistN, this.hist.n);
     gl.uniform1f(L.uVidOn, vidOn ? 1 : 0); gl.uniform1f(L.uVidAspect, vidOn ? v.videoWidth / v.videoHeight : 1);
     if (this.chDirty) {
       gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.ch);
@@ -6293,10 +6507,11 @@ const { Engine, MODES: E_MODES, HALVES, COLORS, noteName } = M_engine;
 const { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } = M_react;
 const { makeOps, Network, Editor, FAMS: WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } = M_nodes;
 const { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } = M_td;
+const { TimeWarp, TW_MODES, TW_DIVS, isTime } = M_tempo;
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace", tw: "heartstudio.picrate" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -6969,6 +7184,7 @@ async function loadMusic(file, el) {
 $("musicFile").onchange = () => { const f = $("musicFile").files[0]; if (f) loadMusic(f, aud); };
 $("videoFile").onchange = async () => {
   const f = $("videoFile").files[0]; if (!f) return;
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
   vid.src = URL.createObjectURL(f); vid.muted = !$("vidAudio").checked; vid.loop = !$("vidAudio").checked;
   if ($("vidAudio").checked) { aud.pause(); await loadMusic(f, vid); }
   else vid.play().catch(() => {});
@@ -7249,6 +7465,32 @@ function health(fps) {
   $("toolReview").innerHTML = (tips.length ? tips : ["✓ הכל מוכן להופעה."]).map(t => `<li>${esc(t)}</li>`).join("");
 }
 
+// ---------- picture rate (heart-tempo.js) ----------
+const tw = new TimeWarp(store.get(K.tw, {}));
+tw.t = tw.tq = performance.now() / 1000;
+const twSave = () => store.set(K.tw, tw.o);
+window.heartStudio.tw = tw; window.heartStudio.setFx = setFx;
+$("twMode").innerHTML = TW_MODES.map(([k, n]) => `<option value="${k}">${n}</option>`).join(""); $("twMode").value = tw.o.mode;
+$("twDiv").innerHTML = TW_DIVS.map(d => `<option value="${d}">${d}</option>`).join(""); $("twDiv").value = tw.o.div;
+$("twMode").onchange = () => { tw.o.mode = $("twMode").value; twSave(); toast("קצב תמונה: " + $("twMode").selectedOptions[0].textContent); };
+$("twDiv").onchange = () => { tw.o.div = +$("twDiv").value; twSave(); };
+for (const k of ["amount", "morph"]) {
+  const el = $("tw" + k[0].toUpperCase() + k.slice(1)), out = $(el.id + "V");
+  el.value = tw.o[k]; out.textContent = el.value + "%";
+  el.oninput = () => { tw.o[k] = +el.value; out.textContent = el.value + "%"; twSave(); };
+}
+for (const k of ["all", "video"]) { const el = $("tw" + k[0].toUpperCase() + k.slice(1)); el.checked = tw.o[k]; el.onchange = () => { tw.o[k] = el.checked; twSave(); }; }
+// The camera as the video source (the AI VJ "rewrite reality" idea): the heart redraws what the camera sees, on the beat.
+let camStream = null;
+$("camBtn").onclick = async () => {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+    vid.removeAttribute("src"); vid.srcObject = camStream; vid.muted = true; await vid.play().catch(() => {});
+    $("camBtn").setAttribute("aria-pressed", "true"); if (curFx() < 196 || curFx() > 205) setFx(205); toast("המצלמה ממופה על הלב");
+  } catch { camStream = null; toast("אין גישה למצלמה"); }
+};
+
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
 // The next frame is asked for first, so an error in one frame can never stop the show (that would look like a freeze).
@@ -7269,6 +7511,14 @@ function step(now) {
   const wsLive = $("wsOn").checked;
   if (wsLive) for (const [k, v] of Object.entries(wsOut.feats)) f[k] = v * rx.o.boost / 100;
   director(f);
+  const tws = tw.frame(f, Math.min(0.1, Math.max(0.001, (now - (step.last ?? now)) / 1000)) || 1 / 60); step.last = now;
+  const twOn = tw.o.mode !== "off";
+  // The video steps at the picture rate (a new frame only on each step) and plays faster or slower with the music.
+  gl.vidHold = twOn && tw.o.video && !tws.newFrame;
+  if (vid.src && !vid.srcObject && music.el !== vid && !($("vidSync").checked && music.el && music.mode === "file")) {
+    const r = twOn && tw.o.video ? Math.min(4, Math.max(0.25, tws.rate)) : 1;
+    if (Math.abs(vid.playbackRate - r) > 0.04) vid.playbackRate = r;
+  }
   if (mix > 0) { mix = Math.min(1, (now - xStart) / 1000 / xDur); if (mix >= 1) { fxA = fxB; mix = 0; } }
   blackLv += ((black ? 0 : 1) - blackLv) * 0.2;
   // Video follows the music clock.
@@ -7283,7 +7533,7 @@ function step(now) {
   const sv = Object.assign(rx.modulate(show), wsLive ? wsOut.params : {}), c01 = v => Math.min(1, Math.max(0, v));
   const state = (a, fx) => ({
     engMix: c01(sv.engmix / 100), fxA: fx ?? fxA, fxB: fx ?? fxB, mix: fx == null && mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
-    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
+    ...tws, time: twOn && tw.o.all ? tws.warpQ : now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
     kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
     master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
   });
@@ -7293,7 +7543,8 @@ function step(now) {
   const used = [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])];
   const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
   // The video goes to the GPU only while something shows it.
-  gl.vidWant = sv.vidmix > 0 || used.some(id => VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
+  if (tws.newFrame && used.some(isTime)) gl.pushHist();
+  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
@@ -7313,6 +7564,7 @@ function step(now) {
   if (now - (frame.ft || 0) > 500) { frame.fps = frame.n * 1000 / (now - (frame.ft || now - 500)); frame.n = 0; frame.ft = now; $("fpsChip").textContent = Math.round(frame.fps) + " FPS"; outStats(frame.fps); health(frame.fps); }
   if (now - hudT > 90) {
     hudT = now;
+    $("twInfo").textContent = twOn ? `${tws.fps.toFixed(1)} fps · ${tws.rate.toFixed(2)}× · frame ${tws.fIdx}` : "60 fps · 1.00×";
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
     drawTL(f);
     $("lyBase").textContent = EFFECTS[curFx()].ico + " " + EFFECTS[curFx()].name + (rx.o.layers.some(l => l.on) ? ` · +${rx.o.layers.filter(l => l.on).length} שכבות` : "");

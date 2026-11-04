@@ -391,6 +391,20 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="vidSync" checked> וידאו מסונכרן לזמן המוזיקה</label>
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
+          <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button></div>
+        </section>
+        <section>
+          <h3>⏱ קצב תמונה</h3>
+          <p class="help">קצב הפריימים והזמן של הוידאו, התמונה והאפקטים הולכים לפי המוזיקה: פריימים שנעולים לפעימות, הקפאות על הקיק, האצה ו-סלואו-מושן. האפקטים 196-205 מציגים בכל תעלה רגע אחר בזמן.</p>
+          <div class="sl"><label for="twMode">מצב</label><select id="twMode"></select></div>
+          <div class="sl"><label for="twDiv">פריימים לפעימה</label><select id="twDiv"></select></div>
+          <div class="sl"><label for="twAmount">השפעת המוזיקה</label><input type="range" id="twAmount" min="0" max="100" value="70"><output id="twAmountV"></output></div>
+          <div class="sl"><label for="twMorph">מעבר בין תמונות</label><input type="range" id="twMorph" min="0" max="100" value="35"><output id="twMorphV"></output></div>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="twAll" checked> על כל האפקטים</label>
+            <label class="row help"><input type="checkbox" id="twVideo" checked> על הוידאו</label>
+          </div>
+          <p class="help" id="twInfo" style="direction:ltr;text-align:right"></p>
         </section>
       </div>
 
@@ -689,10 +703,11 @@ import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engi
 import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
 import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
 import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
+import { TimeWarp, TW_MODES, TW_DIVS, isTime } from "./heart-tempo.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace" };
+const K = { eng: "heartstudio.engine", cc: "heartstudio.midicc", cfg: "heartstudio.cfg", pts: "heartstudio.points", ch: "heartstudio.channels", show: "heartstudio.show", cues: "heartstudio.cues", fold: "heartstudio.fold", fxFold: "heartstudio.fxfold", fxGrp: "heartstudio.fxgroup", fxRecent: "heartstudio.fxrecent", ui: "heartstudio.ui", rx: "heartstudio.react", ws: "heartstudio.workspace", tw: "heartstudio.picrate" };
 const fmt = s => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0"); };
 let toastT; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2200); };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1365,6 +1380,7 @@ async function loadMusic(file, el) {
 $("musicFile").onchange = () => { const f = $("musicFile").files[0]; if (f) loadMusic(f, aud); };
 $("videoFile").onchange = async () => {
   const f = $("videoFile").files[0]; if (!f) return;
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
   vid.src = URL.createObjectURL(f); vid.muted = !$("vidAudio").checked; vid.loop = !$("vidAudio").checked;
   if ($("vidAudio").checked) { aud.pause(); await loadMusic(f, vid); }
   else vid.play().catch(() => {});
@@ -1645,6 +1661,32 @@ function health(fps) {
   $("toolReview").innerHTML = (tips.length ? tips : ["✓ הכל מוכן להופעה."]).map(t => `<li>${esc(t)}</li>`).join("");
 }
 
+// ---------- picture rate (heart-tempo.js) ----------
+const tw = new TimeWarp(store.get(K.tw, {}));
+tw.t = tw.tq = performance.now() / 1000;
+const twSave = () => store.set(K.tw, tw.o);
+window.heartStudio.tw = tw; window.heartStudio.setFx = setFx;
+$("twMode").innerHTML = TW_MODES.map(([k, n]) => `<option value="${k}">${n}</option>`).join(""); $("twMode").value = tw.o.mode;
+$("twDiv").innerHTML = TW_DIVS.map(d => `<option value="${d}">${d}</option>`).join(""); $("twDiv").value = tw.o.div;
+$("twMode").onchange = () => { tw.o.mode = $("twMode").value; twSave(); toast("קצב תמונה: " + $("twMode").selectedOptions[0].textContent); };
+$("twDiv").onchange = () => { tw.o.div = +$("twDiv").value; twSave(); };
+for (const k of ["amount", "morph"]) {
+  const el = $("tw" + k[0].toUpperCase() + k.slice(1)), out = $(el.id + "V");
+  el.value = tw.o[k]; out.textContent = el.value + "%";
+  el.oninput = () => { tw.o[k] = +el.value; out.textContent = el.value + "%"; twSave(); };
+}
+for (const k of ["all", "video"]) { const el = $("tw" + k[0].toUpperCase() + k.slice(1)); el.checked = tw.o[k]; el.onchange = () => { tw.o[k] = el.checked; twSave(); }; }
+// The camera as the video source (the AI VJ "rewrite reality" idea): the heart redraws what the camera sees, on the beat.
+let camStream = null;
+$("camBtn").onclick = async () => {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+    vid.removeAttribute("src"); vid.srcObject = camStream; vid.muted = true; await vid.play().catch(() => {});
+    $("camBtn").setAttribute("aria-pressed", "true"); if (curFx() < 196 || curFx() > 205) setFx(205); toast("המצלמה ממופה על הלב");
+  } catch { camStream = null; toast("אין גישה למצלמה"); }
+};
+
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
 // The next frame is asked for first, so an error in one frame can never stop the show (that would look like a freeze).
@@ -1665,6 +1707,14 @@ function step(now) {
   const wsLive = $("wsOn").checked;
   if (wsLive) for (const [k, v] of Object.entries(wsOut.feats)) f[k] = v * rx.o.boost / 100;
   director(f);
+  const tws = tw.frame(f, Math.min(0.1, Math.max(0.001, (now - (step.last ?? now)) / 1000)) || 1 / 60); step.last = now;
+  const twOn = tw.o.mode !== "off";
+  // The video steps at the picture rate (a new frame only on each step) and plays faster or slower with the music.
+  gl.vidHold = twOn && tw.o.video && !tws.newFrame;
+  if (vid.src && !vid.srcObject && music.el !== vid && !($("vidSync").checked && music.el && music.mode === "file")) {
+    const r = twOn && tw.o.video ? Math.min(4, Math.max(0.25, tws.rate)) : 1;
+    if (Math.abs(vid.playbackRate - r) > 0.04) vid.playbackRate = r;
+  }
   if (mix > 0) { mix = Math.min(1, (now - xStart) / 1000 / xDur); if (mix >= 1) { fxA = fxB; mix = 0; } }
   blackLv += ((black ? 0 : 1) - blackLv) * 0.2;
   // Video follows the music clock.
@@ -1679,7 +1729,7 @@ function step(now) {
   const sv = Object.assign(rx.modulate(show), wsLive ? wsOut.params : {}), c01 = v => Math.min(1, Math.max(0, v));
   const state = (a, fx) => ({
     engMix: c01(sv.engmix / 100), fxA: fx ?? fxA, fxB: fx ?? fxB, mix: fx == null && mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
-    time: now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
+    ...tws, time: twOn && tw.o.all ? tws.warpQ : now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
     kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
     master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
   });
@@ -1689,7 +1739,8 @@ function step(now) {
   const used = [curFx(), fxA, ...rx.o.layers.filter(l => l.on).map(l => +l.fx), ...(wsLive ? wsOut.layers.map(l => +l.fx) : []), ...(gl.chFx || [])];
   const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
   // The video goes to the GPU only while something shows it.
-  gl.vidWant = sv.vidmix > 0 || used.some(id => VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
+  if (tws.newFrame && used.some(isTime)) gl.pushHist();
+  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
@@ -1709,6 +1760,7 @@ function step(now) {
   if (now - (frame.ft || 0) > 500) { frame.fps = frame.n * 1000 / (now - (frame.ft || now - 500)); frame.n = 0; frame.ft = now; $("fpsChip").textContent = Math.round(frame.fps) + " FPS"; outStats(frame.fps); health(frame.fps); }
   if (now - hudT > 90) {
     hudT = now;
+    $("twInfo").textContent = twOn ? `${tws.fps.toFixed(1)} fps · ${tws.rate.toFixed(2)}× · frame ${tws.fIdx}` : "60 fps · 1.00×";
     $("bpmChip").textContent = `${f.bpm ? f.bpm.toFixed(1) : "—"} BPM${f.clock ? " · MIDI Clock" : f.grid ? " · גריד" : music.mode === "mic" ? " · חי" : ""}`;
     drawTL(f);
     $("lyBase").textContent = EFFECTS[curFx()].ico + " " + EFFECTS[curFx()].name + (rx.o.layers.some(l => l.on) ? ` · +${rx.o.layers.filter(l => l.on).length} שכבות` : "");
