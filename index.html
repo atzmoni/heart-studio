@@ -127,6 +127,15 @@ details ul { margin: 6px 0 0; padding-inline-start: 1.2em; color: var(--muted); 
 #rxAdv > section { margin-top: 10px; }
 .layer { border: 1px solid var(--line); border-inline-start: 4px solid #f06595; border-radius: 10px; padding: 10px; display: grid; gap: 8px; }
 .layer.off { opacity: .6; }
+/* output palette: the heart, the layers and one card per element, nothing else */
+.pv { width: 100%; aspect-ratio: 4 / 3; background: #000; border-radius: 10px; display: block; }
+.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.pcard { border: 1px solid var(--line); border-inline-start: 4px solid var(--c, #f06595); border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; }
+.pcard.off { opacity: .55; }
+.pcard header { display: flex; gap: 6px; align-items: center; }
+.pcard header b { flex: 1; }
+.pcard .sl { grid-template-columns: 5.5em 1fr 3em; }
+.pcard select { width: 100%; }
 .layer header { display: flex; gap: 8px; align-items: center; }
 .layer header b { flex: 1; }
 .wsBar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -257,6 +266,7 @@ main > * { min-width: 0; }
     <h1>מיפוי לב <small>· מקרן · 240×240 ס״מ · מוזיקה ווידאו</small></h1>
     <nav class="tabs top" role="tablist" aria-label="כרטיסיות">
       <button role="tab" aria-selected="true" data-tab="show">🎛️ הופעה</button>
+      <button role="tab" aria-selected="false" data-tab="pal">🎨 פלטה</button>
       <button role="tab" aria-selected="false" data-tab="rx">🔊 סאונד</button>
       <button role="tab" aria-selected="false" data-tab="lay">🧱 שכבות</button>
       <button role="tab" aria-selected="false" data-tab="ws">🕸️ שולחן עבודה</button>
@@ -405,6 +415,28 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="twVideo" checked> על הוידאו</label>
           </div>
           <p class="help" id="twInfo" style="direction:ltr;text-align:right"></p>
+        </section>
+      </div>
+
+      <!-- output palette: a high-level desk for the heart. The heart, the layers, one card per element with intensity and render. -->
+      <div class="col" data-panel="pal" hidden>
+        <section>
+          <h3>🎨 פלטת הלב</h3>
+          <canvas id="palView" class="pv" width="320" height="240" aria-label="תצוגת הלב"></canvas>
+          <div class="sl big"><label for="palVis">עוצמת ויזואל</label><input type="range" id="palVis" min="0" max="100"><output id="palVisV"></output></div>
+          <div class="sl big"><label for="palBri">בהירות</label><input type="range" id="palBri" min="0" max="100"><output id="palBriV"></output></div>
+          <div class="sl"><label for="palRate">קצב תמונה</label><select id="palRate"></select></div>
+        </section>
+        <section>
+          <h3>שכבות</h3>
+          <div id="palLayers" class="col"></div>
+        </section>
+        <section>
+          <h3>אלמנטים</h3>
+          <div class="row"><select id="palAddSel" aria-label="אלמנט להוספה"></select><button id="palAdd">➕ הוסף אלמנט</button></div>
+          <div id="palCards" class="pcards"></div>
+          <p class="help">כל כרטיס הוא חלק מהלב (קונטור, תעלות, לבבות, חצי, תעלה אחת...). עוצמה = כמה חזק הויזואל עליו, רינדור = איזה אפקט מצייר אותו, צבע, השתקה, וזיהוי שמדליק אותו בלבן על הלב האמיתי.</p>
+          <div class="row"><button id="palSave">💾 ייצוא פלטה</button><label class="row"><button id="palLoadBtn">📂 טעינת פלטה</button><input type="file" id="palLoad" accept=".json,application/json" hidden></label></div>
         </section>
       </div>
 
@@ -1566,7 +1598,7 @@ $("helpBtn").onclick = () => { ui.help = !ui.help; document.body.classList.toggl
 document.querySelectorAll("[data-panel]").forEach(p => [...p.querySelectorAll(":scope > section")].forEach((sec, i) => {
   const h = sec.querySelector(":scope > h3"); if (!h || sec.id === "wsParams") return;
   const key = p.dataset.panel + i; h.classList.add("fold"); h.tabIndex = 0; h.setAttribute("role", "button");
-  const fold = ui.folded ? ui.folded.includes(key) : i > 0 && !["proj", "ws", "tools"].includes(p.dataset.panel);
+  const fold = ui.folded && p.dataset.panel !== "pal" ? ui.folded.includes(key) : i > 0 && !["proj", "ws", "tools", "pal"].includes(p.dataset.panel);
   sec.classList.toggle("folded", fold); h.setAttribute("aria-expanded", !fold);
   const tog = () => { const f = sec.classList.toggle("folded"); h.setAttribute("aria-expanded", !f);
     ui.folded = [...document.querySelectorAll("[data-panel] > section.folded")].map(x => x.closest("[data-panel]").dataset.panel + [...x.parentElement.querySelectorAll(":scope > section")].indexOf(x)); saveUi(); };
@@ -1687,6 +1719,100 @@ $("camBtn").onclick = async () => {
   } catch { camStream = null; toast("אין גישה למצלמה"); }
 };
 
+
+// ---------- output palette: the heart, its layers and one card per element ----------
+// A card is a named selection of channels (see G.channels): all grooves, the contour, one half, groove 3, part 2... Its
+// controls write the same channel state as the channels tab (gain, own effect, tint, mute), so both stay in step.
+K.pal = "heartstudio.palette";
+const PAL_SETS = () => {
+  const n = model.levels.length, L = [["all", "כל הלב"], ["edge", "קונטור"], ["grooves", "כל התעלות"], ["bands", "כל הלבבות"], ["half0", "חצי שמאל"], ["half1", "חצי ימין"], ["even", "זוגיים"], ["odd", "אי-זוגיים"]];
+  for (let k = 0; k < n; k++) L.push(["groove:" + k, `תעלה ${k + 1}`]);
+  for (let k = 0; k <= n; k++) L.push(["band:" + k, k ? `לב ${k}` : "לב פנימי"]);
+  if (model.multi) chList().filter(c => c.type === "part").forEach(c => L.push(["part:" + c.k, c.name]));
+  return L;
+};
+function palIds(key) {
+  const [t, k] = key.split(":"), list = chList(), ring = c => c.type === "groove" || c.type === "band" || c.type === "part";
+  const f = { all: c => c.type !== "seam", edge: c => c.type === "edge", grooves: c => c.type === "groove", bands: c => c.type === "band", half0: c => c.side === 0 && c.type !== "seam",
+    half1: c => c.side === 1, even: c => ring(c) && c.k % 2 === 0, odd: c => ring(c) && c.k % 2 === 1 }[t] || (c => c.type === t && c.k === +k);
+  return list.filter(f).map(c => c.id);
+}
+let palCards = store.get(K.pal, null) || [{ key: "edge", c: "#ffffff" }, { key: "grooves", c: "#f06595" }, { key: "bands", c: "#4dabf7" }];
+const palName = key => (PAL_SETS().find(([k]) => k === key) || [key, key])[1];
+const palSaveCards = () => store.set(K.pal, palCards);
+function palEdit(card, fn) { for (const id of palIds(card.key)) { chState[id] = { ...(chState[id] || {}) }; fn(chState[id]); if (!Object.keys(chState[id]).length) delete chState[id]; } renderChannels(); }
+function palState(card) { const id = palIds(card.key)[0]; return id != null ? chState[id] || {} : {}; }
+const palFxOpts = cur => `<option value="-1"${cur == null || cur < 0 ? " selected" : ""}>של ההופעה</option>` + FX_GROUPS.map(([g, t]) => `<optgroup label="${esc(t)}">` +
+  EFFECTS.filter(e => e.id > 0 && (e.g || "base") === g).map(e => `<option value="${e.id}"${e.id === cur ? " selected" : ""}>${e.ico} ${esc(e.name)}</option>`).join("") + "</optgroup>").join("");
+function renderPalette() {
+  if (typeof model === "undefined" || !model) return;
+  $("palAddSel").innerHTML = PAL_SETS().map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join("");
+  $("palCards").innerHTML = palCards.map((card, i) => {
+    const st = palState(card), g = Math.round((st.gain ?? 1) * 100);
+    return `<div class="pcard ${st.mute ? "off" : ""}" style="--c:${st.tint || card.c || "#f06595"}" data-i="${i}">
+      <header><b>${esc(palName(card.key))}</b><button data-a="mute" aria-pressed="${!!st.mute}" title="השתקה">${st.mute ? "🔇" : "🔊"}</button><button data-a="ident" title="זיהוי על הלב">🔍</button><button data-a="del" title="הסר כרטיס">✕</button></header>
+      <div class="sl"><label>עוצמה</label><input type="range" data-a="gain" min="0" max="200" value="${g}"><output>${g}%</output></div>
+      <div class="sl"><label>רינדור</label><select data-a="fx">${palFxOpts(st.fx)}</select><span></span></div>
+      <div class="sl"><label>צבע</label><input type="color" data-a="tint" value="${st.tint || card.c || "#ff2d6f"}"><button data-a="tintOff" title="בלי צבע משלו">ללא</button></div>
+    </div>`;
+  }).join("") || `<p class="help">אין עדיין אלמנטים. בחרו חלק והוסיפו.</p>`;
+  $("palLayers").innerHTML = `<div class="pcard"><header><b>1 · ההופעה</b><span class="chip">${EFFECTS[curFx()].ico} ${esc(EFFECTS[curFx()].name)}</span></header></div>` +
+    rx.o.layers.map((l, i) => `<div class="pcard ${l.on ? "" : "off"}" data-l="${i}"><header><button data-a="on" aria-pressed="${l.on}">${l.on ? "👁" : "🚫"}</button><b>${i + 2}</b><select data-a="fx">${palFxOpts(+l.fx).replace(/^<option value="-1"[^<]*<\/option>/, "")}</select></header>
+      <div class="sl"><label>שקיפות</label><input type="range" data-a="op" min="0" max="100" value="${l.op}"><output>${l.op}%</output></div></div>`).join("");
+  $("palVis").value = show.intensity; $("palVisV").textContent = show.intensity + "%";
+  $("palBri").value = show.master; $("palBriV").textContent = show.master + "%";
+}
+$("palRate").innerHTML = TW_MODES.map(([k, n]) => `<option value="${k}">${n}</option>`).join(""); $("palRate").value = tw.o.mode;
+$("palRate").onchange = () => { tw.o.mode = $("twMode").value = $("palRate").value; twSave(); };
+for (const [id, k] of [["palVis", "intensity"], ["palBri", "master"]]) $(id).oninput = () => {
+  show[k] = +$(id).value; $(id + "V").textContent = show[k] + "%"; $(k).value = show[k]; $(k + "V").textContent = sliders[k](show[k]); saveShow();
+};
+$("palAdd").onclick = () => { palCards.push({ key: $("palAddSel").value, c: "#" + Math.floor(0x404040 + Math.random() * 0xbfbfbf).toString(16).padStart(6, "0") }); palSaveCards(); renderPalette(); };
+$("palCards").addEventListener("input", e => {
+  const el = e.target, card = palCards[+el.closest("[data-i]")?.dataset.i]; if (!card) return;
+  if (el.dataset.a === "gain") { el.nextElementSibling.textContent = el.value + "%"; palEdit(card, c => { c.gain = +el.value / 100; if (c.gain === 1) delete c.gain; }); }
+  if (el.dataset.a === "tint") { el.closest(".pcard").style.setProperty("--c", el.value); palEdit(card, c => { c.tint = el.value; c.tintAmt ??= 1; }); }
+});
+$("palCards").addEventListener("change", e => {
+  const el = e.target, card = palCards[+el.closest("[data-i]")?.dataset.i]; if (!card || el.dataset.a !== "fx") return;
+  palEdit(card, c => { const v = +el.value; if (v < 0) delete c.fx; else c.fx = v; });
+});
+$("palCards").addEventListener("click", e => {
+  const b = e.target.closest("button[data-a]"), i = +b?.closest("[data-i]")?.dataset.i, card = palCards[i]; if (!card) return;
+  const a = b.dataset.a;
+  if (a === "del") { palCards.splice(i, 1); palSaveCards(); }
+  if (a === "mute") { const m = !palState(card).mute; palEdit(card, c => { if (m) c.mute = true; else delete c.mute; }); }
+  if (a === "tintOff") palEdit(card, c => { delete c.tint; delete c.tintAmt; });
+  if (a === "ident") { const on = !(ident && sel.size && palIds(card.key).every(id => sel.has(id))); sel = new Set(on ? palIds(card.key) : []); ident = on; $("identBtn").setAttribute("aria-pressed", on); renderChannels(); }
+  renderPalette();
+});
+$("palLayers").addEventListener("input", e => { const el = e.target, l = rx.o.layers[+el.closest("[data-l]")?.dataset.l]; if (!l || el.dataset.a !== "op") return; l.op = +el.value; el.nextElementSibling.textContent = l.op + "%"; saveRx(); });
+$("palLayers").addEventListener("change", e => { const el = e.target, l = rx.o.layers[+el.closest("[data-l]")?.dataset.l]; if (!l || el.dataset.a !== "fx") return; l.fx = +el.value; saveRx(); rxLists(); });
+$("palLayers").addEventListener("click", e => { const b = e.target.closest("button[data-a=on]"), l = rx.o.layers[+b?.closest("[data-l]")?.dataset.l]; if (!l) return; l.on = !l.on; saveRx(); rxLists(); renderPalette(); });
+// Export / load the whole palette: the cards, the channels, the layers, the picture rate and the show sliders, as one file.
+$("palSave").onclick = () => {
+  const data = { kind: "heart-palette", v: 1, cards: palCards, channels: chState, layers: rx.o.layers, picRate: tw.o, show: { intensity: show.intensity, master: show.master, palette: show.palette, speed: show.speed, vidmix: show.vidmix } };
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" })); a.download = "heart-palette.json"; a.click();
+};
+$("palLoadBtn").onclick = () => $("palLoad").click();
+$("palLoad").onchange = async () => {
+  const f = $("palLoad").files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text()); if (d.kind !== "heart-palette") throw new Error("not a palette");
+    palCards = d.cards || []; chState = d.channels || {}; if (Array.isArray(d.layers)) rx.o.layers = d.layers; Object.assign(tw.o, d.picRate || {}); Object.assign(show, d.show || {});
+    palSaveCards(); twSave(); saveShow(); saveRx(); rxLists(); renderChannels(); renderPalette(); $("twMode").value = $("palRate").value = tw.o.mode; renderPals();
+    toast("הפלטה נטענה");
+  } catch { toast("הקובץ הזה אינו פלטת לב"); }
+  $("palLoad").value = "";
+};
+document.querySelector('[data-tab="pal"]').addEventListener("click", () => renderPalette());
+// The heart preview of the palette: a small copy of the output, a few times a second, only while the palette is open.
+function palPreview(now) {
+  if ($("palView").closest("[data-panel]").hidden || now - (palPreview.t || 0) < 66) return; palPreview.t = now;
+  const c = $("palView"), cx = palPreview.cx || (palPreview.cx = c.getContext("2d")), src = gl.canvas || $("out");
+  try { cx.drawImage(src, 0, 0, c.width, c.height); } catch {}
+}
+
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
 // The next frame is asked for first, so an error in one frame can never stop the show (that would look like a freeze).
@@ -1755,7 +1881,7 @@ function step(now) {
     gl.render(state(a, l.fx), P, { blend: l.blend, op: Math.min(1, l.op), mask: MASK_ID[l.mask] });
   }
   if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
-  drawOv();
+  drawOv(); palPreview(now);
   frame.n = (frame.n || 0) + 1;
   if (now - (frame.ft || 0) > 500) { frame.fps = frame.n * 1000 / (now - (frame.ft || now - 500)); frame.n = 0; frame.ft = now; $("fpsChip").textContent = Math.round(frame.fps) + " FPS"; outStats(frame.fps); health(frame.fps); }
   if (now - hudT > 90) {
