@@ -256,6 +256,44 @@ main > * { min-width: 0; }
 .stat { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
 .stat div { background: var(--well, #0a0e14); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; display: grid; }
 .stat div small { color: var(--muted); font-size: .72rem; } .stat div b { font: 600 .9rem var(--mono); }
+/* Effects sidebar (right side): groups with on/off per effect, the layers (B) and the reset */
+.shell { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 12px; align-items: start; }
+.shell.nodock { grid-template-columns: minmax(0, 1fr); }
+.shell.nodock .dock { display: none; }
+.dock { position: sticky; top: 8px; max-height: calc(100vh - 16px); display: grid; grid-template-rows: auto 1fr auto; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; min-height: 0; }
+.dockTabs { display: flex; gap: 4px; }
+.dockTabs [role=tab] { flex: 1; padding: 7px 6px; font-size: .85rem; }
+.dockTabs [role=tab][aria-selected="true"] { border-color: var(--accent); color: var(--accent); background: var(--sel); }
+.dockTabs i { font: 600 .72rem var(--mono); font-style: normal; background: var(--line); border-radius: 99px; padding: 0 6px; margin-inline-start: 4px; }
+.dockTabs #dkHide { padding: 4px 9px; }
+.dkPane { display: grid; align-content: start; gap: 8px; overflow: auto; min-height: 0; scrollbar-width: thin; }
+.dkPane input[type=search] { width: 100%; font: .9rem var(--display); color: var(--fg); background: var(--well, #0a0e14); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.dkList { display: grid; gap: 4px; }
+.dkGrp { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.dkGrp > header { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--well, #0a0e14); cursor: pointer; font-size: .85rem; }
+.dkGrp > header b { flex: 1; font-weight: 600; }
+.dkGrp > header i { font: .72rem var(--mono); font-style: normal; color: var(--muted); }
+.dkGrp > header i.act { color: var(--accent); }
+.dkGrp > div { display: grid; }
+.dkGrp.fold > div { display: none; }
+.dkFx { display: flex; align-items: center; gap: 6px; padding: 3px 6px 3px 8px; border-top: 1px solid var(--line); font-size: .84rem; }
+.dkFx.cur { background: var(--sel); }
+.dkFx > button.nm { flex: 1; text-align: start; background: none; border: 0; padding: 4px 2px; font-weight: 400; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dkFx.cur > button.nm { color: var(--accent); font-weight: 600; }
+.sw { flex: none; min-width: 4.4em; padding: 3px 8px; font-size: .74rem; border-radius: 99px; }
+.sw[aria-pressed="true"] { background: #1d5c3a; border-color: #35d0ba; color: #c8ffe9; }
+.sw.grp { min-width: 0; padding: 2px 8px; }
+.dkBase { display: grid; padding: 6px 10px; border: 1px solid var(--line); border-inline-start: 4px solid var(--accent); border-radius: 9px; }
+.dkBase small { color: var(--muted); font-size: .72rem; }
+.dkLy { display: grid; grid-template-columns: auto 1fr auto auto; gap: 4px 6px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-inline-start: 4px solid #f06595; border-radius: 9px; font-size: .84rem; }
+.dkLy.off { opacity: .55; }
+.dkLy b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dkLy small { color: var(--muted); font: .72rem var(--mono); }
+.dkLy .mv { padding: 2px 6px; font-size: .75rem; }
+.dkLy input[type=range] { grid-column: 1 / -1; }
+.dkReset { background: #3a1416; border-color: #ef6461; color: #ffd6d6; }
+.dkShow { position: fixed; top: 50%; inset-inline-start: 0; z-index: 25; writing-mode: vertical-rl; padding: 10px 6px; border-start-start-radius: 0; border-end-start-radius: 0; }
+@media (max-width: 980px) { .shell { grid-template-columns: 1fr; } .dock { position: static; max-height: 60vh; order: 2; } .dkShow { top: auto; bottom: 12px; writing-mode: initial; border-radius: 8px; } }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
 </style>
@@ -286,6 +324,29 @@ main > * { min-width: 0; }
     </div>
   </header>
 
+  <div class="shell" id="shell">
+  <!-- effects sidebar: every effect group, each effect with an on/off switch that adds it as a layer (tab A),
+       the chosen layers with on/off (tab B), and one button that wipes all effects, layers and their memory -->
+  <aside class="dock" id="dock" aria-label="אפקטים ושכבות">
+    <div class="dockTabs" role="tablist">
+      <button role="tab" id="dkA" aria-selected="true" data-dk="a">A · אפקטים</button>
+      <button role="tab" id="dkB" aria-selected="false" data-dk="b">B · שכבות <i id="dkN">0</i></button>
+      <button id="dkHide" title="הסתרת הסרגל" aria-label="הסתרת הסרגל">⟩</button>
+    </div>
+    <div class="dkPane" data-dkp="a">
+      <input type="search" id="dkSearch" placeholder="חיפוש אפקט…" aria-label="חיפוש אפקט בסרגל" autocomplete="off">
+      <p class="help keep">לחיצה על השם מנגנת אותו כאפקט הראשי. המתג <b>פעיל</b> מוסיף אותו כשכבה מעל.</p>
+      <div id="dkGroups" class="dkList"></div>
+    </div>
+    <div class="dkPane" data-dkp="b" hidden>
+      <div class="dkBase"><small>בסיס · האפקט הראשי</small><b id="dkBase"></b></div>
+      <div id="dkLayers" class="dkList"></div>
+      <div class="row"><button id="dkAllOn">כל השכבות פעילות</button><button id="dkAllOff">כל השכבות כבויות</button></div>
+      <p class="help keep">הגדרות מתקדמות לכל שכבה (מיזוג, מסכה, ערוץ סאונד) בלשונית <a href="#" id="dkAdv">🧱 שכבות</a>.</p>
+    </div>
+    <button id="dkReset" class="dkReset" title="מנקה את כל האפקטים, השכבות והזיכרון שלהם ומתחיל מחדש. הכיול ומבנה הלב נשארים.">🧹 ניקוי וריסט · התחלה מחדש</button>
+  </aside>
+  <button id="dkShow" class="dkShow" hidden title="הצגת סרגל האפקטים" aria-label="הצגת סרגל האפקטים">⟨ אפקטים</button>
   <div class="studio">
     <div class="col">
       <div class="stage" id="stage">
@@ -508,7 +569,7 @@ main > * { min-width: 0; }
         <section>
           <h3><span class="fam top">TOP</span>שכבות · Layer Mix</h3>
           <div class="layer"><header><b>שכבה 1 · ההופעה</b><span class="chip" id="lyBase"></span></header>
-            <p class="help">האפקט שנבחר בלשונית הופעה (או בבמאי האוטומטי), עם המעברים שלו. מעליו עד 3 שכבות.</p></div>
+            <p class="help">האפקט שנבחר בלשונית הופעה (או בבמאי האוטומטי), עם המעברים שלו. מעליו עד 8 שכבות, שמוסיפים מהסרגל בצד ימין.</p></div>
           <div id="layers" class="col"></div>
           <p class="help">לכל שכבה אפקט, מצב מיזוג, שקיפות, מסכה לפי חלקי החיתוך (תעלות, לבבות, קונטור, חצי) וערוץ סאונד שמניע אותה: האפקט של השכבה מגיב רק לערוץ הזה, והשקיפות נפתחת איתו לפי העומק.</p>
         </section>
@@ -711,6 +772,7 @@ main > * { min-width: 0; }
       </div>
     </div>
   </div>
+  </div>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="boot" id="boot" hidden role="dialog" aria-modal="true" aria-labelledby="bootTitle">
@@ -732,7 +794,7 @@ import { Forge, loadDesign, buildModel as forgeModel } from "./heart-forge.js?v=
 import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
-import { React, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
+import { React, newLayer, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
 import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
 import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
 import { TimeWarp, TW_MODES, TW_DIVS, isTime } from "./heart-tempo.js?v=1";
@@ -814,6 +876,7 @@ function renderPads() {
   $("fxChip").textContent = e.ico + " " + e.name;
   if (c > 0 && recent[0] !== c) { recent = [c, ...recent.filter(x => x !== c)].slice(0, 10); store.set(K.fxRecent, recent); }
   $("recent").innerHTML = recent.filter(id => id !== c).map(id => `<button data-fx="${id}" title="${EFFECTS[id].name}">${EFFECTS[id].ico} ${EFFECTS[id].name}</button>`).join("");
+  window.dockSync?.();
   if (!$("fxDlg").open) return;
   $("fxGroups").innerHTML = FX_GROUPS.map(([g]) => `<button type="button" data-grp="${g}" aria-pressed="${!q && g === fxGrp}">${grpName(g)}${EFFECTS.some(x => x.id === c && grpOf(x) === g) ? " ●" : ""}<i>${EFFECTS.filter(x => grpOf(x) === g).length}</i></button>`).join("");
   const list = q ? EFFECTS.filter(x => x.name.includes(q) || grpName(grpOf(x)).includes(q)) : EFFECTS.filter(x => grpOf(x) === fxGrp);
@@ -1051,7 +1114,10 @@ function rxLists() {
     <div class="grid2"><label>מיזוג<select id="ly${i}_blend">${opts(BLENDS, l.blend)}</select></label><label>מסכה<select id="ly${i}_mask">${opts(MASKS, l.mask)}</select></label>
     <label>ערוץ מניע<select id="ly${i}_drive">${chOpts(l.drive, "כמו ההופעה")}</select></label><label>השקיפות לפי<select id="ly${i}_out">${opts(OUTS, l.out)}</select></label></div>
     <div class="sl"><label for="ly${i}_op">שקיפות</label><input type="range" id="ly${i}_op" min="0" max="100" value="${l.op}"><output id="ly${i}_opV">${l.op}%</output></div>
-    <div class="sl"><label for="ly${i}_depth">פתיחה עם הערוץ</label><input type="range" id="ly${i}_depth" min="0" max="100" value="${l.depth}"><output id="ly${i}_depthV">${l.depth}%</output></div></div>`).join("");
+    <div class="sl"><label for="ly${i}_depth">פתיחה עם הערוץ</label><input type="range" id="ly${i}_depth" min="0" max="100" value="${l.depth}"><output id="ly${i}_depthV">${l.depth}%</output></div>
+    <div class="row"><button data-ldel="${i}">🗑 הסרת השכבה</button></div></div>`).join("")
+    || `<p class="help keep">אין שכבות. מוסיפים שכבה מהסרגל בצד ימין: המתג "פעיל" ליד כל אפקט.</p>`;
+  window.dockSync?.();
 }
 function rxAll() { rxTop(); rcForm(); rxLists(); }
 const rxRow = id => { const m = /^(ex|md|ly)(?:_(\w+?)|(\d+))_(\w+)$/.exec(id); return m && { kind: m[1], key: m[2] ?? +m[3], f: m[4] }; };
@@ -1066,7 +1132,8 @@ function rxEdit(e) {
   if (r.kind === "ly" && (r.f === "drive" || e.type === "change")) rxLists();
 }
 for (const box of ["rxExp", "rxMods", "layers"]) { $(box).addEventListener("input", rxEdit); $(box).addEventListener("change", e => e.target.type !== "range" && rxEdit(e)); }
-$("layers").addEventListener("click", e => { const b = e.target.closest("[id$=_on]"); if (!b) return; const l = rx.o.layers[+b.id.slice(2, -3)]; l.on = !l.on; saveRx(); rxLists(); });
+$("layers").addEventListener("click", e => { const d = e.target.closest("[data-ldel]"); if (d) { rx.o.layers.splice(+d.dataset.ldel, 1); saveRx(); rxLists(); return; }
+  const b = e.target.closest("[id$=_on]"); if (!b) return; const l = rx.o.layers[+b.id.slice(2, -3)]; l.on = !l.on; saveRx(); rxLists(); });
 $("rxMods").addEventListener("click", e => { const b = e.target.closest("[data-mdel]"); if (!b) return; rx.o.mods.splice(+b.dataset.mdel, 1); saveRx(); rxLists(); });
 $("rxModAdd").onclick = () => { rx.o.mods.push({ tgt: "master", ch: rx.o.sel, out: "env", depth: 50 }); saveRx(); rxLists(); };
 rxAll();
@@ -1895,6 +1962,104 @@ function step(now) {
   }
   if (f.barBeat !== lastBeatShown) { lastBeatShown = f.barBeat; [...$("beatDots").children].forEach((i, k) => i.classList.toggle("on", k === f.barBeat)); }
 }
+// ---------- effects sidebar: A = every group with an on/off switch per effect (on = it is a layer), B = the layers, and a full reset ----------
+{
+  const MAX_LAYERS = 8;   // every layer is one more full drawing of the heart per frame
+  let dkTab = store.get("heartstudio.docktab", "a"), dkFold = new Set(store.get("heartstudio.dockfold", FX_GROUPS.slice(1).map(g => g[0])));
+  const lyOf = id => rx.o.layers.findIndex(l => +l.fx === id);
+  const lyChanged = () => { saveRx(); rxLists(); renderPalette(); };
+  function addLayer(id) {
+    if (lyOf(id) >= 0) return;
+    if (rx.o.layers.length >= MAX_LAYERS) return toast(`עד ${MAX_LAYERS} שכבות. כבו או הסירו שכבה בלשונית B`);
+    rx.o.layers.push(newLayer(id)); lyChanged(); toast("נוספה שכבה: " + EFFECTS[id].name);
+  }
+  function setDkTab(t) {
+    dkTab = t; store.set("heartstudio.docktab", t);
+    document.querySelectorAll("[data-dk]").forEach(b => b.setAttribute("aria-selected", b.dataset.dk === t));
+    document.querySelectorAll("[data-dkp]").forEach(p => p.hidden = p.dataset.dkp !== t);
+    dockSync();
+  }
+  function renderA() {
+    const q = $("dkSearch").value.trim(), c = curFx();
+    $("dkGroups").innerHTML = FX_GROUPS.map(([g, title]) => {
+      const list = EFFECTS.filter(e => e.id > 0 && grpOf(e) === g && (!q || e.name.includes(q)));
+      if (!list.length) return "";
+      const act = list.filter(e => lyOf(e.id) >= 0), on = act.filter(e => rx.o.layers[lyOf(e.id)].on).length;
+      const open = q || !dkFold.has(g);
+      return `<div class="dkGrp ${open ? "" : "fold"}" data-g="${g}"><header data-a="fold"><span>${open ? "▾" : "▸"}</span><b>${esc(title.split(" · ")[0])}</b>`
+        + `<i class="${act.length ? "act" : ""}">${act.length ? on + "/" + act.length + " · " : ""}${list.length}</i>`
+        + (act.length ? `<button class="sw grp" data-a="grp" aria-pressed="${on > 0}" title="כל השכבות בקבוצה: פעיל או כבוי">${on > 0 ? "פעיל" : "כבוי"}</button>` : "")
+        + `</header><div>${open ? list.map(e => { const i = lyOf(e.id), l = rx.o.layers[i];
+          return `<div class="dkFx ${e.id === c ? "cur" : ""}" data-fx="${e.id}"><button class="nm" data-a="play" title="לנגן כאפקט הראשי">${e.ico} ${esc(e.name)}</button>`
+            + `<button class="sw" data-a="ly" aria-pressed="${!!l?.on}" title="${l ? "שכבה " + (i + 2) + (l.on ? " · פעילה (לחיצה מכבה)" : " · כבויה (לחיצה מפעילה)") : "הוספה כשכבה"}">${l ? (l.on ? "● פעיל" : "○ כבוי") : "＋ שכבה"}</button></div>`; }).join("") : ""}</div></div>`;
+    }).join("") || `<p class="help keep">לא נמצא אפקט בשם הזה</p>`;
+  }
+  function renderB() {
+    const e = EFFECTS[curFx()];
+    $("dkBase").textContent = e.ico + " " + e.name;
+    $("dkLayers").innerHTML = rx.o.layers.map((l, i) => { const x = EFFECTS[l.fx] || EFFECTS[1];
+      return `<div class="dkLy ${l.on ? "" : "off"}" data-l="${i}"><button class="sw" data-a="on" aria-pressed="${l.on}">${l.on ? "● פעיל" : "○ כבוי"}</button>`
+        + `<b title="${esc(x.name)}">${i + 2} · ${x.ico} ${esc(x.name)}</b>`
+        + `<button class="mv" data-a="up" title="למעלה בערימה" ${i === rx.o.layers.length - 1 ? "disabled" : ""}>▲</button><button class="mv" data-a="del" title="הסרת השכבה">✕</button>`
+        + `<input type="range" data-a="op" min="0" max="100" value="${l.op}" aria-label="שקיפות שכבה ${i + 2}"></div>`; }).join("")
+      || `<p class="help keep">אין שכבות. בלשונית A, המתג "＋ שכבה" ליד אפקט מוסיף אותו לכאן.</p>`;
+  }
+  function dockSync() {
+    const n = rx.o.layers.length, on = rx.o.layers.filter(l => l.on).length;
+    $("dkN").textContent = n ? on + "/" + n : "0";
+    if (dkTab === "a") renderA(); else renderB();
+  }
+  window.dockSync = dockSync;
+  document.querySelectorAll("[data-dk]").forEach(b => b.onclick = () => setDkTab(b.dataset.dk));
+  $("dkSearch").oninput = renderA;
+  $("dkGroups").onclick = e => {
+    const a = e.target.closest("[data-a]")?.dataset.a, g = e.target.closest("[data-g]")?.dataset.g, id = +e.target.closest("[data-fx]")?.dataset.fx;
+    if (a === "grp") { const ls = rx.o.layers.filter(l => grpOf(EFFECTS[l.fx] || {}) === g), on = !ls.some(l => l.on); ls.forEach(l => l.on = on); return lyChanged(); }
+    if (a === "fold") { dkFold.has(g) ? dkFold.delete(g) : dkFold.add(g); store.set("heartstudio.dockfold", [...dkFold]); return renderA(); }
+    if (a === "play") return setFx(id);
+    if (a === "ly") { const i = lyOf(id); if (i < 0) return addLayer(id); rx.o.layers[i].on = !rx.o.layers[i].on; return lyChanged(); }
+  };
+  $("dkLayers").onclick = e => {
+    const a = e.target.closest("[data-a]")?.dataset.a, i = +e.target.closest("[data-l]")?.dataset.l, L = rx.o.layers; if (!L[i]) return;
+    if (a === "on") L[i].on = !L[i].on;
+    else if (a === "del") L.splice(i, 1);
+    else if (a === "up") [L[i], L[i + 1]] = [L[i + 1], L[i]];
+    else return;
+    lyChanged();
+  };
+  $("dkLayers").oninput = e => { const l = rx.o.layers[+e.target.closest("[data-l]")?.dataset.l]; if (!l || e.target.dataset.a !== "op") return; l.op = +e.target.value; saveRx(); };
+  $("dkLayers").onchange = () => rxLists();
+  const allLayers = on => { rx.o.layers.forEach(l => l.on = on); lyChanged(); };
+  $("dkAllOn").onclick = () => allLayers(true); $("dkAllOff").onclick = () => allLayers(false);
+  $("dkAdv").onclick = e => { e.preventDefault(); document.querySelector('[data-tab="lay"]').click(); };
+  // Hide / show the sidebar (kept between runs).
+  const dockVis = on => { $("shell").classList.toggle("nodock", !on); $("dkShow").hidden = on; store.set("heartstudio.dock", on); };
+  $("dkHide").onclick = () => dockVis(false); $("dkShow").onclick = () => dockVis(true);
+  dockVis(store.get("heartstudio.dock", true));
+
+  // Clear and reset: back to a fresh start with one effect and nothing over it. Nothing of the effects is remembered:
+  // no layers, no recent effects, no per-channel or per-element effects, colours or mutes, no held mechanisms, no director
+  // or cue playback driving the effects, the workspace network stops driving the heart, and the liquid and picture history are wiped.
+  // The calibration, the heart's structure, the sound settings and the recorded cues stay.
+  function resetAll() {
+    if (!confirm("ניקוי וריסט: כל האפקטים, השכבות והזיכרון שלהם יימחקו והסטודיו יתחיל מחדש עם אפקט אחד.\n\nהכיול, מבנה הלב, הגדרות הסאונד והקיו שהוקלטו נשמרים.\n\nלהמשיך?")) return;
+    rx.o.layers = []; saveRx();
+    fxA = fxB = 1; mix = 0;
+    recent = []; store.set(K.fxRecent, recent);
+    chState = {}; sel.clear(); ident = false; pushChannels(); renderChannels();
+    tdd.held.fill(false); tdd.mech.fill(0); tdd.ext.fill(0); tdd.pulses = []; tdd.dub = null;
+    if (auto) toggleAuto();
+    cuePlay = false; recording = false; $("cueBtn").setAttribute("aria-pressed", false); $("recBtn").setAttribute("aria-pressed", false);
+    if ($("wsOn").checked) { $("wsOn").checked = false; ws.changed(); }
+    gl.clearMemory?.();
+    $("dkSearch").value = "";
+    rxLists(); renderPads(); renderPalette();
+    toast("🧹 נוקה הכל · התחלה מחדש");
+  }
+  $("dkReset").onclick = resetAll;
+  setDkTab(dkTab);
+}
+
 rebuild();
 cueInfo();
 requestAnimationFrame(frame);

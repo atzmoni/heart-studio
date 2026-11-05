@@ -1079,6 +1079,13 @@ export class HeartGL {
     for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.LINEAR);
     for (const q of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, q, gl.CLAMP_TO_EDGE);
   }
+  // Forget everything the picture remembers between frames: the liquid's two textures and the picture-rate history.
+  clearMemory() {
+    const gl = this.gl;
+    for (const fb of this.td.fbo) { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    this.td.i = 0; this.tdT = null; this.tdBad = false; this.hist.n = 0; this.hist.head = 0;
+  }
   // Keep the current video frame as the newest picture of the history (called by the page on each new picture frame).
   pushHist() {
     const gl = this.gl, v = this.videoEl, H = this.hist;
