@@ -58,6 +58,9 @@ export const PRESETS = {
   ], exp: { kick: ["lk", "trig"], hit: ["rk", "trig"], bass: ["lv", "env"], mid: ["rv", "env"], high: ["hi", "env"], level: ["lv", "env"] } },
 };
 
+// A new layer: the effect over the whole heart, reacting to the same music as the show.
+export const newLayer = fx => ({ on: true, fx, blend: "screen", op: 80, mask: "all", drive: "", depth: 0, out: "env" });
+
 export function defaults() {
   const p = PRESETS.dj;
   return {
@@ -66,11 +69,7 @@ export function defaults() {
     exp: Object.fromEntries(Object.entries(p.exp).map(([k, [id, out]]) => [k, { ch: id, out, amt: 100 }])),
     spec: { gain: 120, floor: 10, curve: 130 },
     mods: [{ tgt: "master", ch: "breath", out: "env", depth: 30 }],
-    layers: [
-      { on: false, fx: 23, blend: "screen", op: 80, mask: "all", drive: "kick", depth: 100, out: "trig" },
-      { on: false, fx: 13, blend: "add", op: 60, mask: "grooves", drive: "hats", depth: 100, out: "trig" },
-      { on: false, fx: 9, blend: "lighten", op: 70, mask: "contour", drive: "snare", depth: 0, out: "env" },
-    ],
+    layers: [],   // added from the effects sidebar; any number, drawn in order over the show
   };
 }
 
@@ -85,7 +84,7 @@ export class React {
     o.ch = Array.isArray(o.ch) && o.ch.length ? o.ch.map(c => ({ ...ch("x", "", 20, 20000), ...c })) : d.ch;
     o.exp = { ...d.exp, ...(o.exp || {}) }; o.spec = { ...d.spec, ...(o.spec || {}) };
     o.mods = Array.isArray(o.mods) ? o.mods : d.mods;
-    o.layers = d.layers.map((l, i) => ({ ...l, ...(o.layers?.[i] || {}) }));
+    o.layers = Array.isArray(o.layers) ? o.layers.filter(l => l && Number.isFinite(+l.fx)).map(l => ({ ...newLayer(+l.fx), ...l, fx: +l.fx })) : [];
     if (!o.ch.some(c => c.id === o.sel)) o.sel = o.ch[0].id;
     this.o = o; return o;
   }
