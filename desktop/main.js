@@ -5,6 +5,7 @@
 // calibration and the settings it saves stay between runs.
 const { app, BrowserWindow, protocol, session, shell } = require("electron");
 const fs = require("fs"), path = require("path");
+const paintRelay = require("./paint-relay.js");
 
 app.commandLine.appendSwitch("force_high_performance_gpu");
 app.commandLine.appendSwitch("ignore-gpu-blocklist");
@@ -29,6 +30,8 @@ app.whenReady().then(() => {
     try { return new Response(await fs.promises.readFile(f), { headers: { "content-type": TYPES[path.extname(f)] || "application/octet-stream" } }); }
     catch { return new Response("not found", { status: 404 }); }
   });
+  // Phones on the same Wi-Fi paint on the heart through this (heart-paint.js); the studio shows its address as a QR code.
+  paintRelay.start({ root: ROOT });
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(ALLOW.has(perm)));
   session.defaultSession.setPermissionCheckHandler((wc, perm) => ALLOW.has(perm));
 

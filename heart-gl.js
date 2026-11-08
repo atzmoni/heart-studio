@@ -140,6 +140,8 @@ uniform int uPass, uMask, uLayMode;   // layer passes: 0 is the show itself, 1..
 uniform float uLayOp;
 uniform sampler2D uHist;                                  // picture rate (heart-tempo.js): 16 past video frames, 4x4 tiles
 uniform int uHistHead, uHistN;
+uniform sampler2D uDraw;                                  // painting from the phone (heart-paint.js), heart space, premultiplied
+uniform float uDrawGlow;
 uniform float uWarp, uWarpQ, uRate, uFps, uFPhase, uFIdx, uFDiv, uMorph;
 #define TAU 6.28318530718
 #define S ${SIZE.toFixed(1)}
@@ -949,12 +951,19 @@ float layerMask(H h) {
   if (uMask == 9 || uMask == 10) { int k = uParts > 1 ? h.part : int(ringIdx(h)); return float((k % 2 == 0) == (uMask == 9)); }
   if (uMask == 11) return 1.0 - step(0.5, pK(h));
   if (uMask == 12) return step(0.5, pK(h));
+  if (uMask == 13) return h.lines;
   return 1.0;
 }
 
 void main() {
   vec2 px = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   H h = heart(px);
+  if (uPass == 2) {   // the painting: strokes in heart space, a neon bloom from the blurred mip levels, kept inside the cut
+    vec2 q = h.p / S; vec4 d = texture(uDraw, q);
+    vec3 g = (textureLod(uDraw, q, 2.5).rgb * 0.55 + textureLod(uDraw, q, 4.0).rgb * 0.5 + textureLod(uDraw, q, 5.5).rgb * 0.45) * uDrawGlow * 1.6;
+    float m = layerMask(h) * h.inside * uLayOp;
+    o = vec4((d.rgb + g) * m, d.a * m); return;
+  }
   int dom = 5; float wd = chW(h, 5);
   for (int i = 0; i < 5; i++) { float w = chW(h, i); if (w > wd) { wd = w; dom = i; } }
   bool calib = uFxA == 0 || (uFxB == 0 && uMix > 0.001);            // the test grid always shows the whole heart, untouched
@@ -1230,6 +1239,7 @@ export class HeartGL {
       for (let i = 0; i < n; i++) { const u = gl.getActiveUniform(pr.p, i), name = u.name.replace(/\[0\]$/, ""); pr.loc[name] = gl.getUniformLocation(pr.p, u.name); }
       gl.uniform1i(pr.loc.uField, 0); gl.uniform1i(pr.loc.uVid, 1); gl.uniform1i(pr.loc.uCh, 2);
       gl.uniform1i(pr.loc.uPartMap, 3); gl.uniform1i(pr.loc.uPartD, 4); gl.uniform1i(pr.loc.uFb, 5); gl.uniform1i(pr.loc.uHist, 8);
+      gl.uniform1i(pr.loc.uDraw, 9);
     }
     gl.useProgram(pr.p); this.loc = pr.loc; return pr.loc;
   }
@@ -1283,6 +1293,26 @@ export class HeartGL {
     if (this.parallel) this.allKeys().forEach(k => this.progs.has(k) || this.build(k));
   }
 
+  // The painting (heart-paint.js): a heart-space canvas, sent to the GPU when it changed, with mip levels for the glow.
+  setPaint(canvas) {
+    const gl = this.gl;
+    if (!this.paintTex) {
+      this.paintTex = gl.createTexture(); gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_2D, this.paintTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_2D, this.paintTex);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.generateMipmap(gl.TEXTURE_2D);
+  }
+  // Draw the painting over the show (after the layers). o: { op, mask, glow, blend }. Uses the always-built bank 0 program.
+  paint(s, points, o) {
+    if (!this.model || !this.paintTex || o.op <= 0.003) return;
+    this.draw({ ...s, fxA: 1, fxB: 1, mix: 0 }, points, { paint: true, ...o }, "0");
+  }
+
   // points: the six calibration points (see halves()), in output pixels.
   // A crossfade between effects of different banks is drawn as two passes, the second blended over the first by the mix.
   render(s, points, pass = null) {
@@ -1307,8 +1337,13 @@ export class HeartGL {
     }
     const gl = this.gl, c = this.canvas, m = this.model;
     const tdPass = !!pass?.td, layerPass = pass && !tdPass && pass.xfade == null;
-    gl.uniform1i(L.uPass, layerPass ? 1 : 0);
+    gl.uniform1i(L.uPass, pass?.paint ? 2 : layerPass ? 1 : 0);
     if (tdPass) { gl.disable(gl.BLEND); gl.bindFramebuffer(gl.FRAMEBUFFER, this.td.fbo[1 - this.td.i]); }
+    else if (pass?.paint) {   // premultiplied: "add" glows over the show, "over" covers it where the strokes are
+      gl.uniform1i(L.uMask, pass.mask || 0); gl.uniform1f(L.uLayOp, pass.op); gl.uniform1f(L.uDrawGlow, pass.glow || 0);
+      gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD);
+      gl.blendFunc(gl.ONE, pass.blend === "over" ? gl.ONE_MINUS_SRC_ALPHA : gl.ONE);
+    }
     else if (pass && !layerPass) {
       gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendColor(0, 0, 0, pass.xfade);
       gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
