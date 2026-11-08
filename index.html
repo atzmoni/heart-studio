@@ -60,6 +60,9 @@ button:disabled { opacity: .45; cursor: default; }
 .sl output { font: .8rem var(--mono); color: var(--muted); text-align: end; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
 .help { color: var(--muted); font-size: .86rem; margin: 0; }
+.pLink { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; }
+.pLink svg { border-radius: 8px; flex: none; } .pLink code { direction: ltr; unicode-bidi: isolate; font: 600 .95rem var(--mono); user-select: all; }
+.pLink .big { font-size: 1.6rem; letter-spacing: .15em; } #pPad { max-width: 560px; }
 .warn { color: var(--warn-text, #f2b84b); font-size: .86rem; margin: 0; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .tabs button { flex: 1; padding: 8px 6px; }
@@ -307,6 +310,7 @@ main > * { min-width: 0; }
       <button role="tab" aria-selected="false" data-tab="pal">🎨 פלטה</button>
       <button role="tab" aria-selected="false" data-tab="rx">🔊 סאונד</button>
       <button role="tab" aria-selected="false" data-tab="lay">🧱 שכבות</button>
+      <button role="tab" aria-selected="false" data-tab="paint">🖌️ ציור</button>
       <button role="tab" aria-selected="false" data-tab="ws">🕸️ שולחן עבודה</button>
       <button role="tab" aria-selected="false" data-tab="eng">🎚️ מנוע</button>
       <button role="tab" aria-selected="false" data-tab="ch">🧩 ערוצים</button>
@@ -752,6 +756,19 @@ main > * { min-width: 0; }
         </details>
       </div>
 
+      <!-- painting on the heart from a phone or tablet (heart-paint.js) -->
+      <div class="col" data-panel="paint" hidden>
+        <section>
+          <h3>🖌️ ציור על הלב מהטלפון</h3>
+          <div class="row">
+            <label class="row help"><input type="checkbox" id="pOn" checked> הציור מוצג על הלב</label>
+          </div>
+          <div id="pLink" class="pLink"></div>
+          <div id="pPad"></div>
+          <p class="help">הציור יושב על הלב עצמו (בס״מ), ולכן הוא נשאר במקום גם אחרי כיול מחדש. ב"⚙️ על הלב" בוחרים אם הוא נראה על כל הלב, רק בתוך התעלות או רק על הקונטור, כמה הוא זוהר, אם הוא פועם עם המוזיקה ואם הוא דוהה לבד. 🧹 ניקוי וריסט מוחק גם את הציור.</p>
+        </section>
+      </div>
+
       <!-- tools and review -->
       <div class="col" data-panel="tools" hidden>
         <section>
@@ -798,6 +815,7 @@ import { React, newLayer, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, 
 import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
 import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
 import { TimeWarp, TW_MODES, TW_DIVS, isTime } from "./heart-tempo.js?v=1";
+import { Board, Link, mountPainter, qrSVG, guideSVG, svgURL } from "./heart-paint.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -832,6 +850,7 @@ function rebuild(keepLevels = true) {
   engine.setRings(model.levels.length);
   store.set(K.cfg, cfg);
   renderPlan(); renderChannels(); syncGeoForm();
+  globalThis.heartPaintGuide?.();
 }
 
 // ---------- projector points ----------
@@ -1880,6 +1899,63 @@ function palPreview(now) {
   try { cx.drawImage(src, 0, 0, c.width, c.height); } catch {}
 }
 
+// ---------- painting on the heart from a phone or tablet (heart-paint.js) ----------
+// The studio keeps the board (its picture goes to the GPU and is laid over the show). In the desktop app a relay on the local
+// Wi-Fi (desktop/paint-relay.js, port 8767) brings the phones' strokes; without it the studio paints from its own pad.
+const paint = (() => {
+  const RELAY = "http://127.0.0.1:8767", board = new Board(1024), cid = "studio";
+  Object.assign(board.set, store.get("heartstudio.paint", {}));
+  let link = null, info = null, urlI = 0, first = true;
+  const emit = ev => link?.send(ev);
+  const guide = () => model ? guideSVG(G.toSVG(model, { labels: false, bg: "#000" })) : "";
+  const painter = mountPainter($("pPad"), { board, cid, emit, guide: model ? svgURL(guide()) : "", connected: true });
+  board.onSet = s => { painter.syncSet(s); store.set("heartstudio.paint", s); };
+  $("pOn").checked = store.get("heartstudio.painton", true);
+  $("pOn").onchange = () => store.set("heartstudio.painton", $("pOn").checked);
+  const pushGuide = () => link?.on && model && fetch(RELAY + "/guide", { method: "POST", headers: { "content-type": "text/plain" }, body: guide() }).catch(() => {});
+  globalThis.heartPaintGuide = () => { if (model) { painter.setGuide(svgURL(guide())); pushGuide(); } };
+  function renderLink() {
+    const el = $("pLink");
+    if (!link?.on || !info) {
+      el.innerHTML = `<p class="help">📱 כדי לצייר מהטלפון או מהטאבלט פותחים את <b>תוכנת Windows</b> (Heart Studio.exe): היא פותחת שרת קטן ברשת המקומית, וכאן יופיע קוד QR לסריקה. בלי אינטרנט, רק אותה רשת Wi-Fi (או נקודה חמה מהטלפון). בינתיים אפשר לצייר כאן עם העכבר או במסך מגע.</p>`;
+      return;
+    }
+    const u = info.urls[urlI % Math.max(1, info.urls.length)];
+    if (!u) { el.innerHTML = `<p class="help">⚠️ המחשב לא מחובר לשום רשת. חברו אותו ל-Wi-Fi (או לנקודה חמה מהטלפון) כדי שהטלפון יוכל להגיע אליו.</p>`; return; }
+    el.innerHTML = qrSVG(u.url, 168) + `<div><b>סרקו במצלמה של הטלפון</b> (באותה רשת Wi-Fi)<br><code>${esc(u.url)}</code><br>`
+      + `קוד: <code class="big">${info.key}</code> · ${info.phones > 2 ? info.phones - 1 + " מכשירים מחוברים" : info.phones === 2 ? "מכשיר אחד מחובר" : "עוד אין טלפון מחובר"}`
+      + (info.urls.length > 1 ? `<br><button id="pNext">⇄ רשת אחרת (${esc(u.name)})</button>` : "")
+      + `<p class="help">בפעם הראשונה Windows שואל אם לאפשר גישה לרשת: מאשרים (רשת פרטית).</p></div>`;
+    const nx = $("pNext"); if (nx) nx.onclick = () => { urlI++; renderLink(); };
+  }
+  async function poll() {
+    try {
+      info = await (await fetch(RELAY + "/info", { cache: "no-store" })).json();
+      if (!link) {
+        link = new Link({ base: RELAY, cid,
+          onEvents: (ev, replay) => {
+            if (!replay) return board.apply(ev);
+            // A relay that has nothing yet (it just started) gets what the studio already drew, and the studio's look of the layer.
+            const mine = first && !ev.length && !board.empty ? board.dump() : null; first = false;
+            board.reset(); board.apply(ev);
+            if (mine) { board.apply(mine); link.send(mine); }
+            link.send([{ t: "s", ...board.set }]); pushGuide();
+          },
+          onState: on => { painter.setConnected(on); renderLink(); },
+        });
+        link.start();
+      }
+    } catch { info = null; }
+    renderLink();
+    setTimeout(poll, link?.on ? 4000 : 6000);
+  }
+  renderLink(); poll();
+  return {
+    board, get on() { return $("pOn").checked && !board.empty; },
+    clear() { const ev = [{ t: "x" }]; board.apply(ev); emit(ev); },
+  };
+})();
+
 // ---------- main loop ----------
 let hudT = 0, lastBeatShown = -1;
 // The next frame is asked for first, so an error in one frame can never stop the show (that would look like a freeze).
@@ -1924,7 +2000,7 @@ function step(now) {
     engMix: c01(sv.engmix / 100), fxA: fx ?? fxA, fxB: fx ?? fxB, mix: fx == null && mix > 0 ? mix * mix * (3 - 2 * mix) : 0,
     ...tws, time: twOn && tw.o.all ? tws.warpQ : now / 1000, beat: f.beat, beatN: f.beatN, bar: f.bar, bass: a.bass, mid: a.mid, high: a.high, level: a.level, levelS: f.levelS,
     kick: a.kick * sv.intensity / 75, hit: a.hit * sv.intensity / 75, pump: f.pump ?? 1, build: f.build ?? 0, drop: f.drop ?? 0, break: f.brk ?? 0, spec: f.spec, speed: Math.max(0, sv.speed) / 100, int: c01(sv.intensity / 100),
-    master: c01(sv.master / 100) * blackLv, outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
+    master: c01(sv.master / 100) * blackLv * (paint.on ? 1 - paint.board.set.dim : 1), outline: c01(sv.outline / 100), hue: sv.hue / 360, vidMix: c01(sv.vidmix / 100), palette: PALETTES[show.palette].c,
   });
   // The liquid (heart-td.js): one simulation step when any effect on the heart uses it. The workspace's Heart Out wins,
   // then the show's effect, then the layers.
@@ -1946,6 +2022,12 @@ function step(now) {
     if (l.op <= 0.003) continue;
     const a = { ...f, kick: l.kick ?? f.kick, hit: l.kick ?? f.hit, level: l.level ?? f.level, bass: l.level ?? f.bass, mid: l.level ?? f.mid, high: l.level ?? f.high };
     gl.render(state(a, l.fx), P, { blend: l.blend, op: Math.min(1, l.op), mask: MASK_ID[l.mask] });
+  }
+  // The painting from the phones, over everything, pulsing with the music if asked to.
+  if (paint.board.tick(now)) gl.setPaint(paint.board.out);
+  if (paint.on) {
+    const ps = paint.board.set, beat = Math.min(1, (f.kick || 0) + (f.levelS || 0) * 0.6);
+    gl.paint(state(f), P, { op: ps.op * c01(sv.master / 100) * blackLv * (1 - ps.pulse + ps.pulse * (0.3 + 0.7 * beat)), mask: ps.mask, glow: ps.glow, blend: ps.blend });
   }
   if (!$("wsArea").closest("[data-panel]").hidden) { ws.show(); $("wsInfo").textContent = `${wsNet.nodes.length} אופרטורים · ${wsNet.wires.length} חיבורים · ${wsOut.layers.length} שכבות`; }
   drawOv(); palPreview(now);
@@ -2051,7 +2133,7 @@ function step(now) {
     if (auto) toggleAuto();
     cuePlay = false; recording = false; $("cueBtn").setAttribute("aria-pressed", false); $("recBtn").setAttribute("aria-pressed", false);
     if ($("wsOn").checked) { $("wsOn").checked = false; ws.changed(); }
-    gl.clearMemory?.();
+    gl.clearMemory?.(); paint.clear();
     $("dkSearch").value = "";
     rxLists(); renderPads(); renderPalette();
     toast("🧹 נוקה הכל · התחלה מחדש");

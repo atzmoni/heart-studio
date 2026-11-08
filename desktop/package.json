@@ -17,7 +17,7 @@
   "build": {
     "appId": "com.atzmoni.heartstudio",
     "productName": "Heart Studio",
-    "files": ["main.js", "app/**"],
+    "files": ["main.js", "paint-relay.js", "app/**"],
     "directories": { "output": "dist" },
     "win": { "target": "portable", "signAndEditExecutable": false },
     "portable": { "artifactName": "Heart Studio.exe" }
