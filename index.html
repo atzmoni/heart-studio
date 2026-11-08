@@ -1260,8 +1260,10 @@ engine.onCC = (ch, cc, v) => {
   const el = $(ccMap[key] || DEFAULT_CC[cc] || ""); if (!el) return;
   el.value = +el.min + (+el.max - +el.min) * v / 127; el.dispatchEvent(new Event("input"));
 };
-engine.onProgram = (ch, pc) => setFx(EFFECTS[pc % EFFECTS.length].id);
-engine.onDrum = note => { const i = note - 36; if (i >= 0 && i < EFFECTS.length) setFx(EFFECTS[i].id); };
+// Effect ids have gaps (each bank starts at its own number), so MIDI walks the list of effects that exist.
+const FX_LIST = EFFECTS.filter(Boolean);
+engine.onProgram = (ch, pc) => setFx(FX_LIST[pc % FX_LIST.length].id);
+engine.onDrum = note => { const i = note - 36; if (i >= 0 && i < FX_LIST.length) setFx(FX_LIST[i].id); };
 function midiPorts() {
   const ports = engine.ports(), cur = $("midiIn").value;
   $("midiIn").innerHTML = `<option value="all">כל הכניסות</option>` + ports.map(p => `<option value="${p.id}">${p.name.replace(/</g, "&lt;")}</option>`).join("");
