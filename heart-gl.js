@@ -9,8 +9,9 @@ import { SIZE, MARGIN, RES } from "./heart-geo.js?v=1";
 import { FX_COMMON, FX_BANKS as FX_BANKS_100 } from "./heart-fx.js?v=1";
 import { TD_BANK, TD_SIM_GLSL } from "./heart-td.js?v=1";
 import { TIME_BANK, HIST_N } from "./heart-tempo.js?v=1";
+import { CAM_BANK } from "./heart-cam.js?v=1";
 // The banks after the built-in one: the 100 of heart-fx.js, then the TouchDesigner liquid of heart-td.js.
-const FX_BANKS = [...FX_BANKS_100, TD_BANK, TIME_BANK];
+const FX_BANKS = [...FX_BANKS_100, TD_BANK, TIME_BANK, CAM_BANK];
 
 // id, Hebrew name, icon, energy class (0 calm, 1 medium, 2 intense) for the automatic show.
 export const EFFECTS = [

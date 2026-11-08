@@ -77,12 +77,17 @@ public class MainActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
-            // The page asks for the microphone: grant it once Android has granted RECORD_AUDIO to the app.
+            // The page asks for the microphone or the camera: grant it once Android has granted RECORD_AUDIO / CAMERA to the app.
             @Override
             public void onPermissionRequest(PermissionRequest req) {
                 runOnUiThread(() -> {
-                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) grant(req);
-                    else { pendingPerm = req; requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC); }
+                    java.util.List<String> need = new java.util.ArrayList<>();
+                    for (String r : req.getResources()) {
+                        if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r) && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.RECORD_AUDIO);
+                        if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) need.add(Manifest.permission.CAMERA);
+                    }
+                    if (need.isEmpty()) grant(req);
+                    else { pendingPerm = req; requestPermissions(need.toArray(new String[0]), REQ_MIC); }
                 });
             }
             // Music, video and show files.
@@ -167,8 +172,10 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
         super.onRequestPermissionsResult(code, perms, res);
         if (code != REQ_MIC || pendingPerm == null) return;
-        if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) grant(pendingPerm);
-        else { pendingPerm.deny(); toast("בלי הרשאת מיקרופון הלב לא ישמע את המוזיקה"); }
+        boolean ok = res.length > 0;
+        for (int r : res) ok &= r == PackageManager.PERMISSION_GRANTED;
+        if (ok) grant(pendingPerm);
+        else { pendingPerm.deny(); toast(java.util.Arrays.asList(perms).contains(Manifest.permission.CAMERA) ? "בלי הרשאת מצלמה אין שידור חי על הלב" : "בלי הרשאת מיקרופון הלב לא ישמע את המוזיקה"); }
         pendingPerm = null;
     }
 

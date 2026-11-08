@@ -462,7 +462,8 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="vidSync" checked> וידאו מסונכרן לזמן המוזיקה</label>
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
-          <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button></div>
+          <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button><select id="camDev" title="איזו מצלמה" aria-label="איזו מצלמה"><option value="">מצלמה ברירת מחדל</option></select></div>
+          <p class="help">מצלמה חיה על הלב (אפקטים 206-215): ויטראז' חי, קומיקס, ניאון, תרמית, חריטה בטבעות ועוד. בחירת אפקט מצלמה מדליקה את המצלמה לבד.</p>
         </section>
         <section>
           <h3>⏱ קצב תמונה</h3>
@@ -798,6 +799,7 @@ import { React, newLayer, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, 
 import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
 import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
 import { TimeWarp, TW_MODES, TW_DIVS, isTime } from "./heart-tempo.js?v=1";
+import { isCam } from "./heart-cam.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -861,6 +863,7 @@ function setFx(id, from = "user") {
   if (fxB === fxA) { mix = 0; }
   else mix = 0.0001;
   if (from === "user" && recording && music.el && !music.el.paused) addCue(music.time(performance.now() / 1000), id);
+  if (from === "user") window.camAuto?.(id);
   renderPads();
 }
 const curFx = () => (mix > 0 ? fxB : fxA);
@@ -1023,7 +1026,7 @@ function engForm() {
 for (const [k, f] of Object.entries(ENG_SL)) $("e_" + k).oninput = () => { eo[k] = +$("e_" + k).value; $("e_" + k + "V").textContent = f(eo[k]); engApply(); };
 ["e_routeL", "e_routeR"].forEach(id => $(id).onchange = () => { eo[id === "e_routeL" ? "routeL" : "routeR"] = +$(id).value; engApply(); });
 engForm(); engApply();
-window.heartStudio = { engine, music };   // for the console: heartStudio.engine.midiMsg([0x90, 60, 100])
+window.heartStudio = { engine, music, setFx };   // for the console: heartStudio.engine.midiMsg([0x90, 60, 100]), heartStudio.setFx(206)
 $("engOn").onclick = () => setFx(21);
 engine.onChord = c => { $("chordChip").textContent = c.name; };
 
@@ -1776,15 +1779,34 @@ for (const k of ["amount", "morph"]) {
 }
 for (const k of ["all", "video"]) { const el = $("tw" + k[0].toUpperCase() + k.slice(1)); el.checked = tw.o[k]; el.onchange = () => { tw.o[k] = el.checked; twSave(); }; }
 // The camera as the video source (the AI VJ "rewrite reality" idea): the heart redraws what the camera sees, on the beat.
-let camStream = null;
-$("camBtn").onclick = async () => {
-  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); return; }
+let camStream = null, camBusy = false;
+K.camDev = "heartstudio.camdev";
+const camStop = () => { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); } };
+// Lists the cameras (a USB camera at the event, the laptop's own one); names show only after the first permission.
+async function camList() {
   try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+    const sel = $("camDev"), want = localStorage.getItem(K.camDev) || "";
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+    sel.innerHTML = '<option value="">מצלמה ברירת מחדל</option>' + cams.map((d, i) => `<option value="${d.deviceId}">${(d.label || "מצלמה " + (i + 1)).replace(/</g, "")}</option>`).join("");
+    sel.value = cams.some(d => d.deviceId === want) ? want : "";
+  } catch {}
+}
+async function camStart(fx) {
+  if (camBusy) return; camBusy = true; camStop();
+  try {
+    const id = $("camDev").value;
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(id ? { deviceId: { exact: id } } : {}) }, audio: false });
     vid.removeAttribute("src"); vid.srcObject = camStream; vid.muted = true; await vid.play().catch(() => {});
-    $("camBtn").setAttribute("aria-pressed", "true"); if (curFx() < 196 || curFx() > 205) setFx(205); toast("המצלמה ממופה על הלב");
+    $("camBtn").setAttribute("aria-pressed", "true"); if (fx != null && !isTime(curFx()) && !isCam(curFx())) setFx(fx);
+    toast("המצלמה ממופה על הלב"); camList();
   } catch { camStream = null; toast("אין גישה למצלמה"); }
-};
+  camBusy = false;
+}
+$("camBtn").onclick = () => camStream ? camStop() : camStart(206);
+$("camDev").onchange = () => { try { localStorage.setItem(K.camDev, $("camDev").value); } catch {} if (camStream) camStart(); };
+camList();
+// Picking a live-camera effect with no video loaded turns the camera on by itself.
+window.camAuto = id => { if (isCam(id) && !camStream && !vid.src && !camBusy) camStart(); };
 
 
 // ---------- output palette: the heart, its layers and one card per element ----------
@@ -1933,7 +1955,7 @@ function step(now) {
   const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
   // The video goes to the GPU only while something shows it.
   if (tws.newFrame && used.some(isTime)) gl.pushHist();
-  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
+  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || isCam(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
