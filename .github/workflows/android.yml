@@ -3,7 +3,7 @@ name: Android app
 # Builds "Heart Studio.apk" (the one-file studio in a full-screen WebView) and attaches it to the run as a download.
 on:
   push:
-    branches: ["**"]
+    branches: ["**", "!apk-export"]
     paths: ["index.html", "heart-*.js", "heart-studio.html", "theme.*", "fonts/**", "tools/**", "android/**", ".github/workflows/android.yml"]
   workflow_dispatch:
 
