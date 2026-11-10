@@ -1,0 +1,26 @@
+name: APK export (temporary)
+# Temporary: builds the APK and pushes it to the apk-file branch so it can be fetched with git. Deleted after use.
+on:
+  push:
+    branches: ["apk-export-cam"]
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - run: python3 tools/build-heart-studio.py
+      - working-directory: android
+        run: gradle --no-daemon assembleRelease
+      - run: |
+          mkdir out && cp android/app/build/outputs/apk/release/app-release.apk "out/Heart Studio.apk"
+          cd out && git init -q -b apk-file-cam && git add . && git -c user.name=ci -c user.email=ci@local commit -qm "APK"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" apk-file-cam
