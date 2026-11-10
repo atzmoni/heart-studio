@@ -21,7 +21,7 @@ export const TD_DEFAULT = {
   ramp: 0, chroma: 0, zblur: 0, look: 0, gG: 1.4, sG: 0.55, edge: 0.3, vein: 1,
 };
 // Sources of heat, by number (TD_DEFAULT.src).
-export const TD_SOURCES = ["פעימות לב · גלים מהמרכז", "בועות על כל מכה", "התעלות לפי הספקטרום", "קירות אש · הקונטור", "לבה · רעש חי", "ניצוצות מהמרכז", "משאבה · הלב הפנימי", "וידאו"];
+export const TD_SOURCES = ["פעימות לב · גלים מהמרכז", "בועות על כל מכה", "התעלות לפי הספקטרום", "קירות אש · הקונטור", "לבה · רעש חי", "ניצוצות מהמרכז", "משאבה · הלב הפנימי", "וידאו", "מצלמה כעומק · פסל חי"];
 export const TD_RAMPS = ["אש", "צבעי ההופעה", "ירוק"];
 export const TD_LOOKS = ["לבה", "ורידים", "תלת-ממד"];
 
@@ -52,9 +52,17 @@ export const TD_FX = [
   // A real heart built into the element: the seam is the septum, the two top lobes the atria. It beats lub-dub with the music.
   [184, "לב אמיתי פועם", "🫀", 1, P({ src: 6, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
   [185, "לב אמיתי · ניאון", "💗", 1, P({ src: 6, ramp: 1, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
+  // Live depth sculpture (after the user's reel: a depth camera pushes a sea of fabric/sand, every movement leaves streaks of
+  // folds). The camera (phone over Wi-Fi or USB) becomes depth: what moves in front of the still background stands out.
+  [223, "פסל עומק חי · בד מהמצלמה", "🗿", -1, P({ src: 8, decay: 0.94, gain: 1, flow: 1.1, nscale: 1.3, nspeed: 0.12, push: 0, zoom: 0, visc: 0.12, react: 0.5, wave: 0, edge: 0.25 }), "fxDepthRelief"],
+  [224, "פסל עומק · צבעי ההופעה", "🎭", -1, P({ src: 8, ramp: 1, decay: 0.94, gain: 1, flow: 1.4, nscale: 1.3, nspeed: 0.15, push: 0, zoom: 0, visc: 0.12, react: 0.7, wave: 0, edge: 0.35 }), "fxDepthRelief"],
+  [225, "פסל עומק · חול זהב", "🏜️", -1, P({ src: 8, ramp: 2, decay: 0.96, gain: 0.8, flow: 0.8, nscale: 1.8, nspeed: 0.08, push: 0, zoom: 0, visc: 0.2, react: 0.4, wave: 0, edge: 0.3 }), "fxDepthRelief"],
 ];
 export const TD_PRESET = Object.fromEntries(TD_FX.map(([id, , , , o]) => [id, o]));
 export const isTd = id => TD_PRESET[id] != null;
+// Effects that read the camera (video source 7, depth 8): the page sends video frames to the GPU and turns the camera on for them.
+export const tdUsesVideo = id => TD_PRESET[id]?.src >= 7;
+export const isDepthCam = id => TD_PRESET[id]?.src === 8;
 
 // Mechanisms: things the performer fires by hand (pad, keyboard, MIDI note through the workspace). Held = stays on.
 // [key, icon, name, keyboard key, release seconds]
@@ -154,6 +162,27 @@ float tdSparks(H h) {
   }
   return c * max(uTd[15], 0.6);
 }
+// ---- the camera as depth (src 8) ----
+// A webcam has no depth, so depth is what differs from the still background: g keeps a slow running average of the picture
+// (the empty room, learned over ~10 s, relearned at once by the wipe mechanism), and whatever stands out from it is "near".
+// Brighter parts of the figure count a little nearer, so a face and a raised hand read as a relief, not a flat cut-out.
+float tdCamL(vec2 p) { return dot(video(p), vec3(0.3, 0.55, 0.15)); }
+float tdCamL5(vec2 p) { float r = 1.6; return (tdCamL(p) * 2.0 + tdCamL(p + vec2(r, 0.0)) + tdCamL(p - vec2(r, 0.0)) + tdCamL(p + vec2(0.0, r)) + tdCamL(p - vec2(0.0, r))) / 6.0; }
+// Without a camera: a slow figure (head, shoulders, a waving hand), so the effect shows itself while the camera starts.
+float tdFakeDepth(vec2 p) {
+  float t = uTime * 0.6;
+  vec2 hd = vec2(S * (0.5 + 0.08 * sin(t * 0.7)), S * (0.42 + 0.03 * sin(t * 0.9)));
+  float head = smoothstep(32.0, 18.0, length((p - hd) * vec2(1.0, 0.82)));
+  float body = smoothstep(26.0, 6.0, length(max(abs(p - vec2(hd.x, S * 0.86)) - vec2(46.0, 18.0), 0.0)));
+  vec2 hn = vec2(S * (0.5 + 0.28 * sin(t * 1.3)), S * (0.45 + 0.18 * cos(t * 0.9)));
+  float hand = smoothstep(20.0, 8.0, length((p - hn) * vec2(1.0, 0.75)));
+  return max(max(head * 0.8, body * 0.6), hand);
+}
+float tdDepth(vec2 p, float bg) {
+  if (uVidOn < 0.5) return tdFakeDepth(p);
+  float l = tdCamL5(p), d = smoothstep(0.05, 0.22, abs(l - bg));
+  return d * (0.55 + 0.6 * l);
+}
 float tdInject(H h) {
   int src = int(uTd[0] + 0.5);
   float lv = 0.6 + 0.6 * uLevelS + 0.4 * uBuild, c = 0.0, w = tdWaves(h);
@@ -168,6 +197,7 @@ float tdInject(H h) {
   else if (src == 5) c = w * 0.3;
   else if (src == 6) { float core = 1.0 - smoothstep(0.08, 0.2, h.rad); for (int i = 0; i < 6; i++) if (uPulse[i].y > 0.0 && uPulse[i].z < 1.5) c += core * tdEnv(uPulse[i].x) * uPulse[i].y * 0.35; }
   else if (src == 7) c = dot(video(h.p), vec3(0.3, 0.5, 0.2)) * 0.12 + w * 0.4 * uTd[11];
+  else if (src == 8) c = tdDepth(h.p, tdAt(h.p).g) * 0.07 * (0.8 + 0.5 * uTd[11] * kk()) / lv;   // steady: the figure, not the volume
   return c * lv;
 }
 void main() {
@@ -180,6 +210,10 @@ void main() {
   float n3 = noise(np + vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 + vec2(e, 0.0) - t), n4 = noise(np - vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 - vec2(e, 0.0) - t);
   vec2 vel = vec2(n1 - n2, n4 - n3) * uTd[5] * (0.6 + uTd[11] * (uBassS + 0.8 * kk())) * 1.2;
   vel += h.gP * uTd[8] * (0.35 + uTd[11] * (0.5 * uLevelS + 0.5 * kk())) + h.gP * uMech[1] * 2.5;
+  if (int(uTd[0] + 0.5) == 8) {   // depth: the figure pushes the fabric aside, down the slopes, so every move leaves streaks of folds
+    vec2 gd = vec2(tdAt(p + vec2(tx * 3.0, 0.0)).r - tdAt(p - vec2(tx * 3.0, 0.0)).r, tdAt(p + vec2(0.0, tx * 3.0)).r - tdAt(p - vec2(0.0, tx * 3.0)).r);
+    vel -= gd * (1.6 + 1.5 * kk());
+  }
   // Feedback transform about the part's centre: zoom, twist (and the shock and twist mechanisms).
   float z = (uTd[3] * (0.6 + 0.6 * uTd[11] * kk()) + 5.0 * uMech[1] - 3.0 * uMech[6]) * 0.003, a = (uTd[4] + 4.0 * uMech[3]) * 0.003;
   vec2 d = p - c; d = mat2(cos(a), -sin(a), sin(a), cos(a)) * d * (1.0 - z * fr);
@@ -194,6 +228,10 @@ void main() {
   heat += tdInject(h) * uTd[1] * pour;
   heat += uMech[4] * smoothstep(0.35, 0.8, fbm(p * 0.025 + uTime * 0.6)) * 0.25 * pour;     // eruption: the whole heart boils over
   sp += tdSparks(h) * pour;
+  if (int(uTd[0] + 0.5) == 8) {   // g = the still background, learned in place (not carried by the flow)
+    float bg = tdAt(p).g, l = uVidOn > 0.5 ? tdCamL5(p) : 0.0;
+    sp = bg < 0.001 ? l : mix(bg, l, min(1.0, (0.0015 + 0.2 * uMech[6]) * fr));
+  }
   float hgt = mix(F.b, heat, 0.12 * fr);
   float inside = smoothstep(-6.0, -2.0, h.d);
   o = vec4(min(heat, 3.0), min(sp, 3.0), min(hgt, 3.0), 1.0) * inside;
@@ -286,5 +324,40 @@ vec3 fxRealHeart(H h) {
     lit = pal(along + uFlow) * ln * (0.5 + 1.2 * wave + 0.6 * lub) + pal(0.5 + uFlow) * (1.0 - atr) * lub * 0.25 + pal(0.0) * atr * dub * 0.3;
   }
   return lit * (h.groove * 1.3 + (h.stripe + h.rim) * 0.95 + h.seam * 1.1) + vec3(1.0, 0.4, 0.45) * h.edge * (0.25 + 0.8 * lub);
+}
+
+// ---- live depth sculpture (223-225): the liquid's heat is the height of a sheet of fabric (or sand), lit from the side ----
+// Folds follow the height's own contour lines (so they wrap round the figure and stream behind every move, as in the reel),
+// with a fine grain on the flat parts. The cut stays the cut: the grooves are V creases in the same light, the contour glows.
+float drH(vec2 p) {
+  vec4 F = tdAt(p);
+  return F.r * 0.75 + F.b * 0.45;
+}
+float drFolds(vec2 p, float hh, float slope) {
+  float f = sin(hh * 46.0 + fbm(p * 0.045) * 5.0 + uTime * 0.3);
+  return f * smoothstep(0.004, 0.05, slope);
+}
+vec3 fxDepthRelief(H h) {
+  vec2 p = h.p; float tx = S / uTdN * 1.5;
+  float h0 = drH(p), hx = drH(p + vec2(tx, 0.0)), hy = drH(p + vec2(0.0, tx));
+  vec2 g = vec2(hx - h0, hy - h0); float slope = length(g);
+  float f0 = drFolds(p, h0, slope), fx = drFolds(p + vec2(tx, 0.0), hx, slope), fy = drFolds(p + vec2(0.0, tx), hy, slope);
+  float gr = noise(p * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise(p * 3.9 - h0 * 2.0) * 0.25;   // fine grain, as fabric or sand
+  float grx = noise((p + vec2(tx, 0.0)) * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise((p + vec2(tx, 0.0)) * 3.9 - h0 * 2.0) * 0.25;
+  float gry = noise((p + vec2(0.0, tx)) * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise((p + vec2(0.0, tx)) * 3.9 - h0 * 2.0) * 0.25;
+  float relief = 9.0 + 6.0 * uTdO[7];
+  vec3 n = normalize(vec3(-(g * relief + vec2(fx - f0, fy - f0) * 0.09 + vec2(grx - gr, gry - gr) * 0.05) / tx * 2.2, 1.0));
+  vec3 nc = nCut(h, 1.2); n = normalize(n + vec3(nc.xy, 0.0) * 0.8);                       // the cut's V grooves in the same light
+  float sw = 0.25 * sin(uTime * 0.2) + 0.3 * (uBassS - 0.5);                                 // the light swings slowly with the bass
+  vec3 L = normalize(vec3(-0.55 + sw, -0.65, 0.55));
+  float df = max(dot(n, L), 0.0), sp = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 22.0);
+  float sh = (0.16 + 0.84 * df) * ao(h);
+  int ramp = int(uTdO[0] + 0.5);
+  vec3 base = vec3(0.93, 0.92, 0.9);
+  if (ramp == 1) base = mix(vec3(0.85), pal(h0 * 0.45 + uFlow + gr * 0.2), 0.75);
+  else if (ramp == 2) base = mix(vec3(0.98, 0.8, 0.5), vec3(1.0, 0.92, 0.72), smoothstep(0.2, 1.0, h0));
+  vec3 col = base * sh * (0.85 + 0.25 * uLevelS + 0.35 * kk()) + vec3(1.0, 0.97, 0.92) * sp * (0.35 + 0.4 * kk());
+  col += vec3(1.0) * uMech[5] * 0.6;                                                         // flash
+  return col * (h.stripe + h.rim + h.groove * 0.75 + h.seam * 0.8) + (ramp == 1 ? pal(uFlow) : base) * h.edge * uTdO[6] * (0.6 + 1.4 * kk());
 }
 ` };

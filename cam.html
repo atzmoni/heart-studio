@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Heart Studio · מצלמה חיה</title>
+<!-- The phone's side of the live camera (heart-live.js, desktop/cam-relay.js): served by the desktop app over the local
+     Wi-Fi. It sends the camera to the studio as JPEG frames, as fast as the network takes them. -->
+<style>
+  :root { color-scheme: dark; --bg: #0d1117; --fg: #e6edf3; --mut: #8b949e; --acc: #ff4f8b; --ok: #3fb950; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+  header b { font-size: 18px; }
+  #st { margin-inline-start: auto; font-size: 14px; color: var(--mut); }
+  #st.live { color: var(--ok); }
+  .view { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
+  video { max-width: 100%; max-height: 70vh; }
+  video.mirror { transform: scaleX(-1); }
+  #hint { position: absolute; inset: auto 16px 16px 16px; text-align: center; color: var(--mut); font-size: 14px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  button, select { font: inherit; color: var(--fg); background: #21262d; border: 1px solid #30363d; border-radius: 10px; padding: 12px 14px; min-height: 48px; }
+  button.main { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 700; flex: 1 1 100%; }
+  button[aria-pressed="true"] { outline: 2px solid var(--acc); }
+  .err { color: #ff7b72; padding: 0 16px 12px; }
+</style>
+</head>
+<body>
+<header><b>❤️ מצלמה חיה ללב</b><span id="st">לא משדר</span></header>
+<div class="view"><video id="v" playsinline muted autoplay></video><div id="hint">לחצו "התחל שידור" ואשרו את המצלמה. מה שהמצלמה רואה יוקרן על הלב עם האפקט שבסטודיו.</div></div>
+<p class="err" id="err" hidden></p>
+<div class="bar">
+  <button class="main" id="go">▶ התחל שידור</button>
+  <button id="flip">🔄 מצלמה קדמית / אחורית</button>
+  <select id="q" aria-label="איכות">
+    <option value="480">איכות רגילה (480)</option>
+    <option value="720">איכות גבוהה (720)</option>
+    <option value="360">חסכוני (360)</option>
+  </select>
+  <button id="mir" aria-pressed="false">🪞 מראה</button>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const key = new URLSearchParams(location.search).get("k") || "";
+let stream = null, facing = "user", on = false, mirror = false, wake = null;
+const cv = document.createElement("canvas"), cx = cv.getContext("2d");
+const err = m => { $("err").hidden = !m; $("err").textContent = m || ""; };
+const st = (t, live) => { $("st").textContent = t; $("st").className = live ? "live" : ""; };
+
+async function openCam() {
+  stream?.getTracks().forEach(t => t.stop());
+  const h = +$("q").value;
+  stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: facing, height: { ideal: h }, width: { ideal: Math.round(h * 4 / 3) }, frameRate: { ideal: 30 } } });
+  $("v").srcObject = stream; await $("v").play().catch(() => {});
+  $("v").classList.toggle("mirror", facing === "user");
+}
+
+async function send() {
+  const v = $("v"); let n = 0, t0 = performance.now(), fails = 0;
+  while (on) {
+    if (!v.videoWidth) { await new Promise(ok => setTimeout(ok, 100)); continue; }
+    const h = Math.min(+$("q").value, v.videoHeight), w = Math.round(h * v.videoWidth / v.videoHeight);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    // The front camera is a mirror on the phone; the "mirror" button decides how it lands on the heart.
+    cx.setTransform(mirror ? -1 : 1, 0, 0, 1, mirror ? w : 0, 0); cx.drawImage(v, 0, 0, w, h);
+    const blob = await new Promise(ok => cv.toBlob(ok, "image/jpeg", 0.7));
+    try {
+      const r = await fetch("/frame?k=" + encodeURIComponent(key), { method: "POST", body: blob, headers: { "content-type": "image/jpeg" } });
+      if (r.status === 403) { err("הקוד לא נכון: סרקו שוב את הקוד (QR) שבסטודיו."); stop(); break; }
+      if (!r.ok) throw new Error(r.status);
+      fails = 0; err(""); n++;
+      const now = performance.now(); if (now - t0 > 1000) { st(`🔴 משדר · ${Math.round(n * 1000 / (now - t0))} פריימים בשנייה`, true); n = 0; t0 = now; }
+    } catch { if (++fails > 3) { st("אין חיבור למחשב"); err("המחשב לא עונה. בדקו שהטלפון והמחשב באותה רשת Wi-Fi ושתוכנת Heart Studio פתוחה."); } await new Promise(ok => setTimeout(ok, 700)); }
+    await new Promise(ok => setTimeout(ok, 30));   // up to ~25 frames a second, never faster than the network takes them
+  }
+}
+
+async function start() {
+  err("");
+  if (!window.isSecureContext || !navigator.mediaDevices) { err("הדפדפן חוסם את המצלמה בכתובת הזו. פתחו את הקישור עם https:// מהקוד שבסטודיו."); return; }
+  try { await openCam(); } catch (e) { err("אין גישה למצלמה: אשרו את המצלמה בהגדרות האתר ונסו שוב."); return; }
+  on = true; $("go").textContent = "⏹ עצור שידור"; $("hint").hidden = true; st("מתחבר…");
+  try { wake = await navigator.wakeLock?.request("screen"); } catch {}
+  send();
+}
+function stop() {
+  on = false; stream?.getTracks().forEach(t => t.stop()); stream = null; $("go").textContent = "▶ התחל שידור"; st("לא משדר"); wake?.release?.(); wake = null;
+}
+$("go").onclick = () => on ? stop() : start();
+$("flip").onclick = async () => { facing = facing === "user" ? "environment" : "user"; if (on) try { await openCam(); } catch { err("אין מצלמה שנייה"); } };
+$("q").onchange = async () => { if (on) try { await openCam(); } catch {} };
+$("mir").onclick = () => { mirror = !mirror; $("mir").setAttribute("aria-pressed", mirror); };
+document.addEventListener("visibilitychange", async () => { if (on && document.visibilityState === "visible") try { wake = await navigator.wakeLock?.request("screen"); } catch {} });
+if (!key) err("חסר קוד: סרקו את הקוד (QR) שבסטודיו.");
+</script>
+</body>
+</html>

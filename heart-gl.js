@@ -90,6 +90,10 @@ export const EFFECTS = [
 EFFECTS.forEach(e => e.bank = e.id < 2 ? 0 : -1 - (e.id >> 3));
 const CORE_CHUNKS = [...new Set(EFFECTS.map(e => e.bank))].filter(b => b < 0);
 FX_BANKS.forEach((b, i) => b.fx.forEach(([id, name, ico, e, fn]) => { EFFECTS[id] = { id, name, ico, e, g: b.g, bank: i + 1, fn }; }));
+// A clean start: the studio opens (and the 🧹 reset returns) to a dark heart, with no effect running until one is picked.
+// It lives in bank 0 with no case of its own, so the shader draws black and crossfades in and out of it like any effect.
+export const BLANK = 226;
+EFFECTS[BLANK] = { id: BLANK, name: "ריק · הלב כבוי", ico: "⬛", e: -1, g: "base", bank: 0 };
 // Effect groups for the pads, in the order they show.
 export const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"],
   ["parts", "פסל אור-קול נושם · כל חלק קול משלו"], ...FX_BANKS.map(b => [b.g, b.title])];
@@ -1293,7 +1297,7 @@ export class HeartGL {
     if (!pass) {
       if (this.ready(this.keyFor([fxA, ...own])) && this.ready(this.keyFor([fxB, ...own]))) this.shown = [fxA, fxB, s.mix];
       else if (this.shown) { [fxA, fxB] = this.shown; s = { ...s, fxA, fxB, mix: this.shown[2] }; if (fxA === fxB) s.mix = 0; }
-      else { fxA = fxB = 1; s = { ...s, fxA: 1, fxB: 1, mix: 0 }; return this.draw(s, points, null, "0"); }   // first seconds: the heartbeat
+      else { s = { ...s, fxA: BLANK, fxB: BLANK, mix: 0 }; return this.draw(s, points, null, "0"); }   // first seconds: dark until it is built
     } else if (!this.ready(this.keyFor([fxA, fxB]))) return;
     if (this.bankOf(fxA) === this.bankOf(fxB)) return this.draw(s, points, pass, this.keyFor([fxA, fxB, ...own]));
     this.draw({ ...s, fxB: fxA, mix: 0 }, points, null, this.keyFor([fxA, ...own]));

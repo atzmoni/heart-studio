@@ -75,6 +75,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .transport { display: grid; gap: 8px; }
 #tl { width: 100%; height: 92px; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
 .time { font: .85rem var(--mono); color: var(--muted); direction: ltr; }
+.phonecam { display: flex; gap: 12px; align-items: flex-start; margin-top: 8px; padding: 10px; border: 1px solid var(--line, #30363d); border-radius: 10px; }
+.phonecam p { margin: 4px 0; }
+.phoneqr svg { display: block; border-radius: 6px; }
+#phoneUrl { font: .75rem var(--mono); word-break: break-all; }
 .pal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .pal button { padding: 6px; display: grid; gap: 4px; font-size: .78rem; }
 .pal button b { height: 14px; border-radius: 4px; display: block; }
@@ -463,7 +467,17 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
           <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button><select id="camDev" title="איזו מצלמה" aria-label="איזו מצלמה"><option value="">מצלמה ברירת מחדל</option></select></div>
-          <p class="help">מצלמה חיה על הלב (אפקטים 206-215): ויטראז' חי, קומיקס, ניאון, תרמית, חריטה בטבעות ועוד. בחירת אפקט מצלמה מדליקה את המצלמה לבד.</p>
+          <p class="help">מצלמה חיה על הלב (אפקטים 206-215): ויטראז' חי, קומיקס, ניאון, תרמית, חריטה בטבעות ועוד. בחירת אפקט מצלמה מדליקה את המצלמה לבד.
+            פסל עומק חי (223-225): מה שזז מול המצלמה דוחף ים של בד או חול בתבליט. עומדים רגע מחוץ לתמונה כדי שהרקע ייקלט, או 🧽 ניקוי כדי לקלוט אותו מחדש.</p>
+          <div id="phoneCam" class="phonecam" hidden>
+            <div id="phoneQr" class="phoneqr"></div>
+            <div>
+              <b>📱 הטלפון כמצלמה חיה</b>
+              <p class="help">הטלפון והמחשב באותה רשת Wi‑Fi. סורקים את הקוד בטלפון, ובפעם הראשונה הדפדפן מזהיר על האבטחה: "מתקדם" ואז "המשך" (זה המחשב שלכם, בלי אינטרנט). מאשרים מצלמה ולוחצים "התחל שידור".</p>
+              <p class="help" id="phoneUrl" dir="ltr"></p>
+              <p class="help" id="phoneSt"></p>
+            </div>
+          </div>
         </section>
         <section>
           <h3>⏱ קצב תמונה</h3>
@@ -792,14 +806,15 @@ main > * { min-width: 0; }
 import * as G from "./heart-geo.js?v=1";
 import { ELEMENTS, ELEMENT_BASE, partsOf, setCustom } from "./heart-elements.js?v=1";
 import { Forge, loadDesign, buildModel as forgeModel } from "./heart-forge.js?v=1";
-import { HeartGL, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
+import { HeartGL, BLANK, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } from "./heart-gl.js?v=1";
 import { Music, regrid } from "./heart-audio.js?v=1";
 import { Engine, MODES as E_MODES, HALVES, COLORS, noteName } from "./heart-engine.js?v=1";
 import { React, newLayer, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } from "./heart-react.js?v=1";
 import { makeOps, Network, Editor, FAMS as WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } from "./heart-nodes.js?v=1";
-import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } from "./heart-td.js?v=1";
+import { TdDriver, MECHS, TD_PRESET, TD_FX, isTd, tdUsesVideo, isDepthCam } from "./heart-td.js?v=1";
 import { TimeWarp, TW_MODES, TW_DIVS, isTime } from "./heart-tempo.js?v=1";
 import { isCam } from "./heart-cam.js?v=1";
+import { PhoneCam, qrSVG } from "./heart-live.js?v=1";
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -855,7 +870,7 @@ function flatten() { if (!fold) P = flatPoints([P[0], P[2], P[3], P[5]]); }
 
 // ---------- show state ----------
 const show = Object.assign({ engmix: 0, palette: "love", speed: 100, intensity: 75, hue: 0, master: 100, outline: 0, vidmix: 0, xfade: 6, latency: 40, phrase: "8", strobe: false, style: "all" }, store.get(K.show, {}));
-let fxA = 1, fxB = 1, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
+let fxA = BLANK, fxB = BLANK, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
 function setFx(id, from = "user") {
   if (id === fxB && mix === 0 && id === fxA) return;
   if (mix > 0) fxA = fxB;
@@ -1482,7 +1497,7 @@ async function loadMusic(file, el) {
 $("musicFile").onchange = () => { const f = $("musicFile").files[0]; if (f) loadMusic(f, aud); };
 $("videoFile").onchange = async () => {
   const f = $("videoFile").files[0]; if (!f) return;
-  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
+  camStop();
   vid.src = URL.createObjectURL(f); vid.muted = !$("vidAudio").checked; vid.loop = !$("vidAudio").checked;
   if ($("vidAudio").checked) { aud.pause(); await loadMusic(f, vid); }
   else vid.play().catch(() => {});
@@ -1781,32 +1796,59 @@ for (const k of ["all", "video"]) { const el = $("tw" + k[0].toUpperCase() + k.s
 // The camera as the video source (the AI VJ "rewrite reality" idea): the heart redraws what the camera sees, on the beat.
 let camStream = null, camBusy = false;
 K.camDev = "heartstudio.camdev";
-const camStop = () => { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); } };
+const camFx = id => isCam(id) || isDepthCam(id);
+// A phone on the Wi-Fi as the camera (heart-live.js, the desktop app's relay): its frames are painted on a canvas whose stream
+// becomes the video, so it works with every camera effect exactly like a USB camera.
+const phone = new PhoneCam();
+phone.onstatus = s => {
+  $("phoneSt").textContent = s === "live" ? `🔴 הטלפון משדר · ${phone.fps} פריימים בשנייה` : s === "wait" ? "מחכה לטלפון…" : "אין שרת מצלמה: הטלפון כמצלמה עובד בתוכנת Heart Studio ל-Windows (או node desktop/cam-relay.js).";
+};
+async function phoneShow() {
+  const info = await phone.info();
+  $("phoneCam").hidden = false;
+  if (!info) { phone.onstatus("norelay"); $("phoneQr").innerHTML = ""; $("phoneUrl").textContent = ""; return; }
+  const url = info.urls[0]?.url;
+  $("phoneQr").innerHTML = url ? qrSVG(url, 150) : "";
+  $("phoneUrl").textContent = info.urls.map(u => u.url).join("  ·  ") || "המחשב לא מחובר לרשת";
+}
+const camStop = () => {
+  phone.stop(); $("phoneCam").hidden = $("camDev").value !== "phone";
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
+};
 // Lists the cameras (a USB camera at the event, the laptop's own one); names show only after the first permission.
 async function camList() {
   try {
     const sel = $("camDev"), want = localStorage.getItem(K.camDev) || "";
     const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
-    sel.innerHTML = '<option value="">מצלמה ברירת מחדל</option>' + cams.map((d, i) => `<option value="${d.deviceId}">${(d.label || "מצלמה " + (i + 1)).replace(/</g, "")}</option>`).join("");
-    sel.value = cams.some(d => d.deviceId === want) ? want : "";
+    sel.innerHTML = '<option value="">מצלמה ברירת מחדל</option>' + cams.map((d, i) => `<option value="${d.deviceId}">${(d.label || "מצלמה " + (i + 1)).replace(/</g, "")}</option>`).join("")
+      + '<option value="phone">📱 טלפון ב-Wi‑Fi</option>';
+    sel.value = want === "phone" || cams.some(d => d.deviceId === want) ? want : "";
+    $("phoneCam").hidden = sel.value !== "phone"; if (sel.value === "phone") phoneShow();
   } catch {}
 }
 async function camStart(fx) {
   if (camBusy) return; camBusy = true; camStop();
   try {
     const id = $("camDev").value;
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(id ? { deviceId: { exact: id } } : {}) }, audio: false });
+    if (id === "phone") { await phoneShow(); camStream = phone.start(); }
+    else camStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(id ? { deviceId: { exact: id } } : {}) }, audio: false });
     vid.removeAttribute("src"); vid.srcObject = camStream; vid.muted = true; await vid.play().catch(() => {});
-    $("camBtn").setAttribute("aria-pressed", "true"); if (fx != null && !isTime(curFx()) && !isCam(curFx())) setFx(fx);
-    toast("המצלמה ממופה על הלב"); camList();
+    $("camBtn").setAttribute("aria-pressed", "true"); if (fx != null && !isTime(curFx()) && !camFx(curFx())) setFx(fx);
+    toast(id === "phone" ? "סורקים את הקוד בטלפון ומתחילים שידור" : "המצלמה ממופה על הלב"); if (id !== "phone") camList();
   } catch { camStream = null; toast("אין גישה למצלמה"); }
   camBusy = false;
 }
 $("camBtn").onclick = () => camStream ? camStop() : camStart(206);
-$("camDev").onchange = () => { try { localStorage.setItem(K.camDev, $("camDev").value); } catch {} if (camStream) camStart(); };
+$("camDev").onchange = () => {
+  try { localStorage.setItem(K.camDev, $("camDev").value); } catch {}
+  $("phoneCam").hidden = $("camDev").value !== "phone"; if ($("camDev").value === "phone") phoneShow();
+  if (camStream) camStart();
+};
+// While the phone panel is open, refresh its address now and then (the Wi-Fi can change between the soundcheck and the show).
+setInterval(() => { if (!$("phoneCam").hidden && !phone.on && document.visibilityState === "visible") phoneShow(); }, 8000);
 camList();
 // Picking a live-camera effect with no video loaded turns the camera on by itself.
-window.camAuto = id => { if (isCam(id) && !camStream && !vid.src && !camBusy) camStart(); };
+window.camAuto = id => { if (camFx(id) && !camStream && !vid.src && !camBusy) camStart(); };
 
 
 // ---------- output palette: the heart, its layers and one card per element ----------
@@ -1955,7 +1997,7 @@ function step(now) {
   const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
   // The video goes to the GPU only while something shows it.
   if (tws.newFrame && used.some(isTime)) gl.pushHist();
-  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || isCam(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
+  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || isCam(id) || VIDEO_FX.has(id) || tdUsesVideo(id)) || (wsLive && wsOut.td?.src >= 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
@@ -2064,9 +2106,9 @@ function step(now) {
   // or cue playback driving the effects, the workspace network stops driving the heart, and the liquid and picture history are wiped.
   // The calibration, the heart's structure, the sound settings and the recorded cues stay.
   function resetAll() {
-    if (!confirm("ניקוי וריסט: כל האפקטים, השכבות והזיכרון שלהם יימחקו והסטודיו יתחיל מחדש עם אפקט אחד.\n\nהכיול, מבנה הלב, הגדרות הסאונד והקיו שהוקלטו נשמרים.\n\nלהמשיך?")) return;
+    if (!confirm("ניקוי וריסט: כל האפקטים, השכבות והזיכרון שלהם יימחקו והסטודיו יתחיל מחדש נקי, בלי אף אפקט.\n\nהכיול, מבנה הלב, הגדרות הסאונד והקיו שהוקלטו נשמרים.\n\nלהמשיך?")) return;
     rx.o.layers = []; saveRx();
-    fxA = fxB = 1; mix = 0;
+    fxA = fxB = BLANK; mix = 0;
     recent = []; store.set(K.fxRecent, recent);
     chState = {}; sel.clear(); ident = false; pushChannels(); renderChannels();
     tdd.held.fill(false); tdd.mech.fill(0); tdd.ext.fill(0); tdd.pulses = []; tdd.dub = null;

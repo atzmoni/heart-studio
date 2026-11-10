@@ -137,6 +137,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .transport { display: grid; gap: 8px; }
 #tl { width: 100%; height: 92px; display: block; background: #05070a; border-radius: 8px; cursor: pointer; }
 .time { font: .85rem var(--mono); color: var(--muted); direction: ltr; }
+.phonecam { display: flex; gap: 12px; align-items: flex-start; margin-top: 8px; padding: 10px; border: 1px solid var(--line, #30363d); border-radius: 10px; }
+.phonecam p { margin: 4px 0; }
+.phoneqr svg { display: block; border-radius: 6px; }
+#phoneUrl { font: .75rem var(--mono); word-break: break-all; }
 .pal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .pal button { padding: 6px; display: grid; gap: 4px; font-size: .78rem; }
 .pal button b { height: 14px; border-radius: 4px; display: block; }
@@ -525,7 +529,17 @@ main > * { min-width: 0; }
             <label class="row help"><input type="checkbox" id="vidAudio"> פסקול מתוך הווידאו</label>
           </div>
           <div class="row"><button id="camBtn" aria-pressed="false">📷 מצלמה כמקור וידאו</button><select id="camDev" title="איזו מצלמה" aria-label="איזו מצלמה"><option value="">מצלמה ברירת מחדל</option></select></div>
-          <p class="help">מצלמה חיה על הלב (אפקטים 206-215): ויטראז' חי, קומיקס, ניאון, תרמית, חריטה בטבעות ועוד. בחירת אפקט מצלמה מדליקה את המצלמה לבד.</p>
+          <p class="help">מצלמה חיה על הלב (אפקטים 206-215): ויטראז' חי, קומיקס, ניאון, תרמית, חריטה בטבעות ועוד. בחירת אפקט מצלמה מדליקה את המצלמה לבד.
+            פסל עומק חי (223-225): מה שזז מול המצלמה דוחף ים של בד או חול בתבליט. עומדים רגע מחוץ לתמונה כדי שהרקע ייקלט, או 🧽 ניקוי כדי לקלוט אותו מחדש.</p>
+          <div id="phoneCam" class="phonecam" hidden>
+            <div id="phoneQr" class="phoneqr"></div>
+            <div>
+              <b>📱 הטלפון כמצלמה חיה</b>
+              <p class="help">הטלפון והמחשב באותה רשת Wi‑Fi. סורקים את הקוד בטלפון, ובפעם הראשונה הדפדפן מזהיר על האבטחה: "מתקדם" ואז "המשך" (זה המחשב שלכם, בלי אינטרנט). מאשרים מצלמה ולוחצים "התחל שידור".</p>
+              <p class="help" id="phoneUrl" dir="ltr"></p>
+              <p class="help" id="phoneSt"></p>
+            </div>
+          </div>
         </section>
         <section>
           <h3>⏱ קצב תמונה</h3>
@@ -3420,7 +3434,7 @@ const TD_DEFAULT = {
   ramp: 0, chroma: 0, zblur: 0, look: 0, gG: 1.4, sG: 0.55, edge: 0.3, vein: 1,
 };
 // Sources of heat, by number (TD_DEFAULT.src).
-const TD_SOURCES = ["פעימות לב · גלים מהמרכז", "בועות על כל מכה", "התעלות לפי הספקטרום", "קירות אש · הקונטור", "לבה · רעש חי", "ניצוצות מהמרכז", "משאבה · הלב הפנימי", "וידאו"];
+const TD_SOURCES = ["פעימות לב · גלים מהמרכז", "בועות על כל מכה", "התעלות לפי הספקטרום", "קירות אש · הקונטור", "לבה · רעש חי", "ניצוצות מהמרכז", "משאבה · הלב הפנימי", "וידאו", "מצלמה כעומק · פסל חי"];
 const TD_RAMPS = ["אש", "צבעי ההופעה", "ירוק"];
 const TD_LOOKS = ["לבה", "ורידים", "תלת-ממד"];
 
@@ -3451,9 +3465,17 @@ const TD_FX = [
   // A real heart built into the element: the seam is the septum, the two top lobes the atria. It beats lub-dub with the music.
   [184, "לב אמיתי פועם", "🫀", 1, P({ src: 6, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
   [185, "לב אמיתי · ניאון", "💗", 1, P({ src: 6, ramp: 1, decay: 0.9, push: 1.3, flow: 0.4, visc: 0.2 }), "fxRealHeart"],
+  // Live depth sculpture (after the user's reel: a depth camera pushes a sea of fabric/sand, every movement leaves streaks of
+  // folds). The camera (phone over Wi-Fi or USB) becomes depth: what moves in front of the still background stands out.
+  [223, "פסל עומק חי · בד מהמצלמה", "🗿", -1, P({ src: 8, decay: 0.94, gain: 1, flow: 1.1, nscale: 1.3, nspeed: 0.12, push: 0, zoom: 0, visc: 0.12, react: 0.5, wave: 0, edge: 0.25 }), "fxDepthRelief"],
+  [224, "פסל עומק · צבעי ההופעה", "🎭", -1, P({ src: 8, ramp: 1, decay: 0.94, gain: 1, flow: 1.4, nscale: 1.3, nspeed: 0.15, push: 0, zoom: 0, visc: 0.12, react: 0.7, wave: 0, edge: 0.35 }), "fxDepthRelief"],
+  [225, "פסל עומק · חול זהב", "🏜️", -1, P({ src: 8, ramp: 2, decay: 0.96, gain: 0.8, flow: 0.8, nscale: 1.8, nspeed: 0.08, push: 0, zoom: 0, visc: 0.2, react: 0.4, wave: 0, edge: 0.3 }), "fxDepthRelief"],
 ];
 const TD_PRESET = Object.fromEntries(TD_FX.map(([id, , , , o]) => [id, o]));
 const isTd = id => TD_PRESET[id] != null;
+// Effects that read the camera (video source 7, depth 8): the page sends video frames to the GPU and turns the camera on for them.
+const tdUsesVideo = id => TD_PRESET[id]?.src >= 7;
+const isDepthCam = id => TD_PRESET[id]?.src === 8;
 
 // Mechanisms: things the performer fires by hand (pad, keyboard, MIDI note through the workspace). Held = stays on.
 // [key, icon, name, keyboard key, release seconds]
@@ -3553,6 +3575,27 @@ float tdSparks(H h) {
   }
   return c * max(uTd[15], 0.6);
 }
+// ---- the camera as depth (src 8) ----
+// A webcam has no depth, so depth is what differs from the still background: g keeps a slow running average of the picture
+// (the empty room, learned over ~10 s, relearned at once by the wipe mechanism), and whatever stands out from it is "near".
+// Brighter parts of the figure count a little nearer, so a face and a raised hand read as a relief, not a flat cut-out.
+float tdCamL(vec2 p) { return dot(video(p), vec3(0.3, 0.55, 0.15)); }
+float tdCamL5(vec2 p) { float r = 1.6; return (tdCamL(p) * 2.0 + tdCamL(p + vec2(r, 0.0)) + tdCamL(p - vec2(r, 0.0)) + tdCamL(p + vec2(0.0, r)) + tdCamL(p - vec2(0.0, r))) / 6.0; }
+// Without a camera: a slow figure (head, shoulders, a waving hand), so the effect shows itself while the camera starts.
+float tdFakeDepth(vec2 p) {
+  float t = uTime * 0.6;
+  vec2 hd = vec2(S * (0.5 + 0.08 * sin(t * 0.7)), S * (0.42 + 0.03 * sin(t * 0.9)));
+  float head = smoothstep(32.0, 18.0, length((p - hd) * vec2(1.0, 0.82)));
+  float body = smoothstep(26.0, 6.0, length(max(abs(p - vec2(hd.x, S * 0.86)) - vec2(46.0, 18.0), 0.0)));
+  vec2 hn = vec2(S * (0.5 + 0.28 * sin(t * 1.3)), S * (0.45 + 0.18 * cos(t * 0.9)));
+  float hand = smoothstep(20.0, 8.0, length((p - hn) * vec2(1.0, 0.75)));
+  return max(max(head * 0.8, body * 0.6), hand);
+}
+float tdDepth(vec2 p, float bg) {
+  if (uVidOn < 0.5) return tdFakeDepth(p);
+  float l = tdCamL5(p), d = smoothstep(0.05, 0.22, abs(l - bg));
+  return d * (0.55 + 0.6 * l);
+}
 float tdInject(H h) {
   int src = int(uTd[0] + 0.5);
   float lv = 0.6 + 0.6 * uLevelS + 0.4 * uBuild, c = 0.0, w = tdWaves(h);
@@ -3567,6 +3610,7 @@ float tdInject(H h) {
   else if (src == 5) c = w * 0.3;
   else if (src == 6) { float core = 1.0 - smoothstep(0.08, 0.2, h.rad); for (int i = 0; i < 6; i++) if (uPulse[i].y > 0.0 && uPulse[i].z < 1.5) c += core * tdEnv(uPulse[i].x) * uPulse[i].y * 0.35; }
   else if (src == 7) c = dot(video(h.p), vec3(0.3, 0.5, 0.2)) * 0.12 + w * 0.4 * uTd[11];
+  else if (src == 8) c = tdDepth(h.p, tdAt(h.p).g) * 0.07 * (0.8 + 0.5 * uTd[11] * kk()) / lv;   // steady: the figure, not the volume
   return c * lv;
 }
 void main() {
@@ -3579,6 +3623,10 @@ void main() {
   float n3 = noise(np + vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 + vec2(e, 0.0) - t), n4 = noise(np - vec2(e, 0.0) + t) + 0.5 * noise(np * 2.3 - vec2(e, 0.0) - t);
   vec2 vel = vec2(n1 - n2, n4 - n3) * uTd[5] * (0.6 + uTd[11] * (uBassS + 0.8 * kk())) * 1.2;
   vel += h.gP * uTd[8] * (0.35 + uTd[11] * (0.5 * uLevelS + 0.5 * kk())) + h.gP * uMech[1] * 2.5;
+  if (int(uTd[0] + 0.5) == 8) {   // depth: the figure pushes the fabric aside, down the slopes, so every move leaves streaks of folds
+    vec2 gd = vec2(tdAt(p + vec2(tx * 3.0, 0.0)).r - tdAt(p - vec2(tx * 3.0, 0.0)).r, tdAt(p + vec2(0.0, tx * 3.0)).r - tdAt(p - vec2(0.0, tx * 3.0)).r);
+    vel -= gd * (1.6 + 1.5 * kk());
+  }
   // Feedback transform about the part's centre: zoom, twist (and the shock and twist mechanisms).
   float z = (uTd[3] * (0.6 + 0.6 * uTd[11] * kk()) + 5.0 * uMech[1] - 3.0 * uMech[6]) * 0.003, a = (uTd[4] + 4.0 * uMech[3]) * 0.003;
   vec2 d = p - c; d = mat2(cos(a), -sin(a), sin(a), cos(a)) * d * (1.0 - z * fr);
@@ -3593,6 +3641,10 @@ void main() {
   heat += tdInject(h) * uTd[1] * pour;
   heat += uMech[4] * smoothstep(0.35, 0.8, fbm(p * 0.025 + uTime * 0.6)) * 0.25 * pour;     // eruption: the whole heart boils over
   sp += tdSparks(h) * pour;
+  if (int(uTd[0] + 0.5) == 8) {   // g = the still background, learned in place (not carried by the flow)
+    float bg = tdAt(p).g, l = uVidOn > 0.5 ? tdCamL5(p) : 0.0;
+    sp = bg < 0.001 ? l : mix(bg, l, min(1.0, (0.0015 + 0.2 * uMech[6]) * fr));
+  }
   float hgt = mix(F.b, heat, 0.12 * fr);
   float inside = smoothstep(-6.0, -2.0, h.d);
   o = vec4(min(heat, 3.0), min(sp, 3.0), min(hgt, 3.0), 1.0) * inside;
@@ -3686,9 +3738,44 @@ vec3 fxRealHeart(H h) {
   }
   return lit * (h.groove * 1.3 + (h.stripe + h.rim) * 0.95 + h.seam * 1.1) + vec3(1.0, 0.4, 0.45) * h.edge * (0.25 + 0.8 * lub);
 }
+
+// ---- live depth sculpture (223-225): the liquid's heat is the height of a sheet of fabric (or sand), lit from the side ----
+// Folds follow the height's own contour lines (so they wrap round the figure and stream behind every move, as in the reel),
+// with a fine grain on the flat parts. The cut stays the cut: the grooves are V creases in the same light, the contour glows.
+float drH(vec2 p) {
+  vec4 F = tdAt(p);
+  return F.r * 0.75 + F.b * 0.45;
+}
+float drFolds(vec2 p, float hh, float slope) {
+  float f = sin(hh * 46.0 + fbm(p * 0.045) * 5.0 + uTime * 0.3);
+  return f * smoothstep(0.004, 0.05, slope);
+}
+vec3 fxDepthRelief(H h) {
+  vec2 p = h.p; float tx = S / uTdN * 1.5;
+  float h0 = drH(p), hx = drH(p + vec2(tx, 0.0)), hy = drH(p + vec2(0.0, tx));
+  vec2 g = vec2(hx - h0, hy - h0); float slope = length(g);
+  float f0 = drFolds(p, h0, slope), fx = drFolds(p + vec2(tx, 0.0), hx, slope), fy = drFolds(p + vec2(0.0, tx), hy, slope);
+  float gr = noise(p * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise(p * 3.9 - h0 * 2.0) * 0.25;   // fine grain, as fabric or sand
+  float grx = noise((p + vec2(tx, 0.0)) * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise((p + vec2(tx, 0.0)) * 3.9 - h0 * 2.0) * 0.25;
+  float gry = noise((p + vec2(0.0, tx)) * 1.7 + vec2(h0 * 3.0)) * 0.5 + noise((p + vec2(0.0, tx)) * 3.9 - h0 * 2.0) * 0.25;
+  float relief = 9.0 + 6.0 * uTdO[7];
+  vec3 n = normalize(vec3(-(g * relief + vec2(fx - f0, fy - f0) * 0.09 + vec2(grx - gr, gry - gr) * 0.05) / tx * 2.2, 1.0));
+  vec3 nc = nCut(h, 1.2); n = normalize(n + vec3(nc.xy, 0.0) * 0.8);                       // the cut's V grooves in the same light
+  float sw = 0.25 * sin(uTime * 0.2) + 0.3 * (uBassS - 0.5);                                 // the light swings slowly with the bass
+  vec3 L = normalize(vec3(-0.55 + sw, -0.65, 0.55));
+  float df = max(dot(n, L), 0.0), sp = pow(max(dot(reflect(-L, n), vec3(0.0, 0.0, 1.0)), 0.0), 22.0);
+  float sh = (0.16 + 0.84 * df) * ao(h);
+  int ramp = int(uTdO[0] + 0.5);
+  vec3 base = vec3(0.93, 0.92, 0.9);
+  if (ramp == 1) base = mix(vec3(0.85), pal(h0 * 0.45 + uFlow + gr * 0.2), 0.75);
+  else if (ramp == 2) base = mix(vec3(0.98, 0.8, 0.5), vec3(1.0, 0.92, 0.72), smoothstep(0.2, 1.0, h0));
+  vec3 col = base * sh * (0.85 + 0.25 * uLevelS + 0.35 * kk()) + vec3(1.0, 0.97, 0.92) * sp * (0.35 + 0.4 * kk());
+  col += vec3(1.0) * uMech[5] * 0.6;                                                         // flash
+  return col * (h.stripe + h.rim + h.groove * 0.75 + h.seam * 0.8) + (ramp == 1 ? pal(uFlow) : base) * h.edge * uTdO[6] * (0.6 + 1.4 * kk());
+}
 ` };
 
-return { TD_SIM, TD_LOOK, TD_DEFAULT, TD_SOURCES, TD_RAMPS, TD_LOOKS, TD_FX, TD_PRESET, isTd, MECHS, TdDriver, TD_SIM_GLSL, TD_BANK };
+return { TD_SIM, TD_LOOK, TD_DEFAULT, TD_SOURCES, TD_RAMPS, TD_LOOKS, TD_FX, TD_PRESET, isTd, tdUsesVideo, isDepthCam, MECHS, TdDriver, TD_SIM_GLSL, TD_BANK };
 })();
 
 // ===== heart-tempo.js =====
@@ -4023,6 +4110,113 @@ vec3 fxCamXray(H h) {           // x-ray: inverted, cold and split into colours;
 return { CAM_FX, isCam, CAM_BANK };
 })();
 
+// ===== heart-live.js =====
+const M_live = (() => {
+// A phone as a live camera for the heart, over the local Wi-Fi (no internet, no app to install).
+// The desktop app runs a small relay (desktop/cam-relay.js): the phone opens https://<this computer>:8768/?k=<code> (the studio
+// shows it as a QR code), allows its camera and sends JPEG frames; the studio pulls the newest frame from the relay on
+// http://127.0.0.1:8769 and paints it on a canvas whose stream becomes the studio's video, so every camera effect
+// (206-215, the depth sculptures 223-225) and the "video on the heart" slider work with the phone as with a USB camera.
+const RELAY = "http://127.0.0.1:8769";
+
+class PhoneCam {
+  constructor(base = RELAY) {
+    this.base = base; this.cv = document.createElement("canvas"); this.cv.width = 640; this.cv.height = 480;
+    this.cx = this.cv.getContext("2d"); this.on = false; this.seq = 0; this.n = 0; this.fps = 0; this.last = 0; this.onstatus = null;
+  }
+  // { key, urls: [{ name, url }], phone: seconds since the last frame or null } or null when there is no relay.
+  async info() {
+    try { const r = await fetch(this.base + "/info", { cache: "no-store" }); return r.ok ? await r.json() : null; } catch { return null; }
+  }
+  start() {
+    if (this.on) return this.stream;
+    this.on = true; this.ac = new AbortController();
+    this.cx.fillStyle = "#000"; this.cx.fillRect(0, 0, this.cv.width, this.cv.height);
+    this.stream = this.cv.captureStream(30);
+    this.loop(); return this.stream;
+  }
+  stop() { this.on = false; this.ac?.abort(); this.stream?.getTracks().forEach(t => t.stop()); this.stream = null; }
+  status(s) { this.onstatus?.(s); }
+  async loop() {
+    let t0 = performance.now(), k = 0;
+    while (this.on) {
+      try {
+        // Long poll: the relay answers as soon as a newer frame than this.seq arrives (or 204 after a while).
+        const r = await fetch(`${this.base}/frame?after=${this.seq}`, { cache: "no-store", signal: this.ac.signal });
+        if (r.status === 204) { this.status("wait"); continue; }
+        if (!r.ok) throw new Error(r.status);
+        this.seq = +r.headers.get("x-seq") || this.seq + 1;
+        const bmp = await createImageBitmap(await r.blob());
+        if (bmp.width !== this.cv.width || bmp.height !== this.cv.height) { this.cv.width = bmp.width; this.cv.height = bmp.height; }
+        this.cx.drawImage(bmp, 0, 0); bmp.close?.();
+        k++; this.last = performance.now();
+        if (this.last - t0 > 1000) { this.fps = Math.round(k * 1000 / (this.last - t0)); k = 0; t0 = this.last; this.status("live"); }
+      } catch (e) {
+        if (!this.on) break;
+        this.status("norelay"); await new Promise(ok => setTimeout(ok, 1500));
+      }
+    }
+  }
+}
+
+// ---------------- QR code (byte mode, error level L, versions 1-5), so the phone opens the camera page by scanning ----------------
+const QR_DATA = [0, 19, 34, 55, 80, 108], QR_EC = [0, 7, 10, 15, 20, 26];
+function gfMul(a, b) { let r = 0; for (let i = 7; i >= 0; i--) { r = (r << 1) ^ ((r >>> 7) * 0x11d); r ^= ((b >>> i) & 1) * a; } return r & 255; }
+function rsRemainder(data, deg) {
+  const div = new Array(deg).fill(0); div[deg - 1] = 1; let root = 1;
+  for (let i = 0; i < deg; i++) { for (let j = 0; j < deg; j++) { div[j] = gfMul(div[j], root); if (j + 1 < deg) div[j] ^= div[j + 1]; } root = gfMul(root, 2); }
+  const res = new Array(deg).fill(0);
+  for (const b of data) { const f = b ^ res.shift(); res.push(0); div.forEach((c, i) => res[i] ^= gfMul(c, f)); }
+  return res;
+}
+// Rows of booleans (true = dark), or null if the text is too long.
+function qr(text) {
+  const bytes = [...new TextEncoder().encode(text)];
+  const v = [1, 2, 3, 4, 5].find(v => 4 + 8 + bytes.length * 8 <= QR_DATA[v] * 8); if (!v) return null;
+  const bits = []; const put = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(bytes.length, 8); bytes.forEach(b => put(b, 8));
+  const cap = QR_DATA[v] * 8; put(0, Math.min(4, cap - bits.length)); while (bits.length % 8) bits.push(0);
+  const data = []; for (let i = 0; i < bits.length; i += 8) data.push(parseInt(bits.slice(i, i + 8).join(""), 2));
+  for (let p = 0xec; data.length < QR_DATA[v]; p ^= 0xec ^ 0x11) data.push(p);
+  const all = data.concat(rsRemainder(data, QR_EC[v]));
+  const n = 17 + 4 * v, M = Array.from({ length: n }, () => new Array(n).fill(false)), F = Array.from({ length: n }, () => new Array(n).fill(false));
+  const fn = (x, y, d) => { M[y][x] = d; F[y][x] = true; };
+  for (let i = 0; i < n; i++) { fn(6, i, i % 2 === 0); fn(i, 6, i % 2 === 0); }
+  for (const [cx, cy] of [[3, 3], [n - 4, 3], [3, n - 4]])
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = cx + dx, y = cy + dy, dist = Math.max(Math.abs(dx), Math.abs(dy));
+      if (x >= 0 && x < n && y >= 0 && y < n) fn(x, y, dist !== 2 && dist !== 4);
+    }
+  if (v > 1) { const a = n - 7; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) fn(a + dx, a + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1); }
+  const d = 1 << 3; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+  const b = ((d << 10) | r) ^ 0x5412, g = i => ((b >>> i) & 1) === 1;
+  for (let i = 0; i <= 5; i++) fn(8, i, g(i));
+  fn(8, 7, g(6)); fn(8, 8, g(7)); fn(7, 8, g(8));
+  for (let i = 9; i < 15; i++) fn(14 - i, 8, g(i));
+  for (let i = 0; i < 8; i++) fn(n - 1 - i, 8, g(i));
+  for (let i = 8; i < 15; i++) fn(8, n - 15 + i, g(i));
+  fn(8, n - 8, true);
+  let i = 0;
+  for (let right = n - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < n; vert++) for (let j = 0; j < 2; j++) {
+      const x = right - j, up = ((right + 1) & 2) === 0, y = up ? n - 1 - vert : vert;
+      if (!F[y][x] && i < all.length * 8) { M[y][x] = ((all[i >>> 3] >>> (7 - (i & 7))) & 1) === 1; i++; }
+    }
+  }
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (!F[y][x] && (x + y) % 2 === 0) M[y][x] = !M[y][x];   // mask 0
+  return M;
+}
+function qrSVG(text, px = 170) {
+  const M = qr(text); if (!M) return "";
+  const n = M.length, q = 4, path = [];
+  M.forEach((row, y) => row.forEach((d, x) => d && path.push(`M${x + q} ${y + q}h1v1h-1z`)));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n + q * 2} ${n + q * 2}" width="${px}" height="${px}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${path.join("")}" fill="#000"/></svg>`;
+}
+
+return { RELAY, PhoneCam, qr, qrSVG };
+})();
+
 // ===== heart-gl.js =====
 const M_gl = (() => {
 // Projector renderer for the heart. One full-screen fragment shader: every output pixel is mapped back to centimetres on the
@@ -4117,6 +4311,10 @@ const EFFECTS = [
 EFFECTS.forEach(e => e.bank = e.id < 2 ? 0 : -1 - (e.id >> 3));
 const CORE_CHUNKS = [...new Set(EFFECTS.map(e => e.bank))].filter(b => b < 0);
 FX_BANKS.forEach((b, i) => b.fx.forEach(([id, name, ico, e, fn]) => { EFFECTS[id] = { id, name, ico, e, g: b.g, bank: i + 1, fn }; }));
+// A clean start: the studio opens (and the 🧹 reset returns) to a dark heart, with no effect running until one is picked.
+// It lives in bank 0 with no case of its own, so the shader draws black and crossfades in and out of it like any effect.
+const BLANK = 226;
+EFFECTS[BLANK] = { id: BLANK, name: "ריק · הלב כבוי", ico: "⬛", e: -1, g: "base", bank: 0 };
 // Effect groups for the pads, in the order they show.
 const FX_GROUPS = [["base", "בסיס"], ["live", "לייב · מגיבים למוזיקה"], ["trance", "טראנס · פאמפ, בילדאפ, דרופ וגייט"], ["3d", "תלת-ממד · מוארים לפי החיתוך"],
   ["parts", "פסל אור-קול נושם · כל חלק קול משלו"], ...FX_BANKS.map(b => [b.g, b.title])];
@@ -5320,7 +5518,7 @@ class HeartGL {
     if (!pass) {
       if (this.ready(this.keyFor([fxA, ...own])) && this.ready(this.keyFor([fxB, ...own]))) this.shown = [fxA, fxB, s.mix];
       else if (this.shown) { [fxA, fxB] = this.shown; s = { ...s, fxA, fxB, mix: this.shown[2] }; if (fxA === fxB) s.mix = 0; }
-      else { fxA = fxB = 1; s = { ...s, fxA: 1, fxB: 1, mix: 0 }; return this.draw(s, points, null, "0"); }   // first seconds: the heartbeat
+      else { s = { ...s, fxA: BLANK, fxB: BLANK, mix: 0 }; return this.draw(s, points, null, "0"); }   // first seconds: dark until it is built
     } else if (!this.ready(this.keyFor([fxA, fxB]))) return;
     if (this.bankOf(fxA) === this.bankOf(fxB)) return this.draw(s, points, pass, this.keyFor([fxA, fxB, ...own]));
     this.draw({ ...s, fxB: fxA, mix: 0 }, points, null, this.keyFor([fxA, ...own]));
@@ -5411,7 +5609,7 @@ class HeartGL {
   }
 }
 
-return { EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, CH_W, homography, applyH, BOX, halves, flatPoints, defaultPoints, toHeart, toOutput, HeartGL };
+return { EFFECTS, BLANK, FX_GROUPS, PALETTES, VIDEO_FX, CH_W, homography, applyH, BOX, halves, flatPoints, defaultPoints, toHeart, toOutput, HeartGL };
 })();
 
 // ===== heart-audio.js =====
@@ -6756,14 +6954,15 @@ return { FAMS, EXPORT_PARAMS, EXPORT_FEATS, makeOps, Network, TEMPLATES, buildLi
 const G = M_geo;
 const { ELEMENTS, ELEMENT_BASE, partsOf, setCustom } = M_elements;
 const { Forge, loadDesign, buildModel: forgeModel } = M_forge;
-const { HeartGL, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } = M_gl;
+const { HeartGL, BLANK, EFFECTS, FX_GROUPS, PALETTES, VIDEO_FX, defaultPoints, flatPoints, toHeart, toOutput, halves } = M_gl;
 const { Music, regrid } = M_audio;
 const { Engine, MODES: E_MODES, HALVES, COLORS, noteName } = M_engine;
 const { React, newLayer, PRESETS, EXPORTS, OUTS, TRIG, TARGETS, BLENDS, MASKS, MASK_ID, TRANCE } = M_react;
 const { makeOps, Network, Editor, FAMS: WS_FAMS, TEMPLATES, WS_MENU, buildLiquid } = M_nodes;
-const { TdDriver, MECHS, TD_PRESET, TD_FX, isTd } = M_td;
+const { TdDriver, MECHS, TD_PRESET, TD_FX, isTd, tdUsesVideo, isDepthCam } = M_td;
 const { TimeWarp, TW_MODES, TW_DIVS, isTime } = M_tempo;
 const { isCam } = M_cam;
+const { PhoneCam, qrSVG } = M_live;
 
 const $ = id => document.getElementById(id);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
@@ -6819,7 +7018,7 @@ function flatten() { if (!fold) P = flatPoints([P[0], P[2], P[3], P[5]]); }
 
 // ---------- show state ----------
 const show = Object.assign({ engmix: 0, palette: "love", speed: 100, intensity: 75, hue: 0, master: 100, outline: 0, vidmix: 0, xfade: 6, latency: 40, phrase: "8", strobe: false, style: "all" }, store.get(K.show, {}));
-let fxA = 1, fxB = 1, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
+let fxA = BLANK, fxB = BLANK, mix = 0, xStart = 0, xDur = 0.6, black = false, blackLv = 1;
 function setFx(id, from = "user") {
   if (id === fxB && mix === 0 && id === fxA) return;
   if (mix > 0) fxA = fxB;
@@ -7446,7 +7645,7 @@ async function loadMusic(file, el) {
 $("musicFile").onchange = () => { const f = $("musicFile").files[0]; if (f) loadMusic(f, aud); };
 $("videoFile").onchange = async () => {
   const f = $("videoFile").files[0]; if (!f) return;
-  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
+  camStop();
   vid.src = URL.createObjectURL(f); vid.muted = !$("vidAudio").checked; vid.loop = !$("vidAudio").checked;
   if ($("vidAudio").checked) { aud.pause(); await loadMusic(f, vid); }
   else vid.play().catch(() => {});
@@ -7745,32 +7944,59 @@ for (const k of ["all", "video"]) { const el = $("tw" + k[0].toUpperCase() + k.s
 // The camera as the video source (the AI VJ "rewrite reality" idea): the heart redraws what the camera sees, on the beat.
 let camStream = null, camBusy = false;
 K.camDev = "heartstudio.camdev";
-const camStop = () => { if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); } };
+const camFx = id => isCam(id) || isDepthCam(id);
+// A phone on the Wi-Fi as the camera (heart-live.js, the desktop app's relay): its frames are painted on a canvas whose stream
+// becomes the video, so it works with every camera effect exactly like a USB camera.
+const phone = new PhoneCam();
+phone.onstatus = s => {
+  $("phoneSt").textContent = s === "live" ? `🔴 הטלפון משדר · ${phone.fps} פריימים בשנייה` : s === "wait" ? "מחכה לטלפון…" : "אין שרת מצלמה: הטלפון כמצלמה עובד בתוכנת Heart Studio ל-Windows (או node desktop/cam-relay.js).";
+};
+async function phoneShow() {
+  const info = await phone.info();
+  $("phoneCam").hidden = false;
+  if (!info) { phone.onstatus("norelay"); $("phoneQr").innerHTML = ""; $("phoneUrl").textContent = ""; return; }
+  const url = info.urls[0]?.url;
+  $("phoneQr").innerHTML = url ? qrSVG(url, 150) : "";
+  $("phoneUrl").textContent = info.urls.map(u => u.url).join("  ·  ") || "המחשב לא מחובר לרשת";
+}
+const camStop = () => {
+  phone.stop(); $("phoneCam").hidden = $("camDev").value !== "phone";
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; vid.srcObject = null; $("camBtn").setAttribute("aria-pressed", "false"); }
+};
 // Lists the cameras (a USB camera at the event, the laptop's own one); names show only after the first permission.
 async function camList() {
   try {
     const sel = $("camDev"), want = localStorage.getItem(K.camDev) || "";
     const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
-    sel.innerHTML = '<option value="">מצלמה ברירת מחדל</option>' + cams.map((d, i) => `<option value="${d.deviceId}">${(d.label || "מצלמה " + (i + 1)).replace(/</g, "")}</option>`).join("");
-    sel.value = cams.some(d => d.deviceId === want) ? want : "";
+    sel.innerHTML = '<option value="">מצלמה ברירת מחדל</option>' + cams.map((d, i) => `<option value="${d.deviceId}">${(d.label || "מצלמה " + (i + 1)).replace(/</g, "")}</option>`).join("")
+      + '<option value="phone">📱 טלפון ב-Wi‑Fi</option>';
+    sel.value = want === "phone" || cams.some(d => d.deviceId === want) ? want : "";
+    $("phoneCam").hidden = sel.value !== "phone"; if (sel.value === "phone") phoneShow();
   } catch {}
 }
 async function camStart(fx) {
   if (camBusy) return; camBusy = true; camStop();
   try {
     const id = $("camDev").value;
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(id ? { deviceId: { exact: id } } : {}) }, audio: false });
+    if (id === "phone") { await phoneShow(); camStream = phone.start(); }
+    else camStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, ...(id ? { deviceId: { exact: id } } : {}) }, audio: false });
     vid.removeAttribute("src"); vid.srcObject = camStream; vid.muted = true; await vid.play().catch(() => {});
-    $("camBtn").setAttribute("aria-pressed", "true"); if (fx != null && !isTime(curFx()) && !isCam(curFx())) setFx(fx);
-    toast("המצלמה ממופה על הלב"); camList();
+    $("camBtn").setAttribute("aria-pressed", "true"); if (fx != null && !isTime(curFx()) && !camFx(curFx())) setFx(fx);
+    toast(id === "phone" ? "סורקים את הקוד בטלפון ומתחילים שידור" : "המצלמה ממופה על הלב"); if (id !== "phone") camList();
   } catch { camStream = null; toast("אין גישה למצלמה"); }
   camBusy = false;
 }
 $("camBtn").onclick = () => camStream ? camStop() : camStart(206);
-$("camDev").onchange = () => { try { localStorage.setItem(K.camDev, $("camDev").value); } catch {} if (camStream) camStart(); };
+$("camDev").onchange = () => {
+  try { localStorage.setItem(K.camDev, $("camDev").value); } catch {}
+  $("phoneCam").hidden = $("camDev").value !== "phone"; if ($("camDev").value === "phone") phoneShow();
+  if (camStream) camStart();
+};
+// While the phone panel is open, refresh its address now and then (the Wi-Fi can change between the soundcheck and the show).
+setInterval(() => { if (!$("phoneCam").hidden && !phone.on && document.visibilityState === "visible") phoneShow(); }, 8000);
 camList();
 // Picking a live-camera effect with no video loaded turns the camera on by itself.
-window.camAuto = id => { if (isCam(id) && !camStream && !vid.src && !camBusy) camStart(); };
+window.camAuto = id => { if (camFx(id) && !camStream && !vid.src && !camBusy) camStart(); };
 
 
 // ---------- output palette: the heart, its layers and one card per element ----------
@@ -7919,7 +8145,7 @@ function step(now) {
   const tdId = wsLive && wsOut.td ? -1 : used.find(isTd);
   // The video goes to the GPU only while something shows it.
   if (tws.newFrame && used.some(isTime)) gl.pushHist();
-  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || isCam(id) || VIDEO_FX.has(id) || TD_PRESET[id]?.src === 7) || (wsLive && wsOut.td?.src === 7);
+  gl.vidWant = sv.vidmix > 0 || used.some(id => isTime(id) || isCam(id) || VIDEO_FX.has(id) || tdUsesVideo(id)) || (wsLive && wsOut.td?.src >= 7);
   if (tdId != null) gl.tdStep(state(f), P, tdd.uniforms(tdId === -1 ? wsOut.td : TD_PRESET[tdId]));
   if (now - (frame.mt || 0) > 50) { frame.mt = now; $("mechs").querySelectorAll("button").forEach((b, i) => b.style.setProperty("--m", tdd.mech[i].toFixed(2))); }
   gl.render(state(f), P);
@@ -8028,9 +8254,9 @@ function step(now) {
   // or cue playback driving the effects, the workspace network stops driving the heart, and the liquid and picture history are wiped.
   // The calibration, the heart's structure, the sound settings and the recorded cues stay.
   function resetAll() {
-    if (!confirm("ניקוי וריסט: כל האפקטים, השכבות והזיכרון שלהם יימחקו והסטודיו יתחיל מחדש עם אפקט אחד.\n\nהכיול, מבנה הלב, הגדרות הסאונד והקיו שהוקלטו נשמרים.\n\nלהמשיך?")) return;
+    if (!confirm("ניקוי וריסט: כל האפקטים, השכבות והזיכרון שלהם יימחקו והסטודיו יתחיל מחדש נקי, בלי אף אפקט.\n\nהכיול, מבנה הלב, הגדרות הסאונד והקיו שהוקלטו נשמרים.\n\nלהמשיך?")) return;
     rx.o.layers = []; saveRx();
-    fxA = fxB = 1; mix = 0;
+    fxA = fxB = BLANK; mix = 0;
     recent = []; store.set(K.fxRecent, recent);
     chState = {}; sel.clear(); ident = false; pushChannels(); renderChannels();
     tdd.held.fill(false); tdd.mech.fill(0); tdd.ext.fill(0); tdd.pulses = []; tdd.dub = null;

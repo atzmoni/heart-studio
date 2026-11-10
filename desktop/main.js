@@ -5,6 +5,7 @@
 // calibration and the settings it saves stay between runs.
 const { app, BrowserWindow, protocol, session, shell } = require("electron");
 const fs = require("fs"), path = require("path");
+const camRelay = require("./cam-relay.js");
 
 app.commandLine.appendSwitch("force_high_performance_gpu");
 app.commandLine.appendSwitch("ignore-gpu-blocklist");
@@ -29,6 +30,8 @@ app.whenReady().then(() => {
     try { return new Response(await fs.promises.readFile(f), { headers: { "content-type": TYPES[path.extname(f)] || "application/octet-stream" } }); }
     catch { return new Response("not found", { status: 404 }); }
   });
+  // A phone on the same Wi-Fi as a live camera (heart-live.js): the studio shows its address as a QR code.
+  try { camRelay.start({ root: ROOT, dir: app.getPath("userData") }); } catch (e) { console.error("phone camera relay:", e.message); }
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(ALLOW.has(perm)));
   session.defaultSession.setPermissionCheckHandler((wc, perm) => ALLOW.has(perm));
 
